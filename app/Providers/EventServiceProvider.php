@@ -16,6 +16,11 @@ class EventServiceProvider extends ServiceProvider
         'App\Events\Event' => [
             'App\Listeners\EventListener',
         ],
+        'App\Events\OrderPaid' => [
+            'App\Listeners\SendOrderPaidMail',
+            'App\Listeners\SendWechatTemplateMessage',
+            'App\Listeners\DecreaseStock',      // 库存扣减也放队列
+        ],
     ];
 
     /**
