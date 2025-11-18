@@ -1,0 +1,5710 @@
+<?php
+
+// +----------------------------------------------------------------------
+// | laravelvip 乐融沃B2B2C商城系统
+// +----------------------------------------------------------------------
+// | Copyright (c) 2017-2027 http://www.laravelvip.com All rights reserved.
+// +----------------------------------------------------------------------
+// | Notice: This code is not open source, it is strictly prohibited
+// |         to distribute the copy, otherwise it will pursue its
+// |         legal responsibility.
+// +----------------------------------------------------------------------
+// | 版权所有 2015-2027 云南乐融沃网络科技有限公司，并保留所有权利。
+// | 网站地址: http://www.laravelvip.com
+// +----------------------------------------------------------------------
+// | 这不是一个自由软件！禁止拷贝本软件副本，否则将追究其法律责任！
+// | 如需使用，请移步官网购买正版授权。
+// +----------------------------------------------------------------------
+// | Author: 雲溪荏苒 <290648237@qq.com>
+// | Date:2018-08-15
+// | Description:商品控制器
+// +----------------------------------------------------------------------
+
+namespace App\Modules\Backend\Http\Controllers;
+
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Goods;
+use App\Models\GoodsLayout;
+use App\Models\GoodsSku;
+use App\Models\GoodsUnit;
+use App\Models\Shop;
+use App\Modules\Base\Http\Controllers\Backend;
+use App\Repositories\BonusRepository;
+use App\Repositories\CategoryRepository;
+use App\Repositories\CollectRepository;
+use App\Repositories\CompareRepository;
+use App\Repositories\CustomerRepository;
+use App\Repositories\GoodsCommentRepository;
+use App\Repositories\GoodsHistoryRepository;
+use App\Repositories\GoodsRepository;
+use App\Repositories\GoodsSkuRepository;
+use App\Repositories\SelfPickupRepository;
+use App\Repositories\ShopCategoryRepository;
+use App\Repositories\ShopCreditRepository;
+use App\Repositories\ShopRepository;
+use App\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Nexmo\Response;
+
+header('Access-Control-Allow-Origin: *'); //设置http://www.baidu.com允许跨域访问
+header('Access-Control-Allow-Headers: X-Requested-With,X_Requested_With'); //设置允许的跨域header
+
+class GoodsController extends Backend
+{
+    public $websites;
+    public $source_link = '//rte.gogo198.cn';
+
+    protected $goods; // 商品模型
+    protected $category; // 商品分类模型
+    protected $goodsHistory; // 商品浏览记录模型
+    protected $collect;
+    protected $selfPickup;
+
+    protected $shopCategory;
+    protected $shop;
+    protected $compare;
+    protected $goodsSku;
+    protected $shopCredit;
+    protected $customer;
+
+    protected $bonus;
+
+    protected $goodsComment; // 商品评价
+
+    public function __construct(Request $request)
+    {
+        parent::__construct();
+
+        $this->goods = new GoodsRepository();
+        $this->category = new CategoryRepository();
+        $this->goodsHistory = new GoodsHistoryRepository();
+        $this->shopCategory = new ShopCategoryRepository();
+        $this->collect = new CollectRepository();
+        $this->selfPickup = new SelfPickupRepository();
+        $this->shop = new ShopRepository();
+        $this->compare = new CompareRepository();
+        $this->goodsSku = new GoodsSkuRepository();
+        $this->shopCredit = new ShopCreditRepository();
+        $this->customer = new CustomerRepository();
+
+        $this->bonus = new BonusRepository();
+
+        $this->goodsComment = new GoodsCommentRepository();
+
+        $dat = $request->except(['_token']);
+        #判断有无企业id
+        $cid = isset($dat['cid']) ? intval($dat['cid']) : 0;
+
+        if (empty($cid)) {
+            $cid = cookie::get('cid');
+        }
+
+        if (empty($cid)) {
+            echo '<h1>商家站点ID不能为空，正在跳转至淘中国</h1><script>setTimeout(function(){ window.location.href="//www.gogo198.cn"; },1000);</script>';
+        }
+
+        #获取商户的企业配置的基本信息
+        $this->websites['cid'] = $cid;
+        $domain = $request->getHost();
+        $this->websites['domain'] = 'https://'.$domain.'/?cid='.$cid;
+        $this->websites['rand'] = rand(11111, 99999);
+        ;
+        $this->websites['info'] = Db::connection('shop_db')->table('website_basic')->where(['company_id'=>$cid])->first();
+        $this->websites['info'] = objtoarr($this->websites['info']);
+
+        #获取公示信息
+        $this->websites['info']['publicity_info'] = json_decode($this->websites['info']['publicity_info'], true);
+
+        #获取搜索结果展示版式
+        if (!empty($this->websites['info']['search_format'])) {
+            $this->websites['info']['search_format'] = json_decode($this->websites['info']['search_format'], true);
+        } else {
+            $this->websites['info']['search_format'] = [5,5];
+        }
+
+        #获取商户的企业配置的头部菜单
+        $this->websites['menu'] = Db::connection('shop_db')->table('website_navbar')->where(['company_id'=>$cid,'pid'=>0])->get();
+        $this->websites['menu'] = objtoarr($this->websites['menu']);
+        foreach ($this->websites['menu'] as $k=>$v) {
+            $this->websites['menu'][$k]['children'] = Db::connection('shop_db')->table('website_navbar')->where(['company_id'=>$cid,'pid'=>$v['id']])->get();
+            $this->websites['menu'][$k]['children'] = objtoarr($this->websites['menu'][$k]['children']);
+            foreach ($this->websites['menu'][$k]['children'] as $k2=>$v2) {
+                $this->websites['menu'][$k]['children'][$k2]['children'] = Db::connection('shop_db')->table('website_navbar')->where(['company_id'=>$cid,'pid'=>$v2['id']])->get();
+                $this->websites['menu'][$k]['children'][$k2]['children'] = objtoarr($this->websites['menu'][$k]['children'][$k2]['children']);
+            }
+        }
+
+        #获取页脚功能菜单
+        $this->websites['footer_menu'] = Db::connection('shop_db')->table('website_footer')->where(['company_id'=>$cid,'pid'=>0])->get();
+        $this->websites['footer_menu'] = objtoarr($this->websites['footer_menu']);
+        foreach ($this->websites['footer_menu'] as $k=>$v) {
+            $this->websites['footer_menu'][$k]['children'] = Db::connection('shop_db')->table('website_footer')->where(['company_id'=>$cid,'pid'=>$v['id']])->get();
+            $this->websites['footer_menu'][$k]['children'] = objtoarr($this->websites['footer_menu'][$k]['children']);
+        }
+
+        #获取社媒
+        $this->websites['website_contact'] = Db::connection('shop_db')->table('website_contact')->where(['company_id'=>$cid])->get();
+        $this->websites['website_contact'] = objtoarr($this->websites['website_contact']);
+
+        #获取资质
+        $this->websites['website_qualification'] = Db::connection('shop_db')->table('merchsite_qualification')->where(['company_id'=>$cid])->get();
+        $this->websites['website_qualification'] = objtoarr($this->websites['website_qualification']);
+
+        #客服信息
+        $this->websites['customer'] = Db::connection('shop_db')->table('merchsite_customer_group')->where(['company_id'=>$cid])->first();
+        $this->websites['customer'] = objtoarr($this->websites['customer']);
+    }
+
+    /**
+     * 商品列表
+     * 筛选条件
+     *
+     * @param Request $request
+     * @param $filter_str
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
+    public function goodsList(Request $request, $filter_str)
+    {
+        $filter_param = explode('-', $filter_str);
+        $cat_id = $request->get('cat_id', 0);
+
+        if (empty($filter_param) && !$cat_id) {
+            return redirect(route('pc_home'));
+        }
+        if (!$cat_id) {
+            $cat_id = isset($filter_param[0]) ? (int)$filter_param[0] : 0; // 分类id
+        }
+        $p2 = isset($filter_param[1]) ? $filter_param[1] : 0; // 未知参数
+        $p3 = isset($filter_param[2]) ? $filter_param[2] : 0; // 未知参数
+        $is_platform = isset($filter_param[3]) ? $filter_param[3] : 0; // 平台自营
+        $is_free_shipping = isset($filter_param[4]) ? $filter_param[4] : 0; // 包邮
+        $is_offpay = isset($filter_param[5]) ? $filter_param[5] : 0; // 支持货到付款
+        $has_goods_number = isset($filter_param[6]) ? $filter_param[6] : 0; // 仅显示有货
+        $sort_field = isset($filter_param[7]) ? $filter_param[7] : 0; // 排序字段 综合/销量/新品/评论/价格/人气
+        $sort_type = isset($filter_param[8]) ? $filter_param[8] : 4; // 排序方式 3-asc 4-desc
+        $area_code = isset($filter_param[9]) ? $filter_param[9] : 0; // 地区code
+        $display_model = isset($filter_param[10]) ? $filter_param[10] : 0; // 列表显示方式 0-大图模式 1-列表模式
+        $brand_id = isset($filter_param[11]) ? $filter_param[11] : 0; // 品牌
+        $min_price = isset($filter_param[12]) ? $filter_param[12] : 0; // 最小价格
+        $max_price = isset($filter_param[13]) ? $filter_param[13] : 0; // 最大价格
+
+        /*
+         * 筛选条件
+         *
+         */
+        $where = [];
+        $where[] = ['goods_status',1]; // 商品状态 已发布
+        $where[] = ['goods_audit',1]; // 审核通过
+        // 搜索条件
+        /* $search_arr = ['goods_barcode','keyword', 'cat_id','goods_status'];
+         foreach ($search_arr as $v) {
+             if (isset($params[$v]) && !empty($params[$v])) {
+
+                 if ($v == 'goods_barcode') {
+                     $where[] = [$v, 'like', "%{$params[$v]}%"];
+                 } else {
+                     $where[] = [$v, $params[$v]];
+                 }
+             }
+         }*/
+        // 查询条件
+
+        // 列表
+        $condition = [
+            'where' => $where,
+            'sortname' => 'goods_id',
+            'sortorder' => 'desc'
+        ];
+
+        $cat_id_arr = [];
+        $cat_brands = [];
+        $hot_sale_goods = [];
+        $new_goods = [];
+        $sale_rank_goods = [];
+        $goods_history = [];
+        $goods_category = [];
+        $navigate_cat = [];
+        $navigate_cat_type = 0;
+
+        if ($cat_id) {
+            $cat_info = $this->category->getById($cat_id);
+            $brand_ids = explode(',', $cat_info->brand_ids);
+            $cat_brands = Brand::whereIn('brand_id', $brand_ids)->get();
+            $cat_id_arr = get_cat_grandson($cat_id); // 获取该分类下的所有分类id
+            $condition['in'] = [
+                'field' => 'cat_id',
+                'condition' => $cat_id_arr
+            ];
+
+            // 热卖商品
+            $hot_sale_goods = $this->goods->getHotSaleGoods($cat_id_arr, 4);
+            // 新品推荐
+            $new_goods = $this->goods->getNewGoods($cat_id_arr, 4);
+            // 销量排行榜
+            $sale_rank_goods = $this->goods->getSaleRankGoods($cat_id_arr, 4);
+            // 浏览历史
+            list($goods_history, $goods_history_total) = $this->goods->getGoodsHistory($cat_id_arr, 6);
+
+            // 商品分类列表
+            $goods_category = Category::where('is_show', 1)->select(['cat_id','cat_name','parent_id', 'cat_level'])->orderBy('cat_sort', 'asc')->get();
+            // 分类面包屑导航
+            $navigate_cat = navigate_goods($cat_id);
+            $navigate_cat_type = 0;
+
+            $seo_info = [
+                1 => $cat_info->title,
+                2 => $cat_info->keywords,
+                3 => $cat_info->discription,
+            ];
+
+            $this->show_seo($seo_info, ['name' => $cat_info->cat_name]); // SEO
+        }
+
+
+        list($goods_list, $goods_total) = $this->goods->getList($condition, '', $this->user_id);
+        $pageHtml = frontend_pagination($goods_total);
+
+        $pageArr = frontend_pagination($goods_total, true);
+        $page_count = $pageArr['page_count'];
+        $cur_page = $pageArr['cur_page'];
+        $page_json = json_encode($pageArr);
+
+//        dd($guess_like_goods);
+
+
+        // 分类菜单显示 目前没有用到
+//        $cur_cat_arr = $this->goods->getGoodsCat($cat_info); // 当前分类
+
+
+
+
+        $compact = compact(
+            'cat_info',
+            'cat_brands',
+            'cat_id',
+            'goods_list',
+            'goods_total',
+            'pageHtml',
+            'goods_category',
+            'navigate_cat',
+            'navigate_cat_type',
+            'hot_sale_goods',
+            'new_goods',
+            'sale_rank_goods',
+            'goods_history',
+            'display_model',
+            'page_count',
+            'cur_page',
+            'page_json'
+        );
+
+
+//        $this->show_seo($seo_info); // SEO
+
+        return view('goods.goods_list', $compact);
+    }
+
+    /**
+     * 商品列表
+     * 多端共用一个方法
+     *
+     * @return array|\think\response\View
+     */
+    public function lists(Request $request, $filter_str='')
+    {
+        // 获取数据
+        $params = $request->all();
+
+
+        if (!empty($filter_str)) {
+            $filter_param = explode('-', $filter_str);
+//
+            $params['cat_id'] = isset($filter_param[0]) ? (int)$filter_param[0] : 0; // 分类id
+            $params['p2'] = isset($filter_param[1]) ? $filter_param[1] : 0; // 未知参数
+            $params['p3'] = isset($filter_param[2]) ? $filter_param[2] : 0; // 未知参数
+            $params['is_self'] = isset($filter_param[3]) ? $filter_param[3] : 0; // 平台自营
+            $params['is_free'] = isset($filter_param[4]) ? $filter_param[4] : 0; // 包邮
+            $params['is_cash'] = isset($filter_param[5]) ? $filter_param[5] : 0; // 支持货到付款
+            $params['is_stock'] = isset($filter_param[6]) ? $filter_param[6] : 0; // 仅显示有货
+            $params['sort'] = isset($filter_param[7]) ? $filter_param[7] : 0; // 排序字段 综合/销量/新品/评论/价格/人气
+            $params['order'] = isset($filter_param[8]) ? $filter_param[8] : 4; // 排序方式 3-asc 4-desc
+            $params['region'] = isset($filter_param[9]) ? $filter_param[9] : 0; // 地区code
+            $params['style'] = isset($filter_param[10]) ? $filter_param[10] : 0; // 列表显示方式 0-大图模式 1-列表模式
+            $params['brand_id'] = isset($filter_param[11]) ? $filter_param[11] : 0; // 品牌
+            $params['price_min'] = isset($filter_param[12]) ? $filter_param[12] : 0; // 最小价格
+            $params['price_max'] = isset($filter_param[13]) ? $filter_param[13] : 0; // 最大价格
+            $params['keyword'] = isset($params['keyword']) ? $params['keyword'] : ''; // 关键词搜索
+        }
+//        $cat_id = $request->get('cat_id', 0);
+
+//        if (empty($filter_param) && !$cat_id) {
+//            return redirect(route('pc_home'));
+//        }
+//        if (!$cat_id) {
+//            $cat_id = isset($filter_param[0]) ? (int)$filter_param[0] : 0; // 分类id
+//        }
+//        $p2 = isset($filter_param[1]) ? $filter_param[1] : 0; // 未知参数
+//        $p3 = isset($filter_param[2]) ? $filter_param[2] : 0; // 未知参数
+//        $is_self = isset($filter_param[3]) ? $filter_param[3] : 0; // 平台自营
+//        $is_free = isset($filter_param[4]) ? $filter_param[4] : 0; // 包邮
+//        $is_cash = isset($filter_param[5]) ? $filter_param[5] : 0; // 支持货到付款
+//        $is_stock = isset($filter_param[6]) ? $filter_param[6] : 0; // 仅显示有货
+//        $sort = isset($filter_param[7]) ? $filter_param[7] : 0; // 排序字段 综合/销量/新品/评论/价格/人气
+//        $order = isset($filter_param[8]) ? $filter_param[8] : 4; // 排序方式 3-asc 4-desc
+//        $region_code = isset($filter_param[9]) ? $filter_param[9] : 0; // 地区code
+//        $display_model = isset($filter_param[10]) ? $filter_param[10] : 0; // 列表显示方式 0-大图模式 1-列表模式
+//        $brand_id = isset($filter_param[11]) ? $filter_param[11] : 0; // 品牌
+//        $price_min = isset($filter_param[12]) ? $filter_param[12] : 0; // 最小价格
+//        $price_max = isset($filter_param[13]) ? $filter_param[13] : 0; // 最大价格
+
+
+//        dd($params);
+        extract($params);
+
+        $goods_category = [];
+        $navigate_cat = [];
+        $navigate_cat_type = 0;
+        if (isset($cat_id) && !empty($cat_id)) {
+            $cat_info = $this->category->getById($cat_id);
+            $brand_ids = explode(',', $cat_info->brand_ids);
+            $cat_brands = Brand::whereIn('brand_id', $brand_ids)->get();
+
+            // 商品分类列表
+            $goods_category = Category::where('is_show', 1)->select(['cat_id','cat_name','parent_id', 'cat_level'])->orderBy('cat_sort', 'asc')->get();
+            // 分类面包屑导航
+            $navigate_cat = navigate_goods($cat_id, 1);
+            $navigate_cat_type = 0;
+
+            // 分类菜单显示 目前没有用到
+//        $cur_cat_arr = $this->goods->getGoodsCat($cat_info); // 当前分类
+
+
+
+            $seo_info = [
+                1 => $cat_info->title,
+                2 => $cat_info->keywords,
+                3 => $cat_info->discription,
+            ];
+
+            $this->show_seo($seo_info, ['name' => $cat_info->cat_name]); // SEO
+        }
+
+        $cat_id_arr = [];
+        if (!empty($cat_id)) {
+            $cat_id_arr = get_cat_grandson($cat_id); // 获取该分类下的所有分类id
+        }
+
+//        $condition['in'] = [
+//            'field' => 'cat_id',
+//            'condition' => $cat_id_arr
+//        ];
+        // 热卖商品
+        $hot_sale_goods = $this->goods->getHotSaleGoods($cat_id_arr, 4);
+        // 新品推荐
+        $new_goods = $this->goods->getNewGoods($cat_id_arr, 4);
+
+        // 店内排行榜-销售量
+        $sale_top_list = $this->goods->getTopGoods('sale_num', $cat_id_arr, 4);
+        // 店内排行榜-收藏数
+//        $collect_top_list = $this->goods->getTopGoods('collect_num', $cat_id_arr, 4);
+
+        // 销量排行榜
+//        $sale_rank_goods = $this->goods->getSaleRankGoods($cat_id_arr, 4);
+
+        // 浏览历史
+        list($goods_history, $goods_history_total) = $this->goods->getGoodsHistory($cat_id_arr, 6);
+
+        // 商城所在地区
+//        $region_code = sysconf('mall_region_code');
+
+        $region_code = !empty($params['region']) ? str_replace('_', ',', $params['region']) : null;
+
+        /*
+        * 筛选条件
+        *
+        */
+        $where = [];
+        $where[] = ['goods_status',1]; // 商品状态 已发布
+        $where[] = ['goods_audit',1]; // 审核通过
+        list($where, $whereBetween, $whereIn) = $this->goods->splice_goods_list_condition($params);
+
+        // 计算价格区间
+        $goodsQuery = new Goods();
+        $goodsPriceQuery = new Goods();
+        if (!empty($where)) {
+            $goodsQuery = $goodsQuery->where($where);
+            $goodsPriceQuery = $goodsQuery->where($where);
+        }
+
+        if (!empty($whereBetween) && isset($whereBetween['goods_price'])) { // 暂时固定为goods_price
+            $goodsQuery = $goodsQuery->whereBetween('goods_price', $whereBetween['goods_price']);
+        }
+        if (!empty($whereIn)) {
+            foreach ($whereIn as $k=>$v) {
+                $goodsQuery = $goodsQuery->whereIn($k, $v);
+                $goodsPriceQuery = $goodsQuery->whereIn($k, $v);
+            }
+        }
+
+        // 计算价格区间
+
+        $goodsPriceData = $goodsPriceQuery
+            ->select(DB::raw("MIN(goods_price) as price_min,MAX(goods_price) as price_max, GROUP_CONCAT(goods_price) as price_str"))
+            ->first()->toArray();
+
+        // 商品列表
+        $curPage = isset($go) ? $go : 1;
+        $pageSize = isset($size) ? $size : 20;
+        $sortname = isset($sortname) ? $sortname : 1;
+        $sortorder = isset($sortorder) ? $sortorder : 'DESC';
+        $field = ['goods_id','goods_name','cat_id','shop_id','sku_id','sku_open','goods_price','market_price','mobile_price','give_integral','goods_number','warn_number','goods_image','brand_id','click_count','sale_num','comment_num','collect_num','is_best','is_new','is_hot','is_promote','freight_id','sales_model','goods_sort','last_time',
+//            'shop_name','shop_type','is_supply','show_price','show_content','button_content', 'is_free', 'brand_name','button_url'
+            'goods_freight_fee'
+        ];
+        $total = $goodsQuery
+            ->select($field)->count();
+        $list = $goodsQuery
+            ->select($field)
+            ->forPage($curPage, $pageSize)
+            ->orderBy(get_goods_sort_array($sortname), $sortorder)
+            ->get()->toArray();
+
+        if (!empty($list)) {
+            foreach ($list as &$v) {
+                $shop_info = Shop::where('shop_id', $v['shop_id'])
+                    ->select(['shop_name','shop_type','is_supply','show_price','show_content','button_content','button_url'])
+                    ->first()->toArray();
+                $brand_name = Brand::where('brand_id', $v['brand_id'])->value('brand_name');
+                $isCollected = 0;
+                if ($this->collect->checkIsCollected($this->user_id, 0, 0, $v['goods_id'])) {
+                    // 已收藏
+                    $isCollected = 1;
+                }
+                $v = array_merge($v, $shop_info);
+                $v['is_free'] = $v['goods_freight_fee'] > 0 ? 0 : 1;
+                $v['brand_name'] = $brand_name;
+                $v['act_type'] = null;
+                $v['default_spec_id'] = null;
+                $v['goods_gift'] = 0;
+                $v['price_show'] = ['code'=>1];
+                $v['goods_price_format'] = '￥'.$v['goods_price'];
+                $v['market_price_format'] = '￥'.$v['market_price'];
+                $v['buy_enable'] = [ // 判断是否登录
+                    'code' => 1,
+                    'button_content' => '请登录'
+                ];
+                $v['is_collected'] = $isCollected; // 判断是否收藏商品
+                $v['cart_num'] = 0; // 该商品购物车数量
+
+                #修改价格bug=====
+                $sku_info = Db::table('goods_sku')->where('sku_id', $v['sku_id'])->first();
+                $sku_info->sku_prices = json_decode($sku_info->sku_prices, true);
+                $low_price = '';
+                foreach ($sku_info->sku_prices['price'] as $k=>$v2) {
+                    if (empty($low_price)) {
+                        $low_price = $v2;
+                    } else {
+                        if ($v2<$low_price) {
+                            $low_price = $v2;
+                        }
+                    }
+                }
+                $v['goods_price'] = $low_price;
+                #修改价格bug=====
+            }
+        }
+
+        // 分页
+        $pageHtml = frontend_pagination($total);
+        $page_array = frontend_pagination($total, true);
+        $page_json = json_encode($page_array);
+
+        $goods_ids = implode(',', array_column($list, 'goods_id'));
+
+//        dd($goodsPriceData);
+        list($filter, $filter_condition) = $this->goods->goodsFilterData($params, $goodsPriceData);
+//        dd($filter);
+
+        //2024-02-21===
+        #判断当前分类是否有下层分类
+        $have_cate = 0;
+        $now_cate = Db::table('category')->where('cat_id', $cat_id)->select('cat_id', 'cat_name')->first();
+        $next_cate = Db::table('category')->where(['parent_id'=>$cat_id,'is_show'=>1])->get()->toArray();
+
+        if (!empty($next_cate)) {
+            foreach ($next_cate as $k2=>&$v2) {
+                $v2->child = Db::table('category')->where(['parent_id'=>$v2->cat_id,'is_show'=>1])->get()->toArray();
+            }
+            $have_cate = 1;
+        }
+        //2024-02-21===
+
+        // 重新设置params
+        $params = [
+            'filter_attr_vids' => isset($filter_attr_vids) ? $filter_attr_vids : null,
+            'filter_attr_ids' => isset($filter_attr_ids) ? $filter_attr_ids : null,
+            'filter_brand_ids' => isset($filter_brand_ids) ? $filter_brand_ids : null,
+            'filter_goods_prices' => isset($filter_goods_prices) ? $filter_goods_prices : null,
+            'cat_id' => isset($cat_id) ? $cat_id : 0,
+            //2024-02-21
+            'next_cate' => $next_cate,
+            'have_cate' => $have_cate,
+            'now_cate' => $now_cate,
+            //2024-02-21
+            'cat_ids' => isset($cat_ids) ? $cat_ids : null,
+            'type' => isset($type) ? $type : 0,
+            'go' => isset($go) ? $go : 1,
+            'brand_id' => isset($brand_id) ? $brand_id : 0,
+            'filter_attr' => isset($filter_attr) ? $filter_attr : 0, // '1801-1784-1825-1738-1773'
+            'price_min' => isset($price_min) ? $price_min : 0, // '1'
+            'price_max' => isset($price_max) ? $price_max : 0, // '300'
+            'region_code' => $region_code,
+            'is_free' => isset($is_free) ? $is_free : 0,
+            'is_self' => isset($is_self) ? $is_self : 0,
+            'is_stock' => isset($is_stock) ? $is_stock : 0,
+            'is_cash'=>isset($is_cash) ? $is_cash : 0,
+            'style'=>isset($style) ? $style : 'grid',
+            'sort'=>isset($sort) ? $sort : '1',
+            'order'=>isset($order) ? $order : 'DESC',
+            'keyword'=>isset($keyword) ? $keyword : null,
+            'shop_id'=>isset($shop_id) ? $shop_id : 0,
+            'barcode'=>isset($barcode) ? $barcode : null,
+        ];
+
+        $compact = compact(
+            'cat_info',
+            'cat_brands',
+            'cat_id',
+            'list',
+            'page_array',
+            'total',
+            'pageHtml',
+            'goods_ids',
+            'goods_category',
+            'navigate_cat',
+            'navigate_cat_type',
+            'hot_sale_goods',
+            'new_goods',
+            'sale_top_list',
+            'goods_history',
+            'style',
+            'page_json',
+            'filter',
+            'filter_condition',
+            'region_code',
+            'params'
+        );
+
+        $webData = []; // web端（pc、mobile）数据对象
+        $data = [
+            'app_prefix_data' => [
+                'region_code' => $region_code,
+                'price_show' => [
+                    'code' => 1
+                ],
+                'display' => 'grid',
+                'filter' => $filter,
+                'params' => [
+                    $params
+                ],
+                'condition'=>$filter_condition, // 选中的筛选项
+                'list' => $list,
+                'page' => $page_array, // 列表底部详细分页
+                'goods_ids' => $goods_ids,
+                'keyword' => isset($keyword) ? $keyword : '',
+                'cat_id'=>isset($cat_id) ? $cat_id : 0,
+                'scroll'=>1,
+                'show_sale_number'=>'1',
+            ],
+            'app_suffix_data' => [],
+            'web_data' => $webData,
+            'compact_data' => $compact,
+            'tpl_view' => 'goods.goods_list'
+        ];
+        $this->setData($data); // 设置数据
+        return $this->displayData(); // 模板渲染及APP客户端返回数据
+    }
+
+    #商品详情
+    public function showGoods(Request $request, $goods_id)
+    {
+        if ($request->routeIs('pc_show_goods') || $request->routeIs('mobile_show_goods')) {
+            $sku_id = $this->goods->getSkuId($goods_id);
+        } else {
+            $sku_id = $goods_id;
+            $goods_id = $this->goods->getGoodsId($sku_id);
+        }
+
+        $goods_info = $this->goods->getById($goods_id);
+        if (empty($goods_info)) {
+            abort(200, '商品不存在，可能已下架或者被转移');
+        }
+        $shopId = $goods_info->shop_id;
+
+        // 店铺信息
+        $shop_info = [];
+        if ($shopId>0) {
+            $shop_info = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$shopId])->first();
+            $shop_info = objtoarr($shop_info);
+        }
+
+        $goods = $goods_info->toArray();
+
+        // 商品sku列表
+        $sku_list = $this->goods->getFrontendSkuList($goods_id);
+        $base_sku_list = array_values($sku_list);
+
+        // 商品规格列表
+        $spec_list = $this->goods->getGoodsSpecList($goods_info);
+//        dd($spec_list);
+        if (!empty($spec_list)) {
+            #判断当前属性id在商品规格表中是否存在，不存在时，记录“has_sku”为“-1”，默认为“0”代表有
+            foreach ($spec_list as $k=>$v) {
+                foreach ($v['attr_values'] as $k2=>$v2) {
+                    $spec_list[$k]['attr_values'][$k2]['has_sku'] = 0;
+                    $has_sku = Db::table('goods_sku')->whereRaw('goods_id='.$goods_id.' and spec_vids like "%'.$v2['attr_vid'].'%"')->first();
+                    if (empty($has_sku)) {
+                        $spec_list[$k]['attr_values'][$k2]['has_sku'] = -1;
+                    }
+                }
+            }
+        }
+//        dd($spec_list);
+
+        // 商品属性列表
+        $attr_list = $this->goods->getGoodsAttrList($goods_id);
+
+        // 商品售后服务保障列表
+        $contract_ids = [];
+        if (!empty($goods['contract_ids'])) {
+            foreach ($goods['contract_ids'] as $k=>$v) {
+                if ($v == 1) {
+                    $contract_ids[] = $k;
+                }
+            }
+        }
+        $contract_list = $this->goods->getGoodsContractList($shopId, $contract_ids);
+
+        // 包装清单
+        $packing_layout = GoodsLayout::where('layout_id', $goods['packing_layout_id'])->value('content');
+        // 售后保证版式
+        $service_layout = GoodsLayout::where('layout_id', $goods['service_layout_id'])->value('content');
+
+        // 店铺常见问题
+        $question_list = $this->goods->getShopQuestions($goods['shop_id'], 5);
+
+        // 商品评论
+        $comment = null;
+
+        // 商品单位名称
+        $unit_name = GoodsUnit::where('unit_id', $goods['goods_unit'])->value('unit_name');
+
+        // 检查该商品是否加入过对比
+        $is_compare = $this->compare->checkIsCompared($this->user_id, $goods_id);
+
+        // 是否收藏商品
+        $is_collect = false;
+        if ($this->collect->checkIsCollected($this->user_id, 0, 0, $goods_id)) {
+            // 已收藏
+            $is_collect = true;
+        }
+
+        // 是否收藏店铺
+        $is_shop_collect = false;
+        if ($this->collect->checkIsCollected($this->user_id, 1, $goods['shop_id'])) {
+            // 已收藏
+            $is_shop_collect = true;
+        }
+
+        $goods['goods_button_name'] = null;
+        $goods['goods_button_url'] = null;
+        $goods['region_code'] = isset($shop_info['shop']['region_code']) ? $shop_info['shop']['region_code'] : '';
+        $goods['is_free'] = null;
+        $goods['free_set'] = null;
+        $goods['limit_sale'] = null;
+        $goods['collect_count'] = $goods['collect_num'];
+        $goods['shop_name'] = isset($shop_info['shop']['shop_name']) ? $shop_info['shop']['shop_name'] : '';
+        $goods['is_supply'] = isset($shop_info['shop']['is_supply']) ? $shop_info['shop']['is_supply'] : '';
+//        $goods['brand_name'] =  $brand_name;
+        $goods['start_price'] = isset($shop_info['shop']['start_price']) ? $shop_info['shop']['start_price'] : '';
+        $goods['button_content'] = isset($shop_info['shop']['button_content']) ? $shop_info['shop']['button_content'] : '';
+        $goods['button_url'] = isset($shop_info['shop']['button_url']) ? $shop_info['shop']['button_content'] : '';
+        $goods['show_price'] = isset($shop_info['shop']['show_price']) ? $shop_info['shop']['show_price'] : '';
+        $goods['show_content'] = isset($shop_info['shop']['show_content']) ? $shop_info['shop']['show_content'] : '';
+        $goods['region_name'] = null;
+        $goods['base_sku_list'] = $base_sku_list;
+        $goods['sku_list'] = $sku_list;
+        $goods['price_show'] = [
+            'code' => 1 // todo
+        ];
+        $goods['spec_list'] = $spec_list;
+        $goods['attr_list'] = $attr_list;
+        $goods['contract_list'] = $contract_list;
+        $goods['packing_layout'] = $packing_layout;
+        $goods['service_layout'] = $service_layout;
+        $goods['question_list'] = $question_list;
+        $goods['comment_count'] = $goods['comment_num'];
+        $goods['comment'] = $comment;
+        $goods['goods_price_format'] = '￥'.$goods['goods_price'];
+        $goods['unit_name'] = $unit_name;
+        $goods['is_compare'] = $is_compare;
+        $goods['is_collect'] = $is_collect;
+        $goods['shop_collect'] = $is_shop_collect;
+
+        // todo 暂时 等待平台后台添加商品配置信息后打开
+        $goods['show_sale_number'] = sysconf('goods_show_sale_number'); // 是否显示商品销量
+
+        // 商品SKU信息
+        if (empty($shop_info)) {
+            $shop_info['shop'] = [
+                'is_supply'=>'',
+                'show_price'=>'',
+                'show_content'=>'',
+                'button_content'=>'',
+                'button_url'=>'',
+                'start_price'=>'',
+            ];
+        } else {
+            if ($shopId>0) {
+                $shop_info['shop'] = [
+                    'is_supply'=>'',
+                    'show_price'=>'',
+                    'show_content'=>'',
+                    'button_content'=>'',
+                    'button_url'=>'',
+                    'start_price'=>'',
+                ];
+            }
+        }
+
+        $sku = $this->goodsSku->getGoodsSkuInfo($sku_id, $goods_info, $shop_info['shop']);
+//        if($goods['shop_id']==0){
+        $goods['other_shop'] = json_decode($goods['other_shop'], true);
+        $sku_images = Db::table('goods_image')->where(['goods_id'=>$goods['goods_id']])->select(['path'])->get();
+        $sku_images = objtoarr($sku_images);
+
+        $sku['sku_images'] = [];
+        foreach ($sku_images as $k2=>$v2) {
+            for ($i=0;$i<3;$i++) {
+                $sku['sku_images'][$k2][$i] = $v2['path'];
+            }
+        }
+//        }
+
+        // 是否微信端访问
+        $is_weixin = is_weixin();
+
+        $shop_goods_count = $this->shop->getShopGoodsCount($shopId);
+        $shop_collect_count = isset($shop_info['shop']['collect_num']) ? $shop_info['shop']['collect_num'] : 0;
+
+        // 店内排行榜-销售量
+        $sale_top_list = 0;
+        $collect_top_list = 0;
+        if ($goods['shop_id']>0) {
+            $sale_top_list = $this->goods->getTopGoods('sale_num', [], 10, $goods['shop_id']);
+            // 店内排行榜-收藏数
+            $collect_top_list = $this->goods->getTopGoods('collect_num', [], 10, $goods['shop_id']);
+        }
+
+        $im_enable = 1; // todo
+
+        $comment_count = '0';
+        $collect_count = '0';
+        $show_collect_count = sysconf('goods_info_show_collect'); // 是否显示商品收藏人气;
+
+        // 红包列表
+        $bonus_list = [];
+//        $bonus_list = $this->bonus->getGoodsDetailBonusList($goods_id, $goods['shop_id'], $this->user_id);
+
+        $rank_prices = null;
+        $rank_message = '请登录，确认是否享受优惠';
+        $show_freight_region = 1;
+        $show_stock = '1';
+
+        // 自提点
+        $condition = [
+            'where' => [
+                ['is_show', 1],
+                ['shop_id', $goods_info->shop_id]
+            ],
+            'limit' => 0,
+            'sortname' => 'pickup_id',
+            'sortorder' => 'desc',
+        ];
+        list($pickup, $self_pickup_total) = $this->selfPickup->getList($condition);
+
+        // 商品单位列表
+        $unit_list = ['' => '-- 请选择 --'];
+        $unitList = GoodsUnit::where('shop_id', $shopId)->orderBy('unit_id', 'asc')->get();
+        if (!empty($unitList)) {
+            foreach ($unitList as $item) {
+                $unit_list[$item->unit_id] = $item->unit_name;
+            }
+        }
+
+        // 分享
+        $share = [
+            'seo_goods_title' => '商品名称-网站名称',
+            'seo_goods_keywords' => '【商品名称】-网站名称',
+            'seo_goods_discription' => ''
+        ];
+
+        /* PC端独有 START */
+        // 店铺内分类
+        $where = [];
+        $where[] = ['shop_id', $goods_info->shop_id];
+        $condition = [
+            'where' => $where,
+            'sortname' => 'cat_sort',
+            'sortorder' => 'asc',
+        ];
+        list($shop_category_list, $total) = $this->shopCategory->getList($condition, '', true);
+
+        if (is_login()) {
+            // 记录浏览历史
+            $this->goodsHistory->addHistoryLog(is_login(), $goods_info);
+        }
+        Goods::where('goods_id', $goods_id)->increment('click_count', 1); // 统计点击数+1
+
+        // 商品分类列表
+        $goods_category = Category::where('is_show', 1)->select(['cat_id','cat_name','parent_id', 'cat_level'])->orderBy('cat_sort', 'asc')->get();
+
+        // 分类面包屑导航
+        $navigate_cat = navigate_goods($goods_id, 1);
+        $navigate_cat_type = 1;
+
+
+        $region_code = isset($shop_info['shop']['region_code']) ? $shop_info['shop']['region_code'] : '';
+        $lrw_last_region_code = session('LRW_LAST_REGION_CODE');
+        if (!empty($lrw_last_region_code)) {
+            $lrw_last_region_code_arr = unserialize(substr($lrw_last_region_code, 64));
+//            dd($lrw_last_region_code_arr);
+            $region_code = $lrw_last_region_code_arr[1];
+        }
+
+        #=== 2024/01/18 根据商品信息调整 START ===
+        #1、根据价格区间来进行默认价钱
+        $low_price = 0;
+        if (isset($sku['sku_prices']['price'][0])) {
+            $low_price = $sku['sku_prices']['price'][0];
+            foreach ($sku['sku_prices']['price'] as $k=>$v) {
+                if ($low_price>$v) {
+                    $low_price = $v;
+                }
+            }
+        } else {
+            $low_price = $sku['sku_prices']['price'];
+        }
+
+        //全部规格区间
+        $sku_info = Db::table('goods_sku')->where(['goods_id'=>$goods['goods_id']])->get();
+        $sku_info = objtoarr($sku_info);
+        foreach ($sku_info as $k=>$v) {
+            $sku_info[$k]['sku_prices'] = json_decode($v['sku_prices'], true);
+            foreach ($sku_info[$k]['sku_prices']['unit'] as $k2=>$v2) {
+                $sku_info[$k]['sku_prices']['unit'][$k2] = Db::connection('shop_db')->table('unit')->where(['code_value'=>$v2])->first()->code_name;
+                $sku_info[$k]['sku_prices']['currency'][$k2] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$sku_info[$k]['sku_prices']['currency'][$k2]])->first()->currency_symbol_standard;
+            }
+//            foreach($sku_info[$k]['sku_prices']['price'] as $k2=>$v2){
+//                if($low_price>$v2){
+//                    $low_price = $v2;
+//                }
+//            }
+        }
+
+        $goods['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$sku['sku_prices']['currency'][0]])->first()->currency_symbol_standard;
+        if ($shopId==0) {
+            $goods['goods_price'] = $low_price;
+        } else {
+            $goods['goods_price'] = $sku['sku_prices']['price'][0];
+        }
+        #1.1、获取分类名称
+        $goods['cat_name'] = '';
+        if ($goods['cat_id']>0) {
+            $goods['cat_name'] = Db::table('category')->where(['cat_id'=>$goods['cat_id']])->first()->cat_name;
+        }
+        $goods['logi_id'] = 0;
+        if (!empty($goods['crossb_cate2'])) {
+            $goods['logi_id'] = $goods['crossb_cate2'];
+            $goods['logi_name'] = Db::table('category')->where(['cat_id'=>$goods['crossb_cate2']])->first()->cat_name;
+        } elseif (!empty($goods['crossb_cate1'])) {
+            $goods['logi_id'] = $goods['crossb_cate1'];
+            $goods['logi_name'] = Db::table('category')->where(['cat_id'=>$goods['crossb_cate1']])->first()->cat_name;
+        }
+
+        #国家
+        $country = Db::connection('shop_db')->table('centralize_diycountry_content')->whereRaw('pid=5 and id<>162')->get();
+        $country = objtoarr($country);
+
+        if ($goods['shop_id']>0 && empty($goods['drug_id'])) {
+            #1.1.2、减免...
+            if (!empty($goods['reduction_content'])) {
+                $goods['reduction_content'] = json_decode($goods['reduction_content'], true);
+                foreach ($goods['reduction_content']['preferential_blong'] as $k=>$v) {
+                    $reduction_rule = Db::table('ssl_reduction_rule')->where(['id'=>$goods['reduction_content']['type'][$k]])->first();
+                    $reduction_rule = objtoarr($reduction_rule);
+                    $goods['reduction_content']['type_name'][$k] = $reduction_rule['name'];
+                    $goods['reduction_content']['content'][$k] = json_decode($reduction_rule['content'], true);
+                }
+                $goods['reduction_content']['currency1'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$goods['reduction_content']['currency1']])->first()->currency_symbol_standard;
+                $goods['reduction_content']['currency2'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$goods['reduction_content']['currency2']])->first()->currency_symbol_standard;
+            }
+
+
+            #1.1.2-2、随赠...
+            if (!empty($goods['gift_content'])) {
+                $goods['gift_content'] = json_decode($goods['gift_content'], true);
+                $goods['gift_content']['points_currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id' => $goods['gift_content']['points_currency']])->first()->currency_symbol_standard;
+                $goods['gift_content']['coupon_currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id' => $goods['gift_content']['coupon_currency']])->first()->currency_symbol_standard;
+            }
+
+            #1.1.2-3、价格未含
+            if (!empty($goods['noinclude_content'])) {
+                $goods['noinclude_content'] = json_decode($goods['noinclude_content'], true);
+                $goods['noinclude_content']['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id' => $goods['noinclude_content']['currency']])->first()->currency_symbol_standard;
+            }
+
+            #1.1.2-4、潜在收费
+            if (!empty($goods['potential_content'])) {
+                $goods['potential_content'] = json_decode($goods['potential_content'], true);
+                $goods['potential_content']['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id' => $goods['potential_content']['currency']])->first()->currency_symbol_standard;
+                $goods['potential_content']['currency2'] = Db::connection('shop_db')->table('centralize_currency')->where(['id' => $goods['potential_content']['currency2']])->first()->currency_symbol_standard;
+            }
+
+            #1.1.2-5、其他费用
+            if (!empty($goods['otherfees_content'])) {
+                $goods['otherfees_content'] = json_decode($goods['otherfees_content'], true);
+            }
+
+            #1.1.2-6、物流支撑
+            $goods['shipping_country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$goods['shipping_country']])->first()->param2;
+            if ($goods['service_type']==1) {
+                #国内配送
+                $goods['domestic_logistics'] = json_decode($goods['domestic_logistics'], true);
+                $goods['domestic_logistics']['areas'] = [];
+                foreach ($goods['domestic_logistics']['area1'] as $k=>$v) {
+                    $area1 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$v])->first()->code_name;
+                    $area2 = '';
+                    $area3 = '';
+                    $area4 = '';
+                    $area5 = '';
+                    $area6 = '';
+                    if (isset($goods['domestic_logistics']['area2'][$k])) {
+                        $area2 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['domestic_logistics']['area2'][$k]])->first()->code_name;
+                    }
+                    if (isset($goods['domestic_logistics']['area3'][$k])) {
+                        $area3 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['domestic_logistics']['area3'][$k]])->first()->code_name;
+                    }
+                    if (isset($goods['domestic_logistics']['area4'][$k])) {
+                        $area4 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['domestic_logistics']['area4'][$k]])->first()->code_name;
+                    }
+                    if (isset($goods['domestic_logistics']['area5'][$k])) {
+                        $area5 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['domestic_logistics']['area5'][$k]])->first()->code_name;
+                    }
+                    if (isset($goods['domestic_logistics']['area6'][$k])) {
+                        $area6 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['domestic_logistics']['area6']])->first()->code_name;
+                    }
+                    array_push($goods['domestic_logistics']['areas'], ['area1'=>$area1,'area2'=>$area2,'area3'=>$area3,'area4'=>$area4,'area5'=>$area5,'area6'=>$area6]);
+                }
+            } elseif ($goods['service_type']==2) {
+                #跨境配送
+                if ($goods['gather_method']==2 && $goods['support_export']==1) {
+                    #自主集运+支持跨境配送
+                    $goods['gather_countrys'] = json_decode($goods['gather_countrys'], true);
+                    $goods['gather_countrys']['areas'] = [];
+                    foreach ($goods['gather_countrys']['gather_zhou'] as $k=>$v) {
+                        $area1 = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$v])->first();
+                        $area1 = objtoarr($area1);
+                        $area2 = [];
+                        $area3 = [];
+                        if (isset($goods['gather_countrys']['gather_country'][$k])) {
+                            $area2 = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$goods['gather_countrys']['gather_country'][$k]])->first();
+                            $area2 = objtoarr($area2);
+                        }
+                        if (isset($goods['gather_countrys']['gather_postal'][$k])) {
+                            $area3 = Db::connection('shop_db')->table('centralize_adminstrative_area')->whereRaw('id in ('.$goods['gather_countrys']['gather_postal'][$k].')')->get();
+                            $area3 = objtoarr($area3);
+                        }
+                        array_push($goods['gather_countrys']['areas'], ['area1'=>$area1,'area2'=>$area2,'area3'=>$area3]);
+                    }
+
+                    #发货城市
+                    $goods['shipping_country_info'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$goods['shipping_country']])->first();
+                    $goods['shipping_country_info'] = objtoarr($goods['shipping_country_info']);
+                    $goods['shipping_areas'] = json_decode($goods['areas'], true);
+                    foreach ($goods['shipping_areas'] as $k=>$v) {
+                        $goods['shipping_areas'][$k] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$v])->first();
+                        $goods['shipping_areas'][$k] = objtoarr($goods['shipping_areas'][$k]);
+                    }
+
+                    #支持集运国家
+                    $country = [];
+                    if (isset($goods['gather_countrys']['gather_country'][0])) {
+                        foreach ($goods['gather_countrys']['gather_country'] as $k=>$v) {
+                            $c2 = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$v])->first();
+                            $c2 = objtoarr($c2);
+                            array_push($country, $c2);
+                        }
+                    }
+                }
+//                dd($goods['gather_countrys']);
+            }
+
+            #1.1.2-7、商品促销
+            if (!empty($goods['activity_info'])) {
+                $goods['activity_info'] = explode(',', $goods['activity_info']);
+                foreach ($goods['activity_info'] as $k=>$v) {
+                    $goods['activity_info'][$k] = Db::table('ssl_activity')->where('id', $v)->first();
+                    $goods['activity_info'][$k] = objtoarr($goods['activity_info'][$k]);
+                }
+            }
+
+            #1.1.2-8、商品参数
+            if (!empty($goods['spec_info'])) {
+                $goods['spec_info'] = json_decode($goods['spec_info'], true);
+            }
+
+            #1.1.2-9、商品详情
+            if (!empty($goods['pc_desc'])) {
+                $goods['pc_desc'] = json_decode($goods['pc_desc'], true);
+                $goods['pc_desc'] = str_replace('src="/uploads', 'src="//rte.gogo198.cn/uploads', $goods['pc_desc']);
+            }
+
+            #1.1.3、商品品牌
+            if ($goods['brand_type']==1) {
+                #有牌
+                if ($goods['brand_type2']==0) {
+                    #自有品牌
+                    $goods['goods_name'] = $goods['brand_name'].'的'.$goods['goods_name'];
+                } elseif ($goods['brand_type2']==1) {
+                    #知名品牌
+                    $brand_name = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid'=>8,'id'=>$goods['brand_id']])->first()->param1;
+                    $goods['goods_name'] = $brand_name.'的'.$goods['goods_name'];
+                }
+            }
+
+            #1.1.4、卖家说明规则
+            $goods['rule'] = Db::table('description_rule')->where(['id'=>$goods['rule_id']])->first();
+            $goods['rule'] = objtoarr($goods['rule']);
+            #序言
+            if ($goods['rule']['is_preamble']==1) {
+                $goods['rule']['preamble_con'] = json_decode($goods['rule']['preamble_con'], true);
+            }
+            $goods['rule']['content'] = json_decode($goods['rule']['content'], true);
+
+            #整理树形结构代码
+            if (isset($goods['rule']['type'])) {
+                if ($goods['rule']['type'] == 1) {
+                    $first = [];
+                    $second = [];
+                    foreach ($goods['rule']['content'] as $k => $v) {
+                        if ($v['pnum'] == 0) {
+                            array_push($first, [
+                                'title' => $v['title'],
+                                'parag_num' => $v['parag_num'],
+                                'pnum' => $v['pnum'],
+                                'content' => $v['content'],
+                                'children' => [],
+                            ]);
+                        } else {
+                            array_push($second, [
+                                'title' => $v['title'],
+                                'parag_num' => $v['parag_num'],
+                                'pnum' => $v['pnum'],
+                                'content' => $v['content'],
+                                'children' => [],
+                            ]);
+                        }
+                    }
+
+                    #最多嵌套3层
+                    foreach ($first as $k => $v) {
+                        foreach ($second as $k2 => $v2) {
+                            if ($v['parag_num'] == $v2['pnum']) {
+                                #1.1.
+                                array_push($first[$k]['children'], $v2);
+                            } else {
+                                foreach ($first[$k]['children'] as $k3 => $v3) {
+                                    if ($v3['parag_num'] == $v2['pnum']) {
+                                        #1.1.1.
+                                        array_push($first[$k]['children'][$k3]['children'], [
+                                            'title' => $v2['title'],
+                                            'parag_num' => $v2['parag_num'],
+                                            'pnum' => $v2['pnum'],
+                                            'content' => $v2['content'],
+                                            'children' => [],
+                                        ]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    $goods['rule']['content2'] = $first;
+                }
+            }
+//            dd($rule);
+
+            #1.1.5、商品参数-制造企业
+            if (!empty($goods['manufacture'])) {
+                $goods['manufacture'] = json_decode($goods['manufacture'], true);
+                if (isset($goods['manufacture']['country'])) {
+                    $goods['manufacture']['country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$goods['manufacture']['country']])->first()->param2;
+                }
+                if (isset($goods['manufacture']['area1'])) {
+                    $goods['manufacture']['area1_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['manufacture']['area1']])->first()->code_name;
+                }
+                if (isset($goods['manufacture']['area2'])) {
+                    $goods['manufacture']['area2_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['manufacture']['area2']])->first()->code_name;
+                }
+                if (isset($goods['manufacture']['area3'])) {
+                    $goods['manufacture']['area3_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['manufacture']['area3']])->first()->code_name;
+                }
+                if (isset($goods['manufacture']['area4'])) {
+                    $goods['manufacture']['area4_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['manufacture']['area4']])->first()->code_name;
+                }
+                if (isset($goods['manufacture']['area5'])) {
+                    $goods['manufacture']['area5_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['manufacture']['area5']])->first()->code_name;
+                }
+                if (isset($goods['manufacture']['area6'])) {
+                    $goods['manufacture']['area6_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['manufacture']['area6']])->first()->code_name;
+                }
+            }
+            #1.1.6、商品参数-销售企业
+            if (!empty($goods['sales'])) {
+                $goods['sales'] = json_decode($goods['sales'], true);
+                if (isset($goods['sales']['country'])) {
+                    $goods['sales']['country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id' => $goods['sales']['country']])->first()->param2;
+                }
+                if (isset($goods['sales']['area1'])) {
+                    $goods['sales']['area1_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['sales']['area1']])->first()->code_name;
+                }
+                if (isset($goods['sales']['area2'])) {
+                    $goods['sales']['area2_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['sales']['area2']])->first()->code_name;
+                }
+                if (isset($goods['sales']['area3'])) {
+                    $goods['sales']['area3_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['sales']['area3']])->first()->code_name;
+                }
+                if (isset($goods['sales']['area4'])) {
+                    $goods['sales']['area4_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['sales']['area4']])->first()->code_name;
+                }
+                if (isset($goods['sales']['area5'])) {
+                    $goods['sales']['area5_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['sales']['area5']])->first()->code_name;
+                }
+                if (isset($goods['sales']['area6'])) {
+                    $goods['sales']['area6_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['sales']['area6']])->first()->code_name;
+                }
+            }
+            #1.1.7、商品参数-外贸企业
+            if (!empty($goods['foreign'])) {
+                $goods['foreign'] = json_decode($goods['foreign'], true);
+                if (isset($goods['foreign']['country'])) {
+                    $goods['foreign']['country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id' => $goods['foreign']['country']])->first()->param2;
+                }
+                if (isset($goods['foreign']['area1'])) {
+                    $goods['foreign']['area1_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['foreign']['area1']])->first()->code_name;
+                }
+                if (isset($goods['foreign']['area2'])) {
+                    $goods['foreign']['area2_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['foreign']['area2']])->first()->code_name;
+                }
+                if (isset($goods['foreign']['area3'])) {
+                    $goods['foreign']['area3_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['foreign']['area3']])->first()->code_name;
+                }
+                if (isset($goods['foreign']['area4'])) {
+                    $goods['foreign']['area4_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['foreign']['area4']])->first()->code_name;
+                }
+                if (isset($goods['foreign']['area5'])) {
+                    $goods['foreign']['area5_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['foreign']['area5']])->first()->code_name;
+                }
+                if (isset($goods['foreign']['area6'])) {
+                    $goods['foreign']['area6_name'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$goods['foreign']['area6']])->first()->code_name;
+                }
+            }
+            #1.1.8、商品参数-有效期限
+            if (!empty($goods['effective'])) {
+                $goods['effective'] = json_decode($goods['effective'], true);
+            }
+            #1.1.9、商品参数-贮存条件
+            if (!empty($goods['store'])) {
+                $goods['store'] = json_decode($goods['store'], true);
+            }
+            #1.2.1、商品参数-产品包装
+            if (!empty($goods['packing'])) {
+                $goods['packing'] = json_decode($goods['packing'], true);
+                if (!empty($goods['packing']['packing_container'])) {
+                    $goods['packing']['packing_container_name'] = Db::connection('shop_db')->table('packing_category')->where(['id'=>$goods['packing']['packing_container'],'type'=>1])->first()->name;
+                }
+                if (!empty($goods['packing']['packing_material'])) {
+                    $goods['packing']['packing_material_name'] = Db::connection('shop_db')->table('packing_category')->where(['id'=>$goods['packing']['packing_material'],'type'=>2])->first()->name;
+                }
+            }
+        }
+
+        #10、无规格下解析
+        if ($goods['have_specs']==2) {
+
+            #无规格
+            $goods['nospecs'] = json_decode($goods['nospecs'], true);
+            foreach ($goods['nospecs']['unit'] as $k=>$v) {
+                $goods['nospecs']['unit'][$k] = Db::connection('shop_db')->table('unit')->where('code_value', $v)->first()->code_name;
+                $goods['nospecs']['currency'][$k] = Db::connection('shop_db')->table('centralize_currency')->where('id', $goods['nospecs']['currency'][$k])->first()->currency_symbol_standard;
+            }
+            foreach ($sku['sku_prices']['unit'] as $k=>$v) {
+                $sku['sku_prices']['unit'][$k] = Db::connection('shop_db')->table('unit')->where('code_value', $v)->first()->code_name;
+                $sku['sku_prices']['currency'][$k] = Db::connection('shop_db')->table('centralize_currency')->where('id', $sku['sku_prices']['currency'][$k])->first()->currency_symbol_standard;
+            }
+        } else {
+            #有规格
+            foreach ($sku['sku_prices']['unit'] as $k=>$v) {
+                $sku['sku_prices']['unit'][$k] = Db::connection('shop_db')->table('unit')->where('code_value', $v)->first()->code_name;
+                $sku['sku_prices']['currency'][$k] = Db::connection('shop_db')->table('centralize_currency')->where('id', $sku['sku_prices']['currency'][$k])->first()->currency_symbol_standard;
+            }
+        }
+//        dd($goods['sku_list']);
+        #=== 2024/01/18 根据商品信息调整 END ===
+
+        #获取配置信息
+        $data = ['source_link'=>$this->source_link,'websites'=>$this->websites];
+
+        #收货地址-----START
+        $address = [];
+        if (!empty($request->session()->get('user')['user_id'])) {
+            $user = Db::table('user')->where(['user_id' => $request->session()->get('user')['user_id']])->first();
+            $user2 = Db::connection('shop_db')->table('website_user')->where(['custom_id' => $user->gogo_id])->first();
+            $address = Db::connection('shop_db')->table('centralize_user_address')->where(['user_id'=>$user2->id])->get();
+            $address = objtoarr($address);
+            if (!empty($address)) {
+                foreach ($address as $k=>$v) {
+                    $address[$k]['country_id'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$v['country_id']])->first()->param2;
+                    $address[$k]['true_addr'] = $address[$k]['country_id'];
+                    if ($v['province']>0) {
+                        $address[$k]['province'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$v['province']])->first()->code_name;
+                        $address[$k]['true_addr'] .= $address[$k]['province'];
+                    }
+                    if ($v['city']>0) {
+                        $address[$k]['city'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id' => $v['city']])->first()->code_name;
+                        $address[$k]['true_addr'] .= $address[$k]['city'];
+                    }
+                    if ($v['area']>0) {
+                        $address[$k]['area'] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id' => $v['area']])->first()->code_name;
+                        $address[$k]['true_addr'] .= $address[$k]['area'];
+                    }
+                    $address[$k]['true_addr'] .= $address[$k]['address1'];
+                }
+            }
+        }
+        #收货地址-------END
+
+        #时段判断
+//        $hour = strtotime(date('Y-m-d H:d'));
+        $timeInterval = Db::table('time_interval')->get();
+        $timeInterval = objtoarr($timeInterval);
+        $time_interval = '北京时间';
+        foreach ($timeInterval as $k=>$v) {
+            $typeName='';
+            if ($v['type']==1) {
+                $typeName = '当日';
+            } elseif ($v['type']==2) {
+                $typeName = '次日';
+            }
+            $timeInterval[$k]['typeName'] = $typeName;
+//            $start = date('H:i'.$v['start']);
+//            $end = date('H:i'.$v['end']);
+//            $timeInterval[$k]['start'] = $start;
+//            $timeInterval[$k]['end'] = $end;
+
+//            $start = strtotime(date('Y-m-d '.$v['start']));
+//            $end = strtotime(date('Y-m-d '.$v['end']));
+//            if($end<$start){
+//                if($start<=$hour){
+//                    $time_interval .= '当日'.$v['start'].' — 次日'.$v['end'].'前付款，最快'.$v['fast'].'小时后处理';
+//                }
+//            }else{
+//                if($start<=$hour and $end>=$hour){
+//                    $time_interval .= '当日'.$v['start'].' — 当日'.$v['end'].'前付款，最快'.$v['fast'].'小时后处理';
+//                }
+//            }
+        }
+//        dd($timeInterval);
+        #更多服务（废弃）
+        if ($goods['drug_id']>0) {
+            $drug_shelf = Db::connection('medical_db')->table('drug_shelf')->where(['drug_id'=>$goods['drug_id']])->first();
+            $drug_shelf = objtoarr($drug_shelf);
+            $services = Db::table('goods_services')->whereRaw('find_in_set(id,?)', [$drug_shelf['services_id']])->get();
+            $services = objtoarr($services);
+        } else {
+            $services = Db::table('goods_services')->where(['company_id'=>0])->get();
+            $services = objtoarr($services);
+        }
+        $services_money = 0;
+        foreach ($services as $k=>$v) {
+            $services[$k]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v['currency']])->first()->currency_symbol_standard;
+            if ($v['is_select']==1) {
+                $services_money += $v['price'];
+            }
+        }
+        #更多服务（废弃）
+//        dd($sku['sku_prices']);
+        #当前页面的链接
+        $origin_page = '/login.html?open=4&param2='.base64_encode('/goods-'.$goods['goods_id'].'.html');
+
+        #用户的购购网id
+        $userId = 0;
+        if (!empty($request->session()->get('user')['user_id'])) {
+            $userId = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>$request->session()->get('user')['gogo_id']])->first()->id;
+            $userId = base64_encode($userId);
+        }
+
+        /* PC端独有 END */
+        $compact = compact(
+            'userId',
+            'data',
+            'address',
+            'goods',
+            'origin_page',
+            'time_interval',
+            'timeInterval',
+            'services',
+            'services_money',
+            'country',
+            'sku',
+            'is_weixin',
+            'shop_goods_count',
+            'shop_collect_count',
+            'sale_top_list',
+            'collect_top_list',
+            'im_enable',
+            'shop_info',
+            'comment_count',
+            'collect_count',
+            'show_collect_count',
+            'bonus_list',
+            'rank_prices',
+            'rank_message',
+            'show_freight_region',
+            'show_stock',
+            'region_code',
+            'pickup',
+            'unit_list',
+            'share',
+            'shop_category_list',
+            'goods_category',
+            'navigate_cat',
+            'navigate_cat_type',
+            'sku_info' // PC端独有
+        );
+        $webData = []; // web端（pc、mobile）数据对象
+
+        $datas = [
+            'app_prefix_data' => [
+                'goods' => $goods,
+                'sku' => $sku,
+                'is_weixin' => is_weixin(),
+                'shop_goods_count' => $shop_goods_count,
+                'shop_collect_count' => $shop_collect_count,
+                'sale_top_list' => $sale_top_list,
+                'collect_top_list' => $collect_top_list,
+                'im_enable' => $im_enable,
+                'shop_info' => $shop_info,
+                'comment_count' => $comment_count,
+                'collect_count' => $collect_count,
+                'show_collect_count' => $show_collect_count,
+                'bonus_list' => $bonus_list,
+                'rank_prices' => $rank_prices,
+                'rank_message' => $rank_message,
+                'show_freight_region' => $show_freight_region,
+                'show_stock' => $show_stock,
+                'region_code' => $region_code,
+                'pickup' => $pickup->toArray(),
+                'unit_list' => $unit_list,
+                'share' => $share
+            ],
+            'app_suffix_data' => [],
+            'web_data' => $webData,
+            'compact_data' => $compact,
+            'tpl_view' => 'goods.show_goods'
+        ];
+
+        $this->setData($datas); // 设置数据
+
+        $this->show_seo('seo_goods', ['name'=>$goods_info->goods_name]);
+
+        return $this->displayData(); // 模板渲染及APP客户端返回数据
+    }#685-1287
+
+    //自定义请求方法=====================================================start
+
+    #加入选购清单
+    public function join_cart(Request $request)
+    {
+        $data = $request->except(['_token']);
+
+        if (!isset($data['data']['buy_attr'])) {
+            return Response()->json(['code'=>-1,'msg'=>'请选择商品规格']);
+        }
+
+        #1、获取商品信息
+        $goods = Db::table('goods')->where(['goods_id'=>intval($data['data']['id'])])->first();
+        $goods = objtoarr($goods);
+
+        #2、整理规格的数量+总价
+        $content = ['good_id'=>intval($data['data']['id']),'shop_id'=>$goods['shop_id'],'good_num'=>0,'good_price'=>0,'buy_attr'=>$data['data']['buy_attr']];
+        foreach ($data['data']['buy_attr'] as $k=>$v) {
+            $content['good_num'] += $v['buy_num'];
+            $content['good_price'] += $v['now_gprice'];
+        }
+
+        if (1>2) {
+            #3、其他费用
+            $goods['otherfee_content'] = json_decode($goods['otherfee_content'], true);
+            $goods['otherfee_total'] = 0;
+            if (empty($goods['otherfee_content']['currency'][0])) {
+                $goods['otherfee_currency'] = 'CNY';
+            } else {
+                $goods['otherfee_currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$goods['otherfee_content']['currency'][0]])->first()->currency_symbol_standard;
+                foreach ($goods['otherfee_content']['standard'] as $k=>$v) {
+                    if ($v==1) {
+                        #按订单数量(1张)
+                        $goods['otherfee_total'] += $goods['otherfee_content']['price'][$k];
+                        $goods['otherfee_content']['otherfee_standard_name'][$k] = '按订单数量';
+                    } elseif ($v==2) {
+                        #按包裹数量（1个）
+                        $goods['otherfee_total'] += $goods['otherfee_content']['price'][$k];
+                        $goods['otherfee_content']['otherfee_standard_name'][$k] = '按包裹数量';
+                    } elseif ($v==3) {
+                        #按商品数量
+                        $goods['otherfee_content']['price'][$k] = str_replace(',', '', number_format(intval($content['good_num']) * $goods['otherfee_content']['price'][$k], 2));
+                        $goods['otherfee_total'] += $goods['otherfee_content']['price'][$k];
+                        $goods['otherfee_content']['otherfee_standard_name'][$k] = '按商品数量';
+                    } elseif ($v==4) {
+                        #按服务次数（1次）
+                        $goods['otherfee_total'] += $goods['otherfee_content']['price'][$k];
+                        $goods['otherfee_content']['otherfee_standard_name'][$k] = '按服务次数';
+                    } elseif ($v==5) {
+                        #按商品总价比率
+                        $goods['otherfee_content']['price'][$k] = str_replace(',', '', number_format($content['good_price'] * $goods['otherfee_content']['price'][$k], 2));
+                        $goods['otherfee_total'] += $goods['otherfee_content']['price'][$k];
+                        $goods['otherfee_content']['otherfee_standard_name'][$k] = '按商品总价比率';
+                    }
+                }
+            }
+            $content['other_fee'] = ['otherfee_content'=>$goods['otherfee_content'],'otherfee_total'=>$goods['otherfee_total'],'otherfee_currency'=>$goods['otherfee_currency']];
+
+            #4、减免优惠
+            $content['reduction_money'] = 0;
+            $content['prefe_reduction'] = [];
+            if (isset($data['prefe_reduction'])) {
+                $content['prefe_reduction'] = $data['prefe_reduction'];
+                foreach ($data['prefe_reduction'] as $k=>$v) {
+                    $content['reduction_money'] += $v['reduction_price'];
+                }
+            }
+
+            #5、随赠优惠
+            $content['gift_money'] = 0;
+            $prefe_gift = [];
+            if (isset($data['prefe_gift'])) {
+                foreach ($data['prefe_gift'] as $k => $v) {
+                    if ($v['type'] == 1) {
+                        #积分
+                        $content['gift_money'] += $v['points_send'];
+                        array_push($prefe_gift, ['strict' => $v['strict'], 'type' => $v['type'], 'operaer' => $v['operaer'], 'points_type' => $v['points_type'], 'points_currency' => $v['points_currency'],'points_money'=>$v['points_money'],'points_send'=>$v['points_send']]);
+                    } elseif ($v['type'] == 2) {
+                        #卡券
+                        $content['gift_money'] += $v['coupon_money'] * $v['coupon_num'];
+                        array_push($prefe_gift, ['strict' => $v['strict'], 'type' => $v['type'], 'operaer' => $v['operaer'], 'coupon_num' => $v['coupon_num'], 'coupon_currency' => $v['coupon_currency'],'coupon_money'=>$v['coupon_money']]);
+                    } elseif ($v['type'] == 3) {
+                        #随赠(不需要计算)
+                        $name = '';
+                        if ($v['accgift_type'] == 1) {
+                            $name = '虚拟';
+                        } elseif ($v['accgift_type'] == 2) {
+                            $name = '服务';
+                        } elseif ($v['accgift_type'] == 3) {
+                            $name = '实物';
+                        }
+                        array_push($prefe_gift, ['strict' => $v['strict'], 'type' => $v['type'], 'accgift_type' => $v['accgift_type'], 'accgift_typeName' => $name, 'accgift_content' => $v['accgift_content'], 'accgift_num' => $v['accgift_num']]);
+                    }
+                }
+            }
+            $content['prefe_gift'] = $prefe_gift;
+            #6、实付费用
+            $content['true_price'] = ($content['good_price'] + $content['other_fee']['otherfee_total']) - ($content['reduction_money'] + $content['gift_money']);
+
+            #6.1、平台监管文件
+            $file = [];
+            if (isset($data['data']['supervise_file'])) {
+                foreach ($data['data']['supervise_file'] as $k=>$v) {
+                    array_push($file, $v['file']);
+                }
+            }
+            $content['file'] = $file;
+
+            #6.2、更多服务
+            $content['services'] = $data['data']['services_attr'];
+        }
+
+        #7、插入购物车
+        $user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user.gogo_id')])->first();
+        $shop_id = '';
+        if ($goods['shop_id']>0) {
+            $shop_id = $goods['shop_id'];
+        } else {
+            if (!empty($goods['other_shop'])) {
+                $goods['other_shop'] = json_decode($goods['other_shop'], true);
+                $shop_id = 'o_'.$goods['other_shop']['shopId'];
+            }
+        }
+
+        #8、生成订购单编号
+        $ordersn = get_ordersn(1);
+
+        #9、判断当前“已选购，未订购”的购物车有无此商品
+        $ishave = Db::table('cart')->where(['user_id'=>$user->id,'goods_id'=>$goods['goods_id'],'is_show'=>0,'is_buy'=>0])->first();
+        $ishave = objtoarr($ishave);
+
+        if (empty($ishave)) {
+            #购物车不存在此商品
+            $cart_id = Db::table('cart')->insertGetId([
+                'user_id'=>$user->id,
+                'goods_id'=>$goods['goods_id'],
+                'ordersn'=>$ordersn,
+                'shop_id'=>$shop_id,
+                'selected'=>1,
+//                #减免优惠
+//                'reduction_money'=>$content['reduction_money'],
+//                'prefe_reduction'=>json_encode($content['prefe_reduction'],true),
+//                #随赠优惠
+//                'gift_money'=>$content['gift_money'],
+//                'prefe_gift'=>json_encode($content['prefe_gift'],true),
+//                #其他费用
+//                'otherfee_content'=>json_encode($content['other_fee']['otherfee_content'],true),
+//                'otherfee_currency'=>$content['other_fee']['otherfee_currency'],
+//                'otherfee_total'=>$content['other_fee']['otherfee_total'],
+//                #监管文件
+//                'file'=>json_encode($content['file'],true),
+                #更多服务
+//            'services'=>json_encode($content['services'],true),
+//            'services'=>'',
+                'created_at'=>time()
+            ]);
+
+            foreach ($content['buy_attr'] as $k=>$v) {
+                if (isset($v['attr_id'])) {
+                    #有规格
+                    $attr_id = implode('|', array_reverse(explode('_', $v['attr_id'])));
+                    $sku = Db::table('goods_sku')->where(['goods_id'=>$content['good_id'],'spec_vids'=>$attr_id])->first();
+                    if (empty($sku)) {
+                        $attr_id = implode('|', array_reverse(explode('|', $attr_id)));
+                        $sku = Db::table('goods_sku')->where(['goods_id'=>$content['good_id'],'spec_vids'=>$attr_id])->first();
+                    }
+                } else {
+                    #无规格
+                    $sku = Db::table('goods_sku')->where(['goods_id'=>$goods['goods_id']])->first();
+                }
+                $sku = objtoarr($sku);
+                $sku['sku_prices'] = json_decode($sku['sku_prices'], true);
+
+                #判断有无超过商品数量
+                if ($v['buy_num']>$sku['sku_prices']['goods_number']) {
+                    $content['buy_attr'][$k]['buy_num'] = $sku['sku_prices']['goods_number'];
+                }
+
+                #判断区间价格：商品金额
+                $price = 0;
+                if (count($sku['sku_prices']['price'])>1) {
+                    foreach ($sku['sku_prices']['start_num'] as $k2=>$v2) {
+                        if ($sku['sku_prices']['select_end'][$k2]==1) {
+                            #数值
+                            if ($content['buy_attr'][$k]['buy_num']>=$v2 and $content['buy_attr'][$k]['buy_num']<=$sku['sku_prices']['end_num'][$k2]) {
+                                $target_price = $sku['sku_prices']['price'][$k2];
+                                $price = $content['buy_attr'][$k]['buy_num'] * $target_price;
+                                break;
+                            }
+                        } elseif ($sku['sku_prices']['select_end'][$k2]==2) {
+                            #以上
+                            if ($content['buy_attr'][$k]['buy_num']>=$v2) {
+                                $target_price = $sku['sku_prices']['price'][$k2];
+                                $price = $content['buy_attr'][$k]['buy_num'] * $target_price;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    $price = $content['buy_attr'][$k]['buy_num'] * $sku['sku_prices']['price'][0];
+                }
+
+                Db::table('cart_sku')->insert([
+                    'cart_id'=>$cart_id,
+                    'sku_id'=>$sku['sku_id'],
+                    'attr_id'=>isset($v['attr_id']) ? $v['attr_id'] : 0,
+                    'spec_id'=>isset($v['spec_id']) ? $v['spec_id'] : 0,
+                    'goods_num'=>$content['buy_attr'][$k]['buy_num'],
+                    'currency'=>$sku['sku_prices']['currency'][0],
+                    'price'=>$price,
+                    'selected'=>1,
+                ]);
+            }
+        } else {
+            #购物车存在此商品
+            foreach ($content['buy_attr'] as $k=>$v) {
+                if (isset($v['attr_id'])) {
+                    #有规格
+                    $attr_id = implode('|', array_reverse(explode('_', $v['attr_id'])));
+                    $sku = Db::table('goods_sku')->where(['goods_id' => $content['good_id'], 'spec_vids' => $attr_id])->first();
+                    if (empty($sku)) {
+                        $attr_id = implode('|', array_reverse(explode('|', $attr_id)));
+                        $sku = Db::table('goods_sku')->where(['goods_id' => $content['good_id'], 'spec_vids' => $attr_id])->first();
+                    }
+                } else {
+                    #无规格
+                    $sku = Db::table('goods_sku')->where(['goods_id' => $goods['goods_id']])->first();
+                }
+                $sku = objtoarr($sku);
+                $sku['sku_prices'] = json_decode($sku['sku_prices'], true);
+
+                $ishave2 = Db::table('cart_sku')->where(['cart_id'=>$ishave['cart_id'],'sku_id'=>$sku['sku_id']])->first();
+                $ishave2 = objtoarr($ishave2);
+
+                #判断有无超过商品数量
+                if ($v['buy_num']>$sku['sku_prices']['goods_number']) {
+                    $content['buy_attr'][$k]['buy_num'] = $sku['sku_prices']['goods_number'];
+                }
+
+                if (empty($ishave2)) {
+                    #购物车规格表不存在此商品
+
+                    #判断区间价格：商品金额
+                    $price = 0;
+                    if (count($sku['sku_prices']['price'])>1) {
+                        foreach ($sku['sku_prices']['start_num'] as $k2=>$v2) {
+                            if ($sku['sku_prices']['select_end'][$k2]==1) {
+                                #数值
+                                if ($content['buy_attr'][$k]['buy_num']>=$v2 and $content['buy_attr'][$k]['buy_num']<=$sku['sku_prices']['end_num'][$k2]) {
+                                    $target_price = $sku['sku_prices']['price'][$k2];
+                                    $price = $content['buy_attr'][$k]['buy_num'] * $target_price;
+                                    break;
+                                }
+                            } elseif ($sku['sku_prices']['select_end'][$k2]==2) {
+                                #以上
+                                if ($content['buy_attr'][$k]['buy_num']>=$v2) {
+                                    $target_price = $sku['sku_prices']['price'][$k2];
+                                    $price = $content['buy_attr'][$k]['buy_num'] * $target_price;
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        $price = $content['buy_attr'][$k]['buy_num'] * $sku['sku_prices']['price'][0];
+                    }
+
+                    Db::table('cart_sku')->insert([
+                        'cart_id'=>$ishave['cart_id'],
+                        'sku_id'=>$sku['sku_id'],
+                        'attr_id'=>isset($v['attr_id']) ? $v['attr_id'] : 0,
+                        'spec_id'=>isset($v['spec_id']) ? $v['spec_id'] : 0,
+                        'goods_num'=>$content['buy_attr'][$k]['buy_num'],
+                        'currency'=>$sku['sku_prices']['currency'][0],
+                        'price'=>$price,
+                        'selected'=>1,
+                    ]);
+                } else {
+                    #购物车规格表存在此商品
+                    $content['buy_attr'][$k]['buy_num'] = $content['buy_attr'][$k]['buy_num']+intval($ishave2['goods_num']);
+
+                    #判断区间价格：商品金额
+                    $price = 0;
+                    if (count($sku['sku_prices']['price'])>1) {
+                        foreach ($sku['sku_prices']['start_num'] as $k2=>$v2) {
+                            if ($sku['sku_prices']['select_end'][$k2]==1) {
+                                #数值
+                                if ($content['buy_attr'][$k]['buy_num']>=$v2 and $content['buy_attr'][$k]['buy_num']<=$sku['sku_prices']['end_num'][$k2]) {
+                                    $target_price = $sku['sku_prices']['price'][$k2];
+                                    $price = $content['buy_attr'][$k]['buy_num'] * $target_price;
+                                    break;
+                                }
+                            } elseif ($sku['sku_prices']['select_end'][$k2]==2) {
+                                #以上
+                                if ($content['buy_attr'][$k]['buy_num']>=$v2) {
+                                    $target_price = $sku['sku_prices']['price'][$k2];
+                                    $price = $content['buy_attr'][$k]['buy_num'] * $target_price;
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        $price = $content['buy_attr'][$k]['buy_num'] * $sku['sku_prices']['price'][0];
+                    }
+
+                    Db::table('cart_sku')->where(['cart_id'=>$ishave['cart_id'],'sku_id'=>$sku['sku_id']])->update([
+                        'goods_num'=>$content['buy_attr'][$k]['buy_num'],
+                        'price'=>$price
+                    ]);
+                }
+            }
+        }
+
+        return Response()->json(['code'=>0,'msg'=>'恭喜你！商品已添加至选购中心']);
+    }
+
+    #详情页里立即购买
+    public function loglastbuy(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $spec_vids = rtrim($data['spec_vids'], '|');
+        $ordersn = get_ordersn(1);
+
+        $website_user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user')['gogo_id']])->first();
+
+        $goods = Db::table('goods')->where(['goods_id'=>$data['goods_id']])->first();
+        $goods = objtoarr($goods);
+        $shop_id = 0;
+        if ($goods['shop_id']==0) {
+            $goods['other_shop'] = json_decode($goods['other_shop'], true);
+            $shop_id = 'o_'.$goods['other_shop']['shopId'];
+        } else {
+            $shop_id = $goods['shop_id'];
+        }
+
+        if ($goods['have_specs']==2) {
+            $goods_sku = Db::table('goods_sku')->where(['goods_id'=>$data['goods_id']])->first();
+        } else {
+            $goods_sku = Db::table('goods_sku')->where(['spec_vids'=>$spec_vids,'goods_id'=>$data['goods_id']])->first();
+        }
+
+
+        $goods_sku = objtoarr($goods_sku);
+
+        $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
+
+        #判断有无超过商品数量
+        if ($data['number']>$goods_sku['sku_prices']['goods_number']) {
+            $data['number'] = $goods_sku['sku_prices']['goods_number'];
+//            return Response()->json(['code'=>-1,'msg'=>'当前购买数量>商品库存']);
+        }
+
+        $cart_id = Db::table('cart')->insertGetId([
+            'user_id'=>$website_user->id,
+            'goods_id'=>$data['goods_id'],
+            'ordersn'=>$ordersn,
+            'shop_id'=>$shop_id,
+            'selected'=>1,
+            'is_show'=>1,
+            'created_at'=>time()
+        ]);
+
+        #属性id_id
+        $attr_id = '';
+        if (!empty($goods_sku['spec_vids'])) {
+            $goods_sku['spec_vids'] = explode("|", $goods_sku['spec_vids']);
+            foreach ($goods_sku['spec_vids'] as $k=>$v) {
+                if (!empty($v)) {
+                    $attr_id .= $v.'_';
+                }
+            }
+            $attr_id = rtrim($attr_id, '_');
+        } else {
+            $attr_id = '0';
+        }
+        #属性类别id_id
+        $spec_id = '';
+        if (!empty($goods_sku['spec_ids'])) {
+            $goods_sku['spec_ids'] = explode("|", $goods_sku['spec_ids']);
+            foreach ($goods_sku['spec_ids'] as $k=>$v) {
+                if (!empty($v)) {
+                    $spec_id .= $v.'_';
+                }
+            }
+            $spec_id = rtrim($spec_id, '_');
+        } else {
+            $spec_id = '0';
+        }
+
+
+        #判断区间价格：商品金额
+        $price = 0;
+        if (count($goods_sku['sku_prices']['price'])>1) {
+            foreach ($goods_sku['sku_prices']['start_num'] as $k=>$v) {
+                if ($goods_sku['sku_prices']['select_end'][$k]==1) {
+                    #数值
+                    if ($data['number']>=$v and $data['number']<=$goods_sku['sku_prices']['end_num'][$k]) {
+                        $target_price = $goods_sku['sku_prices']['price'][$k];
+                        $price = $data['number'] * $target_price;
+                        break;
+                    }
+                } elseif ($goods_sku['sku_prices']['select_end'][$k]==2) {
+                    #以上
+                    if ($data['number']>=$v) {
+                        $target_price = $goods_sku['sku_prices']['price'][$k];
+                        $price = $data['number'] * $target_price;
+                        break;
+                    }
+                }
+            }
+        } else {
+            $price = $data['number'] * $goods_sku['sku_prices']['price'][0];
+        }
+
+        Db::table('cart_sku')->insert([
+            'cart_id'=>$cart_id,
+            'sku_id'=>$goods_sku['sku_id'],
+            'attr_id'=>$attr_id,
+            'spec_id'=>$spec_id,
+            'goods_num'=>$data['number'],
+            'currency'=>$goods_sku['sku_prices']['currency'][0],
+            'price'=>$price,
+            'selected'=>1,
+        ]);
+
+        return Response()->json(['code'=>0,'cart_id'=>$cart_id]);
+    }
+
+    #确认订单页(确认订单和购物车信息都放在淘中国)
+    public function order_confirm(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $cart_id = rtrim($data['cart_id'], ',');#购物车id：用逗号分割开
+        $origin_page = '/order_confirm';
+
+        $website_user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user')['gogo_id']])->first();
+
+//        $data = Db::table('last_sure_buy')->where(['user_id'=>$website_user->id])->first();
+//        $data = objtoarr($data);
+//        $data['content'] = json_decode($data['content'],true);
+
+        $data = Db::table('cart')->whereRaw('cart_id in ('.$cart_id.') and user_id='.$website_user->id)->get();
+        $data = objtoarr($data);
+
+        $final['final_price'] = 0;
+        $final['final_currency']='';
+
+        foreach ($data as $k=>$v) {
+            if (empty($v['services'])) {
+                $data[$k]['services_old']=[];
+                $data[$k]['services'] = [];
+
+                #1、记录该清单的必选服务
+                $parent_services = Db::table('cost_service')->where(['company_id'=>0,'pid'=>0])->get();
+                $parent_services = objtoarr($parent_services);
+                $all_services_arr = '';
+                foreach ($parent_services as $pk=>$pv) {
+                    $all_services = Db::table('cost_service')->where(['pid'=>$pv['id']])->get();
+                    $all_services = objtoarr($all_services);
+                    foreach ($all_services as $sk=>$sv) {
+                        $all_services_arr .= $sv['id'].',';
+                    }
+                }
+
+                #2、必选增值服务
+                $must_selected_services = Db::table('goods_services')->whereRaw('company_id=0 and is_select=1 and find_in_set(service_id,"'.rtrim($all_services_arr, ',').'")')->get();
+                $must_selected_services = objtoarr($must_selected_services);
+
+                $insert_services = [];
+                foreach ($must_selected_services as $mk=>$ms) {
+                    array_push($insert_services, ['service_id'=>$ms['id']]);
+                }
+
+                //3、记录在表
+                Db::table('cart')->where(['cart_id'=>$v['cart_id']])->update([
+                    'services'=>json_encode($insert_services, true)
+                ]);
+            } else {
+                $data[$k]['services_old'] = $v['services'];
+                $data[$k]['services'] = json_decode($v['services'], true);
+            }
+
+            #这层相当于在店铺
+            $data[$k]['sku_info'] = Db::table('cart_sku')->where(['cart_id'=>$v['cart_id'],'selected'=>1,'is_buy'=>0])->get();
+            $data[$k]['sku_info'] = objtoarr($data[$k]['sku_info']);
+
+            #当前购物车的商品价格
+            $goods_price = 0;
+            #附加费用
+            $freight_num=0;
+            $goods_freight_fee=0;
+            $data[$k]['services']['additional_money'] = 0;#附加费用
+            $data[$k]['services']['potential_money'] = 0;#潜在费用
+            foreach ($data[$k]['sku_info'] as $k2=>$v2) {
+                #这层相当于是该店铺下的各规格商品
+                $goods_sku = Db::table('goods_sku')->where(['sku_id'=>$v2['sku_id']])->first();
+                $goods_sku = objtoarr($goods_sku);
+                $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
+                $goods = Db::table('goods')->where(['goods_id'=>$goods_sku['goods_id']])->first();
+                $goods = objtoarr($goods);
+                if (!empty($goods['shop_id'])) {
+                    #店铺名称
+                    $data[$k]['shop_name'] = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods['shop_id']])->first()->company;
+                } else {
+                    $goods['other_shop'] = json_decode($goods['other_shop'], true);
+                    #店铺名称
+                    $data[$k]['shop_name'] = $goods['other_shop']['shopName'];
+                }
+
+                #规格/商品图片
+                if (!empty($goods_sku['sku_images'])) {
+                    $data[$k]['sku_info'][$k2]['goods_image'] = $goods_sku['sku_images'];
+                } else {
+                    $data[$k]['sku_info'][$k2]['goods_image'] = $goods['goods_image'];
+                }
+                #商品名称
+                $data[$k]['goods_name'] = $goods['goods_name'];
+                #商品id
+                $data[$k]['goods_id'] = $goods['goods_id'];
+
+                #商品（规格）信息==============================start
+                $data[$k]['sku_info'][$k2]['bgoods_name'] = $goods['goods_name'];
+                if (empty($goods_sku['spec_names'])) {
+                    #无规格商品
+                    $data[$k]['sku_info'][$k2]['boption_name'] = $goods['goods_name'];
+                } else {
+                    #有规格商品
+                    $data[$k]['sku_info'][$k2]['boption_name'] = $goods_sku['spec_names'];
+                }
+                #商品规格名称
+                if (empty($goods_sku['spec_names'])) {
+                    #无规格商品
+                    $data[$k]['sku_info'][$k2]['soption_name'] = $goods['goods_name'];
+                } else {
+                    #有规格商品
+                    $data[$k]['sku_info'][$k2]['soption_name'] = $goods_sku['spec_names'];
+                }
+                #商品（规格）币种&数量&价格（不用重复计算价格了，已经计算了）
+                $data[$k]['sku_info'][$k2]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v2['currency']])->first()->currency_symbol_standard;
+                $data[$k]['sku_info'][$k2]['price'] = $v2['price'];
+                $data[$k]['sku_info'][$k2]['num'] = $v2['goods_num'];
+                #商品（规格）信息==============================end
+
+                #附加费用（国内运费）=====================================start
+                $freight_num += $v2['goods_num'];
+                $goods_freight_fee += $goods['goods_freight_fee'];
+                #附加费用（国内运费）=====================================end
+
+                #当前购物车的商品价格
+                $goods_price += $v2['price'];
+                $data[$k]['currency'] = $data[$k]['sku_info'][$k2]['currency'];
+                $data[$k]['price'] = number_format($goods_price, 2);
+
+                #最终价格的币种
+                $final['final_currency']=$data[$k]['currency'];
+
+                #商品附加费用：卖家运费/卖家要的费用
+                #附加费用=======================================start
+                if ($goods['shop_id']==0) {
+                    $services_ids = Db::table('cost_service')->where(['pid'=>2,'company_id'=>0])->get();
+                    $services_ids = objtoarr($services_ids);
+                    $service_ids_arr = '';
+                    foreach ($services_ids as $sk=>$sv) {
+                        $service_ids_arr .= $sv['id'].',';
+                    }
+
+                    $data[$k]['services']['additional'] = Db::table('goods_services')->whereRaw('company_id=0 and find_in_set(service_id,"'.rtrim($service_ids_arr, ',').'")')->get();
+                    $data[$k]['services']['additional'] = objtoarr($data[$k]['services']['additional']);
+                    foreach ($data[$k]['services']['additional'] as $k3=>$v3) {
+                        $data[$k]['services']['additional'][$k3]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v3['currency']])->first()->currency_symbol_standard;
+                        if ($v3['is_select']==1) {
+                            $data[$k]['services']['additional_money'] += $v3['price'];
+                        }
+                    }
+                } else {
+                    #商户企业id
+                    if (empty($goods['otherfees_content']) && empty($goods['reduction_content']) && empty($goods['gift_content']) && empty($goods['noinclude_content'])) {
+                        $data[$k]['services']['additional'] = [];
+                    } else {
+                        if (!empty($goods['otherfees_content'])) {
+                            #1、其他费用判断
+                            $otherfees_content = json_decode($goods['otherfees_content'], true);
+
+                            foreach ($otherfees_content['fees_name'] as $k3=>$v3) {
+                                if ($otherfees_content['fees_condition'][$k3]==2) {
+                                    #有条件触发
+
+                                    if ($otherfees_content['fees_trigger'][$k3]==1) {
+                                        #要素触发
+                                        if ($otherfees_content['fees_trigger2_equal'][$k3]==1) {
+                                            #少于
+
+                                            #大于/等于就退出当前循环，进行下一个循环（不满足条件）
+                                            if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                                #购买数量
+                                                if ($v2['goods_num']>=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                                #购买金额
+                                                if ($v2['price']>=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==2) {
+                                            #少于或等于
+
+                                            #大于就退出当前循环，进行下一个循环（不满足条件）
+                                            if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                                #购买数量
+                                                if ($v2['goods_num']>$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                                #购买金额
+                                                if ($v2['price']>$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==3) {
+                                            #等于
+
+                                            #不等于就退出当前循环，进行下一个循环（不满足条件）
+                                            if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                                #购买数量
+                                                if ($v2['goods_num']!=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                                #购买金额
+                                                if ($v2['price']!=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==4) {
+                                            #大于
+
+                                            #少于/等于就退出当前循环，进行下一个循环（不满足条件）
+                                            if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                                #购买数量
+                                                if ($v2['goods_num']<=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                                #购买金额
+                                                if ($v2['price']<=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==5) {
+                                            #大于或等于
+
+                                            #少于就退出当前循环，进行下一个循环（不满足条件）
+                                            if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                                #购买数量
+                                                if ($v2['goods_num']<$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                                #购买金额
+                                                if ($v2['price']<$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            }
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger'][$k3]==2) {
+                                        #型号触发
+                                        if ($otherfees_content['fees_options'][$k3]==-1) {
+                                            continue;
+                                        }
+                                        #首先找到商户商品表id和规格
+                                        $goods_merchant = Db::table('goods_merchant')->where(['shelf_id'=>$v['goods_id']])->first();
+                                        $goods_sku_merchant = Db::table('goods_sku_merchant')->where(['goods_id'=>$goods_merchant->id,'sku_id'=>$otherfees_content['fees_options'][$k3]])->first();
+                                        $goods_sku_merchant = objtoarr($goods_sku_merchant);
+
+                                        #不是当前规格就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($goods_sku['spec_names']!=$goods_sku_merchant['spec_names']) {
+                                            continue;
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger'][$k3]==3) {
+                                        #物流触发（待做）
+                                    }
+                                }
+
+                                #收费标准
+                                if ($otherfees_content['fees_standard'][$k3]==1) {
+                                    #定额计价
+                                    $data[$k]['services']['additional'][] = [
+                                        'name'=>$otherfees_content['fees_name'][$k3],
+                                        'desc'=>$otherfees_content['fees_desc'][$k3],
+                                        'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                        'price'=>number_format($otherfees_content['fees_standard_price'][$k3], 2)
+                                    ];
+                                    $data[$k]['services']['additional_money'] += $otherfees_content['fees_standard_price'][$k3];
+                                } elseif ($otherfees_content['fees_standard'][$k3]==2) {
+                                    #比例计价
+                                    if ($otherfees_content['fees_standard_ratio'][$k3]==1) {
+                                        #计费基数
+                                        $data[$k]['services']['additional'][] = [
+                                            'name'=>$otherfees_content['fees_name'][$k3],
+                                            'desc'=>$otherfees_content['fees_desc'][$k3],
+                                            'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                            'price'=>number_format($otherfees_content['fees_standard_ratio_price'][$k3], 2)
+                                        ];
+                                        $data[$k]['services']['additional_money'] += $otherfees_content['fees_standard_ratio_price'][$k3];
+                                    } elseif ($otherfees_content['fees_standard_ratio'][$k3]==2) {
+                                        #计费比率
+                                        $ratio_price = ($otherfees_content['fees_standard_ratio_ratio'][$k3] / 100) * $v2['price'];
+                                        $data[$k]['services']['additional'][] = [
+                                            'name'=>$otherfees_content['fees_name'][$k3],
+                                            'desc'=>$otherfees_content['fees_desc'][$k3],
+                                            'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                            'price'=>number_format($ratio_price, 2)
+                                        ];
+                                        $data[$k]['services']['additional_money'] += $ratio_price;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!empty($goods['reduction_content'])) {
+                            #2、销售优惠减免判断
+                            $reduction_content = json_decode($goods['reduction_content'], true);
+
+                            $reduction_strict = 0;
+                            $reduction_arr = [];
+                            foreach ($reduction_content['preferential_blong'] as $k3=>$v3) {
+                                $rule_name = Db::table('ssl_reduction_rule')->where(['id'=>$reduction_content['type'][$k3]])->first();
+                                $rule_name = objtoarr($rule_name);
+                                $rule_name['content'] = json_decode($rule_name['content'], true);
+
+                                $name = '';
+                                if ($v3==1) {
+                                    $name = '卖家优惠';
+                                } elseif ($v3==2) {
+                                    $name = '平台优惠';
+                                } elseif ($v3==3) {
+                                    $name = '他方优惠';
+                                }
+
+                                if ($reduction_content['strict'][$k3]==1 && $reduction_strict==0) {
+                                    #单独
+                                    if ($v2['price']>$reduction_content['price1'][$k3]) {
+                                        $reduction_arr = [
+                                            'name'=>$name,
+                                            'desc'=>$rule_name['content'][0].$reduction_content['price1'][$k3].$rule_name['content'][2].$reduction_content['price2'][$k3],
+                                            'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$reduction_content['currency1']])->first()->currency_symbol_standard,
+                                            'price'=>'-'.number_format($reduction_content['price2'][$k3], 2)
+                                        ];
+                                        $data[$k]['services']['additional'][] = $reduction_arr;
+                                        $data[$k]['services']['additional_money'] -= $reduction_content['price2'][$k3];
+                                        break;
+                                    }
+                                    $reduction_strict=1;
+                                } elseif ($reduction_content['strice'][$k3]==2 && ($reduction_strict==0 || $reduction_strict==2)) {
+                                    #叠加
+                                    if ($v2['price']>$reduction_content['price1'][$k3]) {
+                                        $reduction_arr = [
+                                            'name' => $name,
+                                            'desc' => $rule_name['content'][0] . $reduction_content['price1'][$k3] . $rule_name['content'][2] . $reduction_content['price2'][$k3],
+                                            'currency' => Db::connection('shop_db')->table('centralize_currency')->where(['id' => $reduction_content['currency1']])->first()->currency_symbol_standard,
+                                            'price' => '-'.number_format($reduction_content['price2'][$k3], 2)
+                                        ];
+                                        $data[$k]['services']['additional'][] = $reduction_arr;
+                                        $data[$k]['services']['additional_money'] -= $otherfees_content['price2'][$k3];
+                                    }
+                                    $reduction_strict=2;
+                                }
+                            }
+                        }
+
+                        if (!empty($goods['gift_content'])) {
+                            #3、随赠优惠判断
+                            $gift_content = json_decode($goods['gift_content'], true);
+
+                            $gift_strict = 0;
+                            foreach ($gift_content['preferential_blong'] as $k3=>$v3) {
+                                $name = '';
+                                if ($v3==1) {
+                                    $name = '卖家优惠';
+                                } elseif ($v3==2) {
+                                    $name = '平台优惠';
+                                } elseif ($v3==3) {
+                                    $name = '他方优惠';
+                                }
+
+                                if ($gift_content['strict'][$k3]==1 && $gift_strict==0) {
+                                    #单独
+                                    $gift_strict=1;
+                                } elseif ($gift_content['strict'][$k3]==2 && ($gift_strict==0 || $gift_strict==2)) {
+                                    #叠加
+                                    $gift_strict=2;
+                                } else {
+                                    continue;
+                                }
+
+                                $gift_project = '随赠项目：';
+                                if ($gift_content['type'][$k3]==1) {
+                                    $gift_project .= '积分；';
+
+                                    if ($gift_content['points_type'][$k3]==1) {
+                                        $gift_project .= '按每订单/次，赠送'.$gift_content['points_send'][$k3].'积分；';
+                                    } elseif ($gift_content['points_type'][$k3]==2) {
+                                        if ($v2['price']>=$gift_content['points_money'][$k3]) {
+                                            $points_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['points_currency']])->first()->currency_symbol_standard;
+                                            $gift_project .= '按金额满 '.$points_currency.' '.number_format($gift_content['points_money'][$k3], 2).'，赠送'.$gift_content['points_send'][$k3].'积分；';
+                                        }
+                                    }
+                                } elseif ($gift_content['type'][$k3]==2) {
+                                    $gift_project .= '卡券；';
+                                    $coupon_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['coupon_currency']])->first()->currency_symbol_standard;
+                                    $gift_project .= '赠送价值 '.$coupon_currency.' '.$gift_content['coupon_money'][$k3].' *'.$gift_content['coupon_num'][$k].'张；';
+                                } elseif ($gift_content['type'][$k3]==3) {
+                                    $gift_project .= '随赠；';
+
+                                    if ($gift_content['accgift_type'][$k3]==1) {
+                                        $gift_project .= '虚拟物品：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'个';
+                                    } elseif ($gift_content['accgift_type'][$k3]==2) {
+                                        $gift_project .= '额外服务：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'次';
+                                    } elseif ($gift_content['accgift_type'][$k3]==3) {
+                                        $gift_project .= '实物赠品：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'个';
+                                    }
+                                }
+
+                                $gift_arr = [
+                                    'name'=>$name,
+                                    'desc'=>$gift_project,
+                                    'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['points_currency']])->first()->currency_symbol_standard,
+                                    'price'=>'0.00'
+                                ];
+                                $data[$k]['services']['additional'][] = $gift_arr;
+                            }
+                        }
+
+                        if (!empty($goods['noinclude_content'])) {
+                            #4、价格未含
+                            $noinclude_content = json_decode($goods['noinclude_content'], true);
+
+                            foreach ($noinclude_content['name'] as $k3=>$v3) {
+                                $data[$k]['services']['additional'][] = [
+                                    'name'=>$v3,
+                                    'desc'=>$noinclude_content['desc'][$k3],
+                                    'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$noinclude_content['currency']])->first()->currency_symbol_standard,
+                                    'price'=>number_format($noinclude_content['price'][$k3], 2)
+                                ];
+                                $data[$k]['services']['additional_money'] += $noinclude_content['price'][$k3];
+                            }
+                        }
+                    }
+                }
+                #附加费用=======================================end
+
+                #潜在费用=======================================start
+                if ($goods['shop_id']==0) {
+                    $services_ids = Db::table('cost_service')->where(['pid' => 3, 'company_id' => 0])->get();
+                    $services_ids = objtoarr($services_ids);
+                    $service_ids_arr = '';
+                    foreach ($services_ids as $sk => $sv) {
+                        $service_ids_arr .= $sv['id'] . ',';
+                    }
+
+                    $data[$k]['services']['potential'] = Db::table('goods_services')->whereRaw('company_id=0 and find_in_set(service_id,"' . rtrim($service_ids_arr, ',') . '")')->get();
+                    $data[$k]['services']['potential'] = objtoarr($data[$k]['services']['potential']);
+                    foreach ($data[$k]['services']['potential'] as $k3 => $v3) {
+                        $data[$k]['services']['potential'][$k3]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id' => $v3['currency']])->first()->currency_symbol_standard;
+                        if ($v3['is_select'] == 1) {
+                            $data[$k]['services']['potential_money'] += $v3['price'];
+                        }
+                    }
+                } else {
+                    #商户企业id
+                    if (empty($goods['potential_content'])) {
+                        $data[$k]['services']['potential'] = [];
+                    } else {
+                        if (!empty($goods['potential_content'])) {
+                            #1、潜在收费判断
+                            $potential_content = json_decode($goods['potential_content'], true);
+
+                            foreach ($potential_content['name'] as $k3 => $v3) {
+                                $data[$k]['services']['potential'][] = [
+                                    'name' => $v3,
+                                    'desc' => $potential_content['desc'][$k3],
+                                    'currency' => Db::connection('shop_db')->table('centralize_currency')->where(['id' => $potential_content['currency'][$k3]])->first()->currency_symbol_standard,
+                                    'price' => number_format($potential_content['price'][$k3], 2)
+                                ];
+                                $data[$k]['services']['potential_money'] += $potential_content['price'][$k3];
+                            }
+                        }
+                    }
+                }
+                #潜在费用=======================================end
+            }
+
+            #商品附加费用：卖家运费/卖家要的费用
+            #增值服务=======================================start
+            $data[$k]['services']['increment_money'] = 0;
+
+            $services_ids = Db::table('cost_service')->where(['pid'=>1,'company_id'=>0])->get();
+            $services_ids = objtoarr($services_ids);
+            $service_ids_arr = '';
+            foreach ($services_ids as $sk=>$sv) {
+                $service_ids_arr .= $sv['id'].',';
+            }
+
+            $data[$k]['services']['increment'] = Db::table('goods_services')->whereRaw('company_id=0 and find_in_set(service_id,"'.rtrim($service_ids_arr, ',').'")')->get();
+            $data[$k]['services']['increment'] = objtoarr($data[$k]['services']['increment']);
+
+            foreach ($data[$k]['services']['increment'] as $k2=>$v2) {
+                if ($v2['type']==1) {
+                    $data[$k]['services']['increment'][$k2]['photonum'] = 0;
+                }
+                $data[$k]['services']['increment'][$k2]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v2['currency']])->first()->currency_symbol_standard;
+                if ($v2['is_select']==1) {
+                    $data[$k]['services']['increment'][$k2]['final_money'] = $v2['price'];
+                } else {
+                    $data[$k]['services']['increment'][$k2]['final_money'] = '0.00';
+                }
+            }
+
+            if (!empty($data[$k]['services_old'])) {
+                #已选服务
+                $data[$k]['services_old'] = json_decode($data[$k]['services_old'], true);
+
+                foreach ($data[$k]['services_old'] as $k2=>$v2) {
+                    $services = Db::table('goods_services')->where(['id'=>$v2['service_id']])->first();
+                    $services = objtoarr($services);
+
+                    if ($services['type']==1) {
+                        #照片服务/价格递增
+                        if ($v2['photonum']>=1) {
+                            if ($v2['photonum']>=$services['num']) {
+                                $services['price'] = $services['price'] + (($v2['photonum'] - $services['num']) * $services['interval_price']);
+                                $data[$k]['services']['increment_money'] += $services['price'];
+                            }
+                        }
+                    } else {
+                        #其他服务
+                        $data[$k]['services']['increment_money'] += $services['price'];
+//                        $data[$k]['services']['increment'][$k2]['final_money'] = $services['price'];
+                    }
+
+                    foreach ($data[$k]['services']['increment'] as $k3=>$v3) {
+                        if ($v3['id']==$v2['service_id']) {
+                            $data[$k]['services']['increment'][$k3]['final_money'] = number_format($services['price'], 2);
+                        }
+
+                        if ($v3['id']==$v2['service_id'] && isset($v2['photonum'])) {
+                            $data[$k]['services']['increment'][$k3]['photonum'] = $v2['photonum'];
+                        }
+                    }
+                }
+            } else {
+                #未选服务
+                foreach ($data[$k]['services']['increment'] as $k2=>$v2) {
+                    if ($v2['is_select']==1) {
+                        $data[$k]['services']['increment_money'] += $v2['price'];
+                    }
+                }
+            }
+
+            $data[$k]['services']['increment_money'] = number_format($data[$k]['services']['increment_money'], 2);
+            #增值服务=======================================end
+
+            #当前购物车id的商品（规格）总价（商品（规格）单价+各服务费用）
+            $data[$k]['total_price'] = number_format($goods_price+$data[$k]['services']['additional_money']+$data[$k]['services']['increment_money']+$data[$k]['services']['potential_money'], 2);
+
+            #所有购物清单的最终价格
+            $final['final_price'] += $goods_price+$data[$k]['services']['additional_money']+$data[$k]['services']['increment_money']+$data[$k]['services']['potential_money'];
+            $data[$k]['services']['additional_money'] = number_format($data[$k]['services']['additional_money'], 2);
+            $data[$k]['services']['potential_money'] = number_format($data[$k]['services']['potential_money'], 2);
+        }
+
+        #所有购物清单的最终价格
+        $final['final_price'] = number_format($final['final_price'], 2);
+
+        $website = get_website();
+        $page_info = get_pageinfo('/goods');
+        $website['background'] = $page_info['content']['background'];
+        $website['content'] = $page_info['content']['content'];
+        $website['fontcolor'] = $page_info['content']['fontcolor'];
+        $website['agentLink'] = $page_info['content']['agent_link'];
+
+        $is_inner=1;#内页打开首页头部，不显示消息轮播框
+
+        #协议确认与知悉、了解
+        $check_content = $this->get_rule(['function_id'=>48]);
+
+        return view('goods.order_confirm', compact('data', 'origin_page', 'website', 'final', 'cart_id', 'is_inner', 'check_content'));
+    }
+
+    #集运系统各功能确认同意内容列表
+    public function get_rule($data=[])
+    {
+        $content = Db::connection('shop_db')->table('centralize_rule_list')->where(['system_id'=>2,'function_id'=>$data['function_id']])->first();
+        $content = objtoarr($content);
+        if (!empty($content)) {
+            $content['confirm'] = json_decode($content['confirm'], true);
+            $content['sure'] = json_decode($content['sure'], true);
+            $content['knows'] = json_decode($content['knows'], true);
+        }
+        return $content;
+    }
+
+    #确认订单页-监听当前商品的数量变化
+    public function order_confirm_calc(Request $request)
+    {
+        $data = $request->except(['_token']);
+
+        $goods_id = intval($data['goods_id']);#变化的商品id
+        $sku_id = intval($data['sku_id']);#变化的商品规格id
+        $buy_num = intval($data['buy_num']);#变化的商品规格数量
+
+        $cart_ids = trim($data['cart_ids']);#购物车ids
+        $cart_id = intval($data['cart_id']);#购物车id
+        $website_user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user')['gogo_id']])->first();
+
+        $data = Db::table('cart')->whereRaw('cart_id in ('.$cart_ids.') and user_id='.$website_user->id)->get();
+        $data = objtoarr($data);
+
+        #返回变化的单价
+        $update['sku_price'] = 0;
+        $update['all_sku_price'] = 0;
+        $update['total_price'] = 0;
+        $update['final_price'] = 0;
+
+        foreach ($data as $k=>$v) {
+            if (empty($v['services'])) {
+                $data[$k]['services_old']=[];
+                $data[$k]['services'] = [];
+            } else {
+                $data[$k]['services_old'] = $v['services'];
+                $data[$k]['services'] = json_decode($v['services'], true);
+            }
+            $data[$k]['services_old'] = $v['services'];
+            #这层相当于在店铺
+            $data[$k]['sku_info'] = Db::table('cart_sku')->where(['cart_id'=>$v['cart_id'],'selected'=>1,'is_buy'=>0])->get();
+            $data[$k]['sku_info'] = objtoarr($data[$k]['sku_info']);
+
+            #当前购物车的商品价格
+            $goods_price = 0;
+
+            $freight_num=0;
+            $goods_freight_fee=0;
+            $data[$k]['services']['additional_money'] = 0;#附加费用
+            $data[$k]['services']['potential_money'] = 0;#潜在费用
+            foreach ($data[$k]['sku_info'] as $k2=>$v2) {
+                #这层相当于是该店铺下该商品下的各规格商品
+                $goods_sku = Db::table('goods_sku')->where(['sku_id'=>$v2['sku_id']])->first();
+                $goods_sku = objtoarr($goods_sku);
+                $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
+
+                $goods = Db::table('goods')->where(['goods_id'=>$goods_sku['goods_id']])->first();
+                $goods = objtoarr($goods);
+                $goods['other_shop'] = json_decode($goods['other_shop'], true);
+
+                #店铺名称
+                $data[$k]['shop_name'] = $goods['other_shop']['shopName'];
+                #规格/商品图片
+                if (!empty($goods_sku['sku_images'])) {
+                    $data[$k]['goods_image'] = $goods_sku['sku_images'];
+                } else {
+                    $data[$k]['goods_image'] = $goods['goods_image'];
+                }
+                #商品名称
+                $data[$k]['goods_name'] = $goods['goods_name'];
+                #商品id
+                $data[$k]['goods_id'] = $goods['goods_id'];
+
+                #商品（规格）信息==============================start
+                $data[$k]['sku_info'][$k2]['bgoods_name'] = $goods['goods_name'];
+                if (empty($goods_sku['spec_names'])) {
+                    #无规格商品
+                    $data[$k]['sku_info'][$k2]['boption_name'] = $goods['goods_name'];
+                } else {
+                    #有规格商品
+                    $data[$k]['sku_info'][$k2]['boption_name'] = $goods_sku['spec_names'];
+                }
+                #商品规格名称
+                if (empty($goods_sku['spec_names'])) {
+                    #无规格商品
+                    $data[$k]['sku_info'][$k2]['soption_name'] = $goods['goods_name'];
+                } else {
+                    #有规格商品
+                    $data[$k]['sku_info'][$k2]['soption_name'] = $goods_sku['spec_names'];
+                }
+                #商品（规格）币种&数量&价格（不用重复计算价格了，已经计算了）
+                $data[$k]['sku_info'][$k2]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v2['currency']])->first()->currency_symbol_standard;
+                $data[$k]['sku_info'][$k2]['price'] = $v2['price'];
+                $data[$k]['sku_info'][$k2]['num'] = $v2['goods_num'];
+
+                if ($goods_id==$goods['goods_id'] && $sku_id==$v2['sku_id']) {
+                    #数量框+/-：更改商品价钱
+                    #判断购买数量有无超过当前规格数量
+                    if ($buy_num>$goods_sku['sku_prices']['goods_number']) {
+                        return Response()->json(['code'=>-1,'msg'=>'当前购买数量>商品库存']);
+                    }
+
+                    foreach ($goods_sku['sku_prices']['start_num'] as $k3=>$v3) {
+                        if ($goods_sku['sku_prices']['select_end'][$k3]==1) {
+                            #数值
+                            if ($buy_num>=$v3 and $buy_num<=$goods_sku['sku_prices']['end_num'][$k3]) {
+                                $target_price = $goods_sku['sku_prices']['price'][$k3];
+                                $data[$k]['sku_info'][$k2]['num'] = $buy_num;
+                                $data[$k]['sku_info'][$k2]['price'] = $buy_num*$target_price;
+                                break;
+                            }
+                        } elseif ($goods_sku['sku_prices']['select_end'][$k3]==2) {
+                            #以上
+                            if ($buy_num>=$v3) {
+                                $target_price = $goods_sku['sku_prices']['price'][$k3];
+                                $data[$k]['sku_info'][$k2]['num'] = $buy_num;
+                                $data[$k]['sku_info'][$k2]['price'] = $buy_num*$target_price;
+                                break;
+                            }
+                        }
+                    }
+                    #修改当前购物清单的清单规格表
+                    Db::table('cart_sku')->where(['id'=>$v2['id']])->update([
+                        'goods_num'=>$buy_num,
+                        'price'=>$data[$k]['sku_info'][$k2]['price']
+                    ]);
+
+                    #返回的规格单价
+                    $update['sku_price'] = number_format($data[$k]['sku_info'][$k2]['price'], 2);
+                }
+                #商品（规格）信息==============================end
+
+                #附加费用（国内运费）=====================================start
+                $freight_num += $v2['goods_num'];
+                $goods_freight_fee += $goods['goods_freight_fee'];
+                #附加费用（国内运费）=====================================end
+
+                #当前购物车的商品价格
+                $goods_price += $data[$k]['sku_info'][$k2]['price'];
+
+//                $data[$k]['currency'] = $data[$k]['sku_info'][$k2]['currency'];
+//                $data[$k]['price'] = number_format($goods_price,2);
+
+                #返回的规格单价
+                if ($cart_id==$v2['cart_id']) {
+                    $update['all_sku_price'] = number_format($goods_price, 2);
+                }
+
+                #附加费用=======================================start
+                if ($goods['shop_id']==0) {
+                    $services_ids = Db::table('cost_service')->where(['pid' => 2, 'company_id' => 0])->get();
+                    $services_ids = objtoarr($services_ids);
+                    $service_ids_arr = '';
+                    foreach ($services_ids as $sk => $sv) {
+                        $service_ids_arr .= $sv['id'] . ',';
+                    }
+
+                    $data[$k]['services']['additional'] = Db::table('goods_services')->whereRaw('company_id=0 and find_in_set(service_id,"' . rtrim($service_ids_arr, ',') . '")')->get();
+                    $data[$k]['services']['additional'] = objtoarr($data[$k]['services']['additional']);
+                    foreach ($data[$k]['services']['additional'] as $k3 => $v3) {
+                        $data[$k]['services']['additional'][$k3]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id' => $v3['currency']])->first()->currency_symbol_standard;
+                        if ($v3['is_select'] == 1) {
+                            $data[$k]['services']['additional_money'] += $v3['price'];
+                        }
+                    }
+                } else {
+                    #商户企业id
+                    if (empty($goods['otherfees_content']) && empty($goods['reduction_content']) && empty($goods['gift_content']) && empty($goods['noinclude_content'])) {
+                        $data[$k]['services']['additional'] = [];
+                    } else {
+                        if (!empty($goods['otherfees_content'])) {
+                            #1、其他费用判断
+                            $otherfees_content = json_decode($goods['otherfees_content'], true);
+
+                            foreach ($otherfees_content['fees_name'] as $k3=>$v3) {
+                                if ($otherfees_content['fees_condition'][$k3]==2) {
+                                    #有条件触发
+
+                                    if ($otherfees_content['fees_trigger'][$k3]==1) {
+                                        #要素触发
+                                        if ($otherfees_content['fees_trigger2_equal'][$k3]==1) {
+                                            #少于
+
+                                            #大于/等于就退出当前循环，进行下一个循环（不满足条件）
+                                            if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                                #购买数量
+                                                if ($v2['goods_num']>=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                                #购买金额
+                                                if ($v2['price']>=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==2) {
+                                            #少于或等于
+
+                                            #大于就退出当前循环，进行下一个循环（不满足条件）
+                                            if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                                #购买数量
+                                                if ($v2['goods_num']>$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                                #购买金额
+                                                if ($v2['price']>$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==3) {
+                                            #等于
+
+                                            #不等于就退出当前循环，进行下一个循环（不满足条件）
+                                            if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                                #购买数量
+                                                if ($v2['goods_num']!=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                                #购买金额
+                                                if ($v2['price']!=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==4) {
+                                            #大于
+
+                                            #少于/等于就退出当前循环，进行下一个循环（不满足条件）
+                                            if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                                #购买数量
+                                                if ($v2['goods_num']<=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                                #购买金额
+                                                if ($v2['price']<=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==5) {
+                                            #大于或等于
+
+                                            #少于就退出当前循环，进行下一个循环（不满足条件）
+                                            if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                                #购买数量
+                                                if ($v2['goods_num']<$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                                #购买金额
+                                                if ($v2['price']<$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                    continue;
+                                                }
+                                            }
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger'][$k3]==2) {
+                                        #型号触发
+                                        if ($otherfees_content['fees_options'][$k3]==-1) {
+                                            continue;
+                                        }
+                                        #首先找到商户商品表id和规格
+                                        $goods_merchant = Db::table('goods_merchant')->where(['shelf_id'=>$v['goods_id']])->first();
+                                        $goods_sku_merchant = Db::table('goods_sku_merchant')->where(['goods_id'=>$goods_merchant->id,'sku_id'=>$otherfees_content['fees_options'][$k3]])->first();
+                                        $goods_sku_merchant = objtoarr($goods_sku_merchant);
+
+                                        #不是当前规格就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($goods_sku['spec_names']!=$goods_sku_merchant['spec_names']) {
+                                            continue;
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger'][$k3]==3) {
+                                        #物流触发（待做）
+                                    }
+                                }
+
+                                #收费标准
+                                if ($otherfees_content['fees_standard'][$k3]==1) {
+                                    #定额计价
+                                    $data[$k]['services']['additional'][] = [
+                                        'name'=>$otherfees_content['fees_name'][$k3],
+                                        'desc'=>$otherfees_content['fees_desc'][$k3],
+                                        'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                        'price'=>number_format($otherfees_content['fees_standard_price'][$k3], 2)
+                                    ];
+                                    $data[$k]['services']['additional_money'] += $otherfees_content['fees_standard_price'][$k3];
+                                } elseif ($otherfees_content['fees_standard'][$k3]==2) {
+                                    #比例计价
+                                    if ($otherfees_content['fees_standard_ratio'][$k3]==1) {
+                                        #计费基数
+                                        $data[$k]['services']['additional'][] = [
+                                            'name'=>$otherfees_content['fees_name'][$k3],
+                                            'desc'=>$otherfees_content['fees_desc'][$k3],
+                                            'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                            'price'=>number_format($otherfees_content['fees_standard_ratio_price'][$k3], 2)
+                                        ];
+                                        $data[$k]['services']['additional_money'] += $otherfees_content['fees_standard_ratio_price'][$k3];
+                                    } elseif ($otherfees_content['fees_standard_ratio'][$k3]==2) {
+                                        #计费比率
+                                        $ratio_price = ($otherfees_content['fees_standard_ratio_ratio'][$k3] / 100) * $v2['price'];
+                                        $data[$k]['services']['additional'][] = [
+                                            'name'=>$otherfees_content['fees_name'][$k3],
+                                            'desc'=>$otherfees_content['fees_desc'][$k3],
+                                            'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                            'price'=>number_format($ratio_price, 2)
+                                        ];
+                                        $data[$k]['services']['additional_money'] += $ratio_price;
+                                    }
+                                }
+                            }
+                        }
+                        if (!empty($goods['reduction_content'])) {
+                            #2、销售优惠减免判断
+                            $reduction_content = json_decode($goods['reduction_content'], true);
+
+                            $reduction_strict = 0;
+                            $reduction_arr = [];
+                            foreach ($reduction_content['preferential_blong'] as $k3=>$v3) {
+                                $rule_name = Db::table('ssl_reduction_rule')->where(['id'=>$reduction_content['type'][$k3]])->first();
+                                $rule_name = objtoarr($rule_name);
+                                $rule_name['content'] = json_decode($rule_name['content'], true);
+
+                                $name = '';
+                                if ($v3==1) {
+                                    $name = '卖家优惠';
+                                } elseif ($v3==2) {
+                                    $name = '平台优惠';
+                                } elseif ($v3==3) {
+                                    $name = '他方优惠';
+                                }
+
+                                if ($reduction_content['strict'][$k3]==1 && $reduction_strict==0) {
+                                    #单独
+                                    if ($v2['price']>$reduction_content['price1'][$k3]) {
+                                        $reduction_arr = [
+                                            'name'=>$name,
+                                            'desc'=>$rule_name['content'][0].$reduction_content['price1'][$k3].$rule_name['content'][2].$reduction_content['price2'][$k3],
+                                            'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$reduction_content['currency1']])->first()->currency_symbol_standard,
+                                            'price'=>'-'.number_format($reduction_content['price2'][$k3], 2)
+                                        ];
+                                        $data[$k]['services']['additional'][] = $reduction_arr;
+                                        $data[$k]['services']['additional_money'] -= $reduction_content['price2'][$k3];
+                                        break;
+                                    }
+                                    $reduction_strict=1;
+                                } elseif ($reduction_content['strice'][$k3]==2 && ($reduction_strict==0 || $reduction_strict==2)) {
+                                    #叠加
+                                    if ($v2['price']>$reduction_content['price1'][$k3]) {
+                                        $reduction_arr = [
+                                            'name' => $name,
+                                            'desc' => $rule_name['content'][0] . $reduction_content['price1'][$k3] . $rule_name['content'][2] . $reduction_content['price2'][$k3],
+                                            'currency' => Db::connection('shop_db')->table('centralize_currency')->where(['id' => $reduction_content['currency1']])->first()->currency_symbol_standard,
+                                            'price' => '-'.number_format($reduction_content['price2'][$k3], 2)
+                                        ];
+                                        $data[$k]['services']['additional'][] = $reduction_arr;
+                                        $data[$k]['services']['additional_money'] -= $otherfees_content['price2'][$k3];
+                                    }
+                                    $reduction_strict=2;
+                                }
+                            }
+                        }
+                        if (!empty($goods['gift_content'])) {
+                            #3、随赠优惠判断
+                            $gift_content = json_decode($goods['gift_content'], true);
+
+                            $gift_strict = 0;
+                            foreach ($gift_content['preferential_blong'] as $k3=>$v3) {
+                                $name = '';
+                                if ($v3==1) {
+                                    $name = '卖家优惠';
+                                } elseif ($v3==2) {
+                                    $name = '平台优惠';
+                                } elseif ($v3==3) {
+                                    $name = '他方优惠';
+                                }
+
+                                if ($gift_content['strict'][$k3]==1 && $gift_strict==0) {
+                                    #单独
+                                    $gift_strict=1;
+                                } elseif ($gift_content['strict'][$k3]==2 && ($gift_strict==0 || $gift_strict==2)) {
+                                    #叠加
+                                    $gift_strict=2;
+                                } else {
+                                    continue;
+                                }
+
+                                $gift_project = '随赠项目：';
+                                if ($gift_content['type'][$k3]==1) {
+                                    $gift_project .= '积分；';
+
+                                    if ($gift_content['points_type'][$k3]==1) {
+                                        $gift_project .= '按每订单/次，赠送'.$gift_content['points_send'][$k3].'积分；';
+                                    } elseif ($gift_content['points_type'][$k3]==2) {
+                                        if ($v2['price']>=$gift_content['points_money'][$k3]) {
+                                            $points_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['points_currency']])->first()->currency_symbol_standard;
+                                            $gift_project .= '按金额满 '.$points_currency.' '.number_format($gift_content['points_money'][$k3], 2).'，赠送'.$gift_content['points_send'][$k3].'积分；';
+                                        }
+                                    }
+                                } elseif ($gift_content['type'][$k3]==2) {
+                                    $gift_project .= '卡券；';
+                                    $coupon_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['coupon_currency']])->first()->currency_symbol_standard;
+                                    $gift_project .= '赠送价值 '.$coupon_currency.' '.$gift_content['coupon_money'][$k3].' *'.$gift_content['coupon_num'][$k].'张；';
+                                } elseif ($gift_content['type'][$k3]==3) {
+                                    $gift_project .= '随赠；';
+
+                                    if ($gift_content['accgift_type'][$k3]==1) {
+                                        $gift_project .= '虚拟物品：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'个';
+                                    } elseif ($gift_content['accgift_type'][$k3]==2) {
+                                        $gift_project .= '额外服务：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'次';
+                                    } elseif ($gift_content['accgift_type'][$k3]==3) {
+                                        $gift_project .= '实物赠品：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'个';
+                                    }
+                                }
+
+                                $gift_arr = [
+                                    'name'=>$name,
+                                    'desc'=>$gift_project,
+                                    'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['points_currency']])->first()->currency_symbol_standard,
+                                    'price'=>'0.00'
+                                ];
+                                $data[$k]['services']['additional'][] = $gift_arr;
+                            }
+                        }
+                        if (!empty($goods['noinclude_content'])) {
+                            #4、价格未含
+                            $noinclude_content = json_decode($goods['noinclude_content'], true);
+                            foreach ($noinclude_content['name'] as $k3=>$v3) {
+                                $data[$k]['services']['additional'][] = [
+                                    'name'=>$v3,
+                                    'desc'=>$noinclude_content['desc'][$k3],
+                                    'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$noinclude_content['currency']])->first()->currency_symbol_standard,
+                                    'price'=>number_format($noinclude_content['price'][$k3], 2)
+                                ];
+                                $data[$k]['services']['additional_money'] += $noinclude_content['price'][$k3];
+                            }
+                        }
+                    }
+                }
+                #附加费用=======================================end
+
+                #潜在费用=======================================start
+                if ($goods['shop_id']==0) {
+                    $services_ids = Db::table('cost_service')->where(['pid' => 3, 'company_id' => 0])->get();
+                    $services_ids = objtoarr($services_ids);
+                    $service_ids_arr = '';
+                    foreach ($services_ids as $sk => $sv) {
+                        $service_ids_arr .= $sv['id'] . ',';
+                    }
+
+                    $data[$k]['services']['potential'] = Db::table('goods_services')->whereRaw('company_id=0 and find_in_set(service_id,"' . rtrim($service_ids_arr, ',') . '")')->get();
+                    $data[$k]['services']['potential'] = objtoarr($data[$k]['services']['potential']);
+                    foreach ($data[$k]['services']['potential'] as $k3 => $v3) {
+                        $data[$k]['services']['potential'][$k3]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id' => $v3['currency']])->first()->currency_symbol_standard;
+                        if ($v3['is_select'] == 1) {
+                            $data[$k]['services']['potential_money'] += $v3['price'];
+                        }
+                    }
+                } else {
+                    #商户企业id
+
+                    if (empty($goods['potential_content'])) {
+                        $data[$k]['services']['potential'] = [];
+                    } else {
+                        if (!empty($goods['potential_content'])) {
+                            #1、潜在收费判断
+                            $potential_content = json_decode($goods['potential_content'], true);
+
+                            foreach ($potential_content['name'] as $k3 => $v3) {
+                                $data[$k]['services']['potential'][] = [
+                                    'name' => $v3,
+                                    'desc' => $potential_content['desc'][$k3],
+                                    'currency' => Db::connection('shop_db')->table('centralize_currency')->where(['id' => $potential_content['currency']])->first()->currency_symbol_standard,
+                                    'price' => number_format($potential_content['price'][$k3], 2)
+                                ];
+                                $data[$k]['services']['potential_money'] += $potential_content['price'][$k3];
+                            }
+                        }
+                    }
+                }
+                #潜在费用=======================================end
+            }
+
+            #商品附加费用：卖家运费/卖家要的费用
+            #增值服务=======================================start
+            $data[$k]['services']['increment_money'] = 0;
+
+            $services_ids = Db::table('cost_service')->where(['pid'=>1,'company_id'=>0])->get();
+            $services_ids = objtoarr($services_ids);
+            $service_ids_arr = '';
+            foreach ($services_ids as $sk=>$sv) {
+                $service_ids_arr .= $sv['id'].',';
+            }
+
+            $data[$k]['services']['increment'] = Db::table('goods_services')->whereRaw('company_id=0 and find_in_set(service_id,"'.rtrim($service_ids_arr, ',').'")')->get();
+            $data[$k]['services']['increment'] = objtoarr($data[$k]['services']['increment']);
+
+            foreach ($data[$k]['services']['increment'] as $k2=>$v2) {
+                $data[$k]['services']['increment'][$k2]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v2['currency']])->first()->currency_symbol_standard;
+                if ($v2['is_select']==1) {
+                    $data[$k]['services']['increment'][$k2]['final_money'] = $v2['price'];
+                } else {
+                    $data[$k]['services']['increment'][$k2]['final_money'] = '0.00';
+                }
+            }
+
+            if (!empty($data[$k]['services_old'])) {
+                #已选服务
+                $data[$k]['services_old'] = json_decode($data[$k]['services_old'], true);
+
+                foreach ($data[$k]['services_old'] as $k2=>$v2) {
+                    $services = Db::table('goods_services')->where(['id'=>$v2['service_id']])->first();
+                    $services = objtoarr($services);
+
+                    if ($services['type']==1) {
+                        #照片服务/价格递增
+                        if ($v2['photonum']>=1) {
+                            if ($v2['photonum']>=$services['num']) {
+                                $services['price'] = $services['price'] + (($v2['photonum'] - $services['num']) * $services['interval_price']);
+                                $data[$k]['services']['increment_money'] += $services['price'];
+                                $data[$k]['services']['increment'][$k2]['final_money'] = $services['price'];
+                            }
+                        }
+                    } else {
+                        #其他服务
+                        $data[$k]['services']['increment_money'] += $services['price'];
+                        $data[$k]['services']['increment'][$k2]['final_money'] = $services['price'];
+                    }
+                }
+            } else {
+                #未选服务
+                foreach ($data[$k]['services']['increment'] as $k2=>$v2) {
+                    if ($v2['is_select']==1) {
+                        $data[$k]['services']['increment_money'] += $v2['price'];
+                    }
+                }
+            }
+
+            $data[$k]['services']['increment_money'] = number_format($data[$k]['services']['increment_money'], 2);
+            #增值服务=======================================end
+
+            #当前购物车id的商品（规格）总价（商品（规格）单价+各服务费用）
+            if ($cart_id==$v['cart_id']) {
+                $data[$k]['total_price'] = number_format($goods_price+$data[$k]['services']['additional_money']+$data[$k]['services']['increment_money']+$data[$k]['services']['potential_money'], 2);
+                #返回的购物车总价
+                $update['total_price'] = $data[$k]['total_price'];
+            }
+            #所有清单的最终价格
+            $update['final_price'] += $goods_price+$data[$k]['services']['additional_money']+$data[$k]['services']['increment_money']+$data[$k]['services']['potential_money'];
+        }
+        #所有清单的最终价格
+        $update['final_price'] = number_format($update['final_price'], 2);
+
+        return Response()->json(['code'=>0,'data'=>$update]);
+    }
+
+    #更新购物清单的各种费用
+    public function update_cart_fees_info($datas)
+    {
+        $data = Db::table('cart')->whereRaw('cart_id in ('.$datas['cart_id'].') and user_id='.$datas['user_id'])->get();
+        $data = objtoarr($data);
+
+        $shop_money = 0;
+        foreach ($data as $k=>$v) {
+            #这层相当于在店铺
+            $data[$k]['sku_info'] = Db::table('cart_sku')->where(['cart_id'=>$v['cart_id'],'selected'=>1,'is_buy'=>0])->get();
+            $data[$k]['sku_info'] = objtoarr($data[$k]['sku_info']);
+
+            foreach ($data[$k]['sku_info'] as $k2=>$v2) {
+                #这层相当于是该店铺下的各规格商品
+                $goods_sku = Db::table('goods_sku')->where(['sku_id'=>$v2['sku_id']])->first();
+                $goods_sku = objtoarr($goods_sku);
+                $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
+                $goods = Db::table('goods')->where(['goods_id'=>$goods_sku['goods_id']])->first();
+                $goods = objtoarr($goods);
+
+                if ($goods['shop_id']>0) {
+                    #附加费用=======================================start
+                    if (!empty($goods['otherfees_content'])) {
+                        #1、其他费用判断
+                        $otherfees_content = json_decode($goods['otherfees_content'], true);
+
+                        $real_otherfees_content = [];
+                        $real_otherfees_money=0;
+                        foreach ($otherfees_content['fees_name'] as $k3=>$v3) {
+                            if ($otherfees_content['fees_condition'][$k3]==2) {
+                                #有条件触发
+
+                                if ($otherfees_content['fees_trigger'][$k3]==1) {
+                                    #要素触发
+                                    if ($otherfees_content['fees_trigger2_equal'][$k3]==1) {
+                                        #少于
+
+                                        #大于/等于就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                            #购买数量
+                                            if ($v2['goods_num']>=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                            #购买金额
+                                            if ($v2['price']>=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==2) {
+                                        #少于或等于
+
+                                        #大于就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                            #购买数量
+                                            if ($v2['goods_num']>$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                            #购买金额
+                                            if ($v2['price']>$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==3) {
+                                        #等于
+
+                                        #不等于就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                            #购买数量
+                                            if ($v2['goods_num']!=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                            #购买金额
+                                            if ($v2['price']!=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==4) {
+                                        #大于
+
+                                        #少于/等于就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                            #购买数量
+                                            if ($v2['goods_num']<=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                            #购买金额
+                                            if ($v2['price']<=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==5) {
+                                        #大于或等于
+
+                                        #少于就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                            #购买数量
+                                            if ($v2['goods_num']<$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                            #购买金额
+                                            if ($v2['price']<$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                } elseif ($otherfees_content['fees_trigger'][$k3]==2) {
+                                    #型号触发
+                                    if ($otherfees_content['fees_options'][$k3]==-1) {
+                                        continue;
+                                    }
+                                    #首先找到商户商品表id和规格
+                                    $goods_merchant = Db::table('goods_merchant')->where(['shelf_id'=>$v['goods_id']])->first();
+                                    $goods_sku_merchant = Db::table('goods_sku_merchant')->where(['goods_id'=>$goods_merchant->id,'sku_id'=>$otherfees_content['fees_options'][$k3]])->first();
+                                    $goods_sku_merchant = objtoarr($goods_sku_merchant);
+
+                                    #不是当前规格就退出当前循环，进行下一个循环（不满足条件）
+                                    if ($goods_sku['spec_names']!=$goods_sku_merchant['spec_names']) {
+                                        continue;
+                                    }
+                                } elseif ($otherfees_content['fees_trigger'][$k3]==3) {
+                                    #物流触发（待做）
+                                }
+                            }
+
+                            #收费标准
+                            if ($otherfees_content['fees_standard'][$k3]==1) {
+                                #定额计价
+                                $real_otherfees_content[] = [
+                                    'name'=>$otherfees_content['fees_name'][$k3],
+                                    'desc'=>$otherfees_content['fees_desc'][$k3],
+                                    'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                    'price'=>number_format($otherfees_content['fees_standard_price'][$k3], 2)
+                                ];
+                                $real_otherfees_money += $otherfees_content['fees_standard_price'][$k3];
+                            } elseif ($otherfees_content['fees_standard'][$k3]==2) {
+                                #比例计价
+                                if ($otherfees_content['fees_standard_ratio'][$k3]==1) {
+                                    #计费基数
+                                    $real_otherfees_content[] = [
+                                        'name'=>$otherfees_content['fees_name'][$k3],
+                                        'desc'=>$otherfees_content['fees_desc'][$k3],
+                                        'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                        'price'=>number_format($otherfees_content['fees_standard_ratio_price'][$k3], 2)
+                                    ];
+                                    $real_otherfees_money += $otherfees_content['fees_standard_ratio_price'][$k3];
+                                } elseif ($otherfees_content['fees_standard_ratio'][$k3]==2) {
+                                    #计费比率
+                                    $ratio_price = ($otherfees_content['fees_standard_ratio_ratio'][$k3] / 100) * $v2['price'];
+                                    $real_otherfees_content[] = [
+                                        'name'=>$otherfees_content['fees_name'][$k3],
+                                        'desc'=>$otherfees_content['fees_desc'][$k3],
+                                        'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                        'price'=>number_format($ratio_price, 2)
+                                    ];
+                                    $real_otherfees_money += $ratio_price;
+                                }
+                            }
+                        }
+
+                        #更改购物清单其他费用的信息
+                        $shop_money += $real_otherfees_money;
+                        Db::table('cart')->where(['cart_id'=>$v['cart_id']])->update([
+                            'otherfee_content'=>json_encode($real_otherfees_content, true),
+                            'otherfee_currency'=>$goods['goods_currency'],
+                            'otherfee_total'=>$real_otherfees_money
+                        ]);
+                    }
+
+                    if (!empty($goods['reduction_content'])) {
+                        #2、销售优惠减免判断
+                        $reduction_content = json_decode($goods['reduction_content'], true);
+
+                        $real_reduction_content = [];
+                        $real_reduction_money=0;
+                        $reduction_strict = 0;
+                        $reduction_arr = [];
+                        foreach ($reduction_content['preferential_blong'] as $k3=>$v3) {
+                            $rule_name = Db::table('ssl_reduction_rule')->where(['id'=>$reduction_content['type'][$k3]])->first();
+                            $rule_name = objtoarr($rule_name);
+                            $rule_name['content'] = json_decode($rule_name['content'], true);
+
+                            $name = '';
+                            if ($v3==1) {
+                                $name = '卖家优惠';
+                            } elseif ($v3==2) {
+                                $name = '平台优惠';
+                            } elseif ($v3==3) {
+                                $name = '他方优惠';
+                            }
+
+                            if ($reduction_content['strict'][$k3]==1 && $reduction_strict==0) {
+                                #单独
+                                if ($v2['price']>$reduction_content['price1'][$k3]) {
+                                    $reduction_arr = [
+                                        'name'=>$name,
+                                        'desc'=>$rule_name['content'][0].$reduction_content['price1'][$k3].$rule_name['content'][2].$reduction_content['price2'][$k3],
+                                        'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$reduction_content['currency1']])->first()->currency_symbol_standard,
+                                        'price'=>'-'.number_format($reduction_content['price2'][$k3], 2)
+                                    ];
+                                    $real_reduction_content[] = $reduction_arr;
+                                    $real_reduction_money += $reduction_content['price2'][$k3];
+                                    break;
+                                }
+                                $reduction_strict=1;
+                            } elseif ($reduction_content['strice'][$k3]==2 && ($reduction_strict==0 || $reduction_strict==2)) {
+                                #叠加
+                                if ($v2['price']>$reduction_content['price1'][$k3]) {
+                                    $reduction_arr = [
+                                        'name' => $name,
+                                        'desc' => $rule_name['content'][0] . $reduction_content['price1'][$k3] . $rule_name['content'][2] . $reduction_content['price2'][$k3],
+                                        'currency' => Db::connection('shop_db')->table('centralize_currency')->where(['id' => $reduction_content['currency1']])->first()->currency_symbol_standard,
+                                        'price' => '-'.number_format($reduction_content['price2'][$k3], 2)
+                                    ];
+                                    $real_reduction_content[] = $reduction_arr;
+                                    $real_reduction_money += $otherfees_content['price2'][$k3];
+                                }
+                                $reduction_strict=2;
+                            }
+                        }
+
+                        #更改购物清单其他费用的信息
+                        $shop_money -= $real_reduction_money;
+                        Db::table('cart')->where(['cart_id'=>$v['cart_id']])->update([
+                            'reduction_content'=>json_encode($real_reduction_content, true),
+                            'reduction_money'=>$real_reduction_money
+                        ]);
+                    }
+
+                    if (!empty($goods['gift_content'])) {
+                        #3、随赠优惠判断
+                        $gift_content = json_decode($goods['gift_content'], true);
+
+                        $real_gift_content = [];
+                        $real_gift_money=0;
+                        $gift_strict = 0;
+                        foreach ($gift_content['preferential_blong'] as $k3=>$v3) {
+                            $name = '';
+                            if ($v3==1) {
+                                $name = '卖家优惠';
+                            } elseif ($v3==2) {
+                                $name = '平台优惠';
+                            } elseif ($v3==3) {
+                                $name = '他方优惠';
+                            }
+
+                            if ($gift_content['strict'][$k3]==1 && $gift_strict==0) {
+                                #单独
+                                $gift_strict=1;
+                            } elseif ($gift_content['strict'][$k3]==2 && ($gift_strict==0 || $gift_strict==2)) {
+                                #叠加
+                                $gift_strict=2;
+                            } else {
+                                continue;
+                            }
+
+                            $gift_project = '随赠项目：';
+                            if ($gift_content['type'][$k3]==1) {
+                                $gift_project .= '积分；';
+
+                                if ($gift_content['points_type'][$k3]==1) {
+                                    $gift_project .= '按每订单/次，赠送'.$gift_content['points_send'][$k3].'积分；';
+                                } elseif ($gift_content['points_type'][$k3]==2) {
+                                    if ($v2['price']>=$gift_content['points_money'][$k3]) {
+                                        $points_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['points_currency']])->first()->currency_symbol_standard;
+                                        $gift_project .= '按金额满 '.$points_currency.' '.number_format($gift_content['points_money'][$k3], 2).'，赠送'.$gift_content['points_send'][$k3].'积分；';
+                                    }
+                                }
+                            } elseif ($gift_content['type'][$k3]==2) {
+                                $gift_project .= '卡券；';
+                                $coupon_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['coupon_currency']])->first()->currency_symbol_standard;
+                                $gift_project .= '赠送价值 '.$coupon_currency.' '.$gift_content['coupon_money'][$k3].' *'.$gift_content['coupon_num'][$k].'张；';
+                            } elseif ($gift_content['type'][$k3]==3) {
+                                $gift_project .= '随赠；';
+
+                                if ($gift_content['accgift_type'][$k3]==1) {
+                                    $gift_project .= '虚拟物品：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'个';
+                                } elseif ($gift_content['accgift_type'][$k3]==2) {
+                                    $gift_project .= '额外服务：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'次';
+                                } elseif ($gift_content['accgift_type'][$k3]==3) {
+                                    $gift_project .= '实物赠品：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'个';
+                                }
+                            }
+
+                            $real_gift_content[] = [
+                                'name'=>$name,
+                                'desc'=>$gift_project,
+                                'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['points_currency']])->first()->currency_symbol_standard,
+                                'price'=>'0.00'
+                            ];
+                        }
+
+                        #更改购物清单其他费用的信息
+                        $shop_money += $real_gift_money;
+                        Db::table('cart')->where(['cart_id'=>$v['cart_id']])->update([
+                            'prefe_gift'=>json_encode($real_gift_content, true),
+                            'gift_money'=>$real_gift_money
+                        ]);
+                    }
+
+                    if (!empty($goods['noinclude_content'])) {
+                        #4、价格未含
+                        $noinclude_content = json_decode($goods['noinclude_content'], true);
+
+                        $real_noinclude_content = [];
+                        $real_noinclude_money=0;
+                        foreach ($noinclude_content['name'] as $k3=>$v3) {
+                            $real_noinclude_content[] = [
+                                'name'=>$v3,
+                                'desc'=>$noinclude_content['desc'][$k3],
+                                'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$noinclude_content['currency']])->first()->currency_symbol_standard,
+                                'price'=>number_format($noinclude_content['price'][$k3], 2)
+                            ];
+                            $real_noinclude_money += $noinclude_content['price'][$k3];
+                        }
+
+                        #更改购物清单其他费用的信息
+                        $shop_money += $real_noinclude_money;
+                        Db::table('cart')->where(['cart_id'=>$v['cart_id']])->update([
+                            'noinclude_content'=>json_encode($real_noinclude_content, true),
+                            'noinclude_money'=>$real_noinclude_money
+                        ]);
+                    }
+                    #附加费用=======================================end
+
+                    #潜在费用=======================================start
+                    if (!empty($goods['potential_content'])) {
+                        $potential_content = json_decode($goods['potential_content'], true);
+
+                        $real_potential_content = [];
+                        $real_potential_money = 0;
+                        foreach ($potential_content['name'] as $k3 => $v3) {
+                            $real_potential_content[] = [
+                                'name' => $v3,
+                                'desc' => $potential_content['desc'][$k3],
+                                'currency' => Db::connection('shop_db')->table('centralize_currency')->where(['id' => $potential_content['currency'][$k3]])->first()->currency_symbol_standard,
+                                'price' => number_format($potential_content['price'][$k3], 2)
+                            ];
+                            $real_potential_money += $potential_content['price'][$k3];
+                        }
+
+                        #更改购物清单其他费用的信息
+                        $shop_money += $real_potential_money;
+                        Db::table('cart')->where(['cart_id'=>$v['cart_id']])->update([
+                            'potential_content'=>json_encode($real_potential_content, true),
+                            'potential_money'=>$real_potential_money
+                        ]);
+                    }
+                    #潜在费用=======================================end
+                }
+            }
+        }
+
+        return $shop_money;
+    }
+
+    #申请订购
+    public function apply_order(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $cart_id = explode(',', rtrim($data['cart_id'], ','));
+
+        $website_user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user')['gogo_id']])->first();
+
+        #正式修改购物清单里含商户商品的已判断符合条件的费用信息
+        $shop_goods_money = $this->update_cart_fees_info(['cart_id'=>rtrim($data['cart_id'], ','),'user_id'=>$website_user->id]);
+
+        DB::beginTransaction();
+        try {
+            $user = get_userid();#官网用户id
+            $ordersn = get_ordersn(2);#订购单编号
+
+            #订购单总价格
+            $true_price = $shop_goods_money;
+
+            #订购单信息
+            $content = ['goods_info' => [], 'warehouse_id' => 16];
+            $cart_info = [];
+            foreach ($cart_id as $k => $v) {
+                $cart_sku = Db::table('cart_sku')->where(['cart_id' => $v,'selected'=>1])->get();
+                $cart_sku = objtoarr($cart_sku);
+
+                foreach ($cart_sku as $k2=>$v2) {
+                    $true_price = $true_price + $v2['price'];
+
+                    #组装订购清单商品数据
+                    $cart = Db::table('cart')->where(['cart_id' => $v])->first();
+
+                    if (empty($content['goods_info'])) {
+                        $content['goods_info'] = array_merge($content['goods_info'], [[
+                            'good_id' => $cart->goods_id,
+                            #其他费用
+                            'otherfee_content' => $cart->otherfee_content,
+                            'otherfee_currency' => $cart->otherfee_currency,
+                            'otherfee_total' => $cart->otherfee_total,
+                            #优惠减免
+                            'reduction_content'=>$cart->reduction_content,
+                            'reduction_money' => $cart->reduction_money,
+                            #随赠优惠
+                            'prefe_gift'=>$cart->prefe_gift,
+                            'prefe_reduction' => $cart->prefe_reduction,#废弃
+                            'gift_money' => $cart->gift_money,
+                            #价格未含
+                            'noinclude_content'=>$cart->noinclude_content,
+                            'noinclude_money'=>$cart->noinclude_money,
+                            #潜在收费
+                            'potential_content'=>$cart->potential_content,
+                            'potential_money'=>$cart->potential_money,
+                            #监管文件
+                            'file' => $cart->file,
+                            #其他+增值服务费用（第三方平台的商品所有的服务都在这里，商户商品除外）
+                            'services' => $cart->services,
+                            'sku_info' => []
+                        ]]);
+                    } else {
+                        $is_have = 0;
+                        foreach ($content['goods_info'] as $k3 => $v3) {
+                            if ($v3['good_id'] == $cart->goods_id) {
+                                $is_have = 1;
+                            }
+                        }
+
+                        if ($is_have == 0) {
+                            #没出现相同商品id
+                            $content['goods_info'] = array_merge($content['goods_info'], [[
+                                'good_id' => $cart->goods_id,
+                                #其他费用
+                                'otherfee_content' => $cart->otherfee_content,
+                                'otherfee_currency' => $cart->otherfee_currency,
+                                'otherfee_total' => $cart->otherfee_total,
+                                #优惠减免
+                                'reduction_content'=>$cart->reduction_content,
+                                'reduction_money' => $cart->reduction_money,
+                                #随赠优惠
+                                'prefe_gift'=>$cart->prefe_gift,
+                                'prefe_reduction' => $cart->prefe_reduction,#废弃
+                                'gift_money' => $cart->gift_money,
+                                #价格未含
+                                'noinclude_content'=>$cart->noinclude_content,
+                                'noinclude_money'=>$cart->noinclude_money,
+                                #潜在收费
+                                'potential_content'=>$cart->potential_content,
+                                'potential_money'=>$cart->potential_money,
+                                #监管文件
+                                'file' => $cart->file,
+                                #其他+增值服务费用（第三方平台的商品所有的服务都在这里，商户商品除外
+                                'services' => $cart->services,
+                                'sku_info' => []
+                            ]]);
+                        }
+                    }
+
+                    #在响应商品id下插入规格信息
+                    foreach ($content['goods_info'] as $k3 => $v3) {
+                        if ($v3['good_id'] == $cart->goods_id) {
+                            $cart_info = array_merge($cart_info, [$v]);
+                            $content['goods_info'][$k3]['sku_info'] = array_merge($content['goods_info'][$k3]['sku_info'], [[
+                                'sku_id' => $v2['sku_id'],
+                                'goods_num' => $v2['goods_num'],
+                                'price' => $v2['price'],
+                                'currency' => $v2['currency'],
+                                'cart_id' => $v2['cart_id'],
+                            ]]);
+                        }
+                    }
+
+                    #选购清单下的规格商品修改为已订购
+                    Db::table('cart_sku')->where(['id'=>$v2['id']])->update(['is_buy'=>1]);
+                }
+            }
+
+            sleep(1);
+
+            #更改当前选购清单为已买/未买
+            $cart_info = array_values(array_unique($cart_info));
+            foreach ($cart_info as $k=>$v) {
+                #更改当前选购清单为已买/未买
+                $is_buy = 1;
+                $cart_sku = Db::table('cart_sku')->where(['cart_id' => $v])->get();
+                $cart_sku = objtoarr($cart_sku);
+                foreach ($cart_sku as $k2=>$v2) {
+                    if ($v2['is_buy']==0) {
+                        $is_buy = 0;
+                    }
+                }
+                Db::table('cart')->where(['cart_id' => $v])->update(['is_buy'=>$is_buy]);
+
+                #计算服务费用
+                $cart = Db::table('cart')->where(['cart_id' => $v])->first();
+                $cart = objtoarr($cart);
+                $cart['services'] = json_decode($cart['services'], true);
+                $services_money = 0;
+
+                foreach ($cart['services'] as $k2=>$v2) {
+                    $services = Db::table('goods_services')->where(['id'=>$v2['service_id']])->first();
+                    $services = objtoarr($services);
+                    if ($services['type']==1) {
+                        if ($v2['photonum']>$services['num']) {
+                            $services_money += $services['price'] + (($v2['photonum'] - 1) * $services['interval_price']);
+                        } else {
+                            $services_money += $services['price'];
+                        }
+                    } else {
+                        $services_money += $services['price'];
+                    }
+                }
+
+//                - $cart['reduction_money'] - $cart['gift_money'] + $cart['otherfee_total']
+                $true_price = $true_price + $services_money;
+            }
+
+            $orderid = Db::connection('shop_db')->table('website_order_list')->insertGetId([
+                'user_id' => $user->id,
+                'ordersn' => $ordersn,
+                'order_type' => 1,
+                'pay_method' => 1,
+                'true_money' => $true_price,
+                'content' => json_encode($content, true),
+                'status' => -2,#待确认有无货
+                'createtime' => time(),
+            ]);
+
+            if ($orderid > 0) {
+                shuntWechat([
+                    'first' => '订购清单[' . $ordersn . ']',
+                    'keyword1' => '订购清单[' . $ordersn . ']',
+                    'keyword2' => '申请订购',
+                    'remark' => '查看详情',
+                    'url' => 'https://www.gogo198.net/?s=shop/audit',
+                    'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
+                ]);
+                DB::commit();
+                return Response()->json(['code'=>0,'msg'=>'申请订购成功，请等待消息','data'=>['ordersn'=>$ordersn]]);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            echo $e->getMessage();
+            echo $e->getCode();
+            return Response()->json(['code'=>-1,'msg'=>'系统错误，请联系管理员']);
+        }
+    }
+
+    #收银台
+    public function cashier(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $orderid = intval($data['orderid']);
+        $origin_page = '/cashier?orderid='.$orderid;
+
+        $user = session('user');
+        if (empty($user)) {
+            header('Location: /login.html?open=4&param2='.base64_encode($origin_page));
+        }
+
+        #订单信息
+        $order = Db::connection('shop_db')->table('website_order_list')->where(['id'=>$orderid])->first();
+        $order = objtoarr($order);
+        $order['content'] = json_decode($order['content'], true);
+        $order['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$order['currency']])->first()->currency_symbol_standard;
+
+        #国家
+        $country = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid'=>5])->get();
+        $country = objtoarr($country);
+
+        $is_inner=1;#内页打开首页头部，不显示消息轮播框
+
+        $website = get_website();
+        $page_info = get_pageinfo('/goods');
+        $website['background'] = $page_info['content']['background'];
+        $website['content'] = $page_info['content']['content'];
+        $website['fontcolor'] = $page_info['content']['fontcolor'];
+        $website['agentLink'] = $page_info['content']['agent_link'];
+
+        return view('goods.cashier', compact('is_inner', 'origin_page', 'website', 'country', 'order'));
+    }
+
+    #获取国家收银台配置
+    public function get_cashier_country(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $country_id = intval($data['country']);
+        $orderid = intval($data['orderid']);
+
+        #订单信息
+        $order = Db::connection('shop_db')->table('website_order_list')->where(['id'=>$orderid])->first();
+        $order = objtoarr($order);
+
+        $ishave = Db::table('cashier_country')->where(['country_id'=>$country_id])->first();
+        $ishave = objtoarr($ishave);
+        if (empty($ishave)) {
+            return response()->json(['code'=>-1,'msg'=>'暂无该国家地区的收银台信息']);
+        } else {
+            $shifu = ['currency'=>'','price'=>''];
+            $category = Db::table('cashier_category')->where(['country_id'=>$ishave['id']])->get();
+            $category = objtoarr($category);
+
+            foreach ($category as $k=>$v) {
+                $category[$k]['children'] = Db::table('settlement')->where(['type_id'=>$v['id']])->get();
+                $category[$k]['children'] = objtoarr($category[$k]['children']);
+
+                if (!empty($category[$k]['children'])) {
+                    #查询汇率
+                    foreach ($category[$k]['children'] as $k2=>$v2) {
+                        #通道汇率（订单币种:通道币种=汇率）
+                        if ($order['currency'] == $v2['currency']) {
+                            #订单币种=通道币种均为CNY
+                            $category[$k]['children'][$k2]['rate'] = "1:1.000";
+                        } else {
+                            if ($order['currency']==5) {
+                                #订单币种为CNY
+                                #查找cny对换其他币种的汇率
+                                $currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v2['currency']])->first()->currency_symbol_standard;
+                                $other_currency_rate = Db::connection('shop_db')->table('website_exchange_rate')->where(['symbol'=>$currency])->first();
+                                if (!empty($other_currency_rate)) {
+//                                    $dotPosition = strpos($other_currency_rate->rate, '.'); // 找到小数点的位置
+//                                    if ($dotPosition !== false) {
+//                                        $result = substr($other_currency_rate->rate, 0, $dotPosition + 4); // 从第0个字符开始，截取长度为小数点位置+4的子字符串
+//
+//                                        $category[$k]['children'][$k2]['rate'] = "1:".$result;
+//                                    }
+                                    preg_match('/^(\d+\.\d{3})/', $other_currency_rate->rate, $matches);
+                                    $category[$k]['children'][$k2]['rate'] = "1:".$matches[1];
+                                } else {
+                                    $category[$k]['children'][$k2]['rate'] = "暂无数据";
+                                }
+                            } else {
+                                #订单币种不为CNY
+                                $category[$k]['children'][$k2]['rate'] = "暂无数据";
+                            }
+                        }
+
+                        #通道币种
+                        $category[$k]['children'][$k2]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v2['currency']])->first()->currency_symbol_standard;
+                        #通道手续费
+                        $category[$k]['children'][$k2]['service_charge'] = json_decode($v2['service_charge'], true);
+
+                        #当前通道费率信息
+                        $exchange_money=0;#将订单金额换算为通道金额后的金额
+                        foreach ($category[$k]['children'][$k2]['service_charge'] as $k3=>$v3) {
+                            if ($order['currency'] == $v2['currency']) {
+                                #订单币种=通道币种均为CNY，无需换算
+                                if ($v3['end_type']==1) {
+                                    #数值
+                                    if ($v3['start_money']<=$order['true_money'] && $order['true_money']<$v3['end_money']) {
+                                        if ($v3['charge_type']==1) {
+                                            #按额
+                                            $category[$k]['children'][$k2]['rate_money'] = $order['true_money'] * ($v3['charge_num'] / 100);
+                                        } elseif ($v3['charge_type']==2) {
+                                            #按笔
+                                            $category[$k]['children'][$k2]['rate_money'] = $v3['charge_num'];
+                                        }
+                                        break;
+                                    }
+                                } elseif ($v3['end_type']==2) {
+                                    #以上
+                                    if ($v3['start_money']<=$order['true_money']) {
+                                        if ($v3['charge_type']==1) {
+                                            #按额
+                                            $category[$k]['children'][$k2]['rate_money'] = $order['true_money'] * ($v3['charge_num'] / 100);
+                                        } elseif ($v3['charge_type']==2) {
+                                            #按笔
+                                            $category[$k]['children'][$k2]['rate_money'] = $v3['charge_num'];
+                                        }
+                                        break;
+                                    } else {
+                                        #不符合条件
+                                        $category[$k]['children'][$k2]['rate_money'] = '金额不符合条件';
+                                        break;
+                                    }
+                                } else {
+                                    #不符合条件
+                                    $category[$k]['children'][$k2]['rate_money'] = '金额不符合条件';
+                                    break;
+                                }
+                            } else {
+                                #订单币种!=通道币种
+                                if ($order['currency']==5) {
+                                    #订单币种为CNY，需要将订单币种换成通道币种金额
+                                    $currency = Db::connection('shop_db')->table('centralize_currency')->where(['id' => $v2['currency']])->first()->currency_symbol_standard;
+                                    $other_currency_rate = Db::connection('shop_db')->table('website_exchange_rate')->where(['symbol' => $currency])->first();
+
+                                    #通道实付费用
+                                    $category[$k]['children'][$k2]['true_money'] = 0;
+
+                                    if (!empty($other_currency_rate)) {
+                                        $exchange_money = $order['true_money'] * $other_currency_rate->rate;#换算为通道的金额
+
+                                        #通道手续费
+                                        if ($v3['end_type']==1) {
+                                            #数值
+                                            if ($v3['start_money']<=$exchange_money && $exchange_money<$v3['end_money']) {
+                                                if ($v3['charge_type']==1) {
+                                                    #按额
+                                                    $category[$k]['children'][$k2]['rate_money'] = $exchange_money * ($v3['charge_num'] / 100);
+                                                } elseif ($v3['charge_type']==2) {
+                                                    #按笔
+                                                    $category[$k]['children'][$k2]['rate_money'] = $v3['charge_num'];
+                                                }
+                                                break;
+                                            }
+                                        } elseif ($v3['end_type']==2) {
+                                            #以上
+                                            if ($v3['start_money']<=$exchange_money) {
+                                                if ($v3['charge_type']==1) {
+                                                    #按额
+                                                    $category[$k]['children'][$k2]['rate_money'] = $exchange_money * ($v3['charge_num'] / 100);
+                                                } elseif ($v3['charge_type']==2) {
+                                                    #按笔
+                                                    $category[$k]['children'][$k2]['rate_money'] = $v3['charge_num'];
+                                                }
+                                                break;
+                                            } else {
+                                                #不符合条件
+                                                $category[$k]['children'][$k2]['rate_money'] = '金额不符合条件';
+                                                break;
+                                            }
+                                        } else {
+                                            #不符合条件
+                                            $category[$k]['children'][$k2]['rate_money'] = '金额不符合条件';
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    #订单币种为其他币种，暂时未有（待做）
+                                    $category[$k]['children'][$k2]['rate_money'] = '暂无该国地币种兑换此通道币种汇率信息';
+                                    break;
+                                }
+                            }
+                        }
+
+                        #通道实付费用=订单换算金额+订单换算手续费金额
+                        if ($order['currency'] == $v2['currency']) {
+                            #订单币种=通道币种
+                            #实付费用
+                            $category[$k]['children'][$k2]['true_money'] = $order['true_money'] + floatval($category[$k]['children'][$k2]['rate_money']);
+                            #订单费用
+                            $category[$k]['children'][$k2]['order_money'] = $order['true_money'];
+                        } else {
+                            #订单币种!=通道币种
+                            #实付费用
+                            $category[$k]['children'][$k2]['true_money'] = $exchange_money + floatval($category[$k]['children'][$k2]['rate_money']);
+                            #订单费用
+                            $category[$k]['children'][$k2]['order_money'] = $exchange_money;
+                        }
+                    }
+                }
+            }
+
+            foreach ($category as $k=>$v) {
+                foreach ($v['children'] as $k2=>$v2) {
+                    $category[$k]['children'][$k2]['rate_money'] = number_format($v2['rate_money'], 2);
+                    $category[$k]['children'][$k2]['true_money'] = number_format($v2['true_money'], 2);
+                    $category[$k]['children'][$k2]['order_money'] = number_format($v2['order_money'], 2);
+                }
+            }
+
+            $currency = Db::connection('shop_db')->table('centralize_currency')->where(['country_id'=>$country_id])->first();
+            $shifu['currency'] = $currency->currency_symbol_standard;
+
+            #实付金额，换算为该国币种
+            if ($currency->country_id == $country_id) {
+                $shifu['price'] = $order['true_money'];
+            } else {
+                $other_currency_rate = Db::connection('shop_db')->table('website_exchange_rate')->where(['symbol'=>$currency->currency_symbol_standard])->first();
+                preg_match('/^(\d+\.\d{3})/', $other_currency_rate->rate, $matches);
+                $shifu['price'] = number_format($order['true_money'] * $matches[1], 2);
+            }
+            return response()->json(['code'=>0,'data'=>$category,'currency'=>$currency->currency_symbol_standard,'shifu'=>$shifu]);
+        }
+    }
+
+    #在线申请
+    public function apply(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $orderid = intval($data['oid']);
+
+        if (isset($data['pa'])) {
+            $time = time();
+            DB::beginTransaction();
+            try {
+                #1、处方信息
+                $starttime = strtotime(date('Y-m-d 00:00:00', $time));
+                $endtime = strtotime(date('Y-m-d 23:59:59', $time));
+                $number = Db::table('user_prescription')->whereRaw('createtime>='.$starttime.' and createtime<='.$endtime)->count();
+                $number += 1;
+                $number = str_pad($number, 3, '0', STR_PAD_LEFT);
+                $ordersn = 'GRP'.date('Ymd').$number;
+                $prescription_id = Db::table('user_prescription')->insertGetId([
+                    'uid'=>session('user.gogo_id'),
+                    'patient_id'=>$data['patient_id'],
+                    'order_id'=>$orderid,
+                    'ordersn'=>$ordersn,
+                    'status'=>0,
+                    'createtime'=>$time
+                ]);
+
+                #2、通知总后台
+                $system = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0])->first();
+                $system = objtoarr($system);
+                if ($system['notice_type']==1) {
+                    $post = json_encode([
+                        'call' => 'confirmCollectionNotice',
+                        'first' => '处方申请消息，请打开查看！',
+                        'keyword1' => '处方申请消息，请打开查看！',
+                        'keyword2' => '已提交待分配',
+                        'keyword3' => date('Y-m-d H:i:s', $time),
+                        'remark' => '点击查看详情',
+                        'url' => 'https://gadmin.gogo198.cn',
+//                    'url' => 'https://shopping.gogo198.cn/check_prescription?prescription_id='.$prescription_id,
+                        'openid' => $system['account'],
+                        'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
+                    ]);
+                    httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+                }
+                DB::commit();
+                return Response()->json(['code'=>0,'msg'=>'提交申请成功']);
+            } catch (\Exception $e) {
+                DB::rollback();//事务回滚
+//            echo $e->getMessage();die;
+//            echo $e->getCode();
+                return Response()->json(['code'=>0,'msg'=>'添加失败']);
+            }
+        } else {
+            $account = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user.gogo_id')])->first();
+            $account = objtoarr($account);
+
+            $order = Db::connection('shop_db')->table('website_order_list')->where(['user_id'=>$account['id'],'id'=>$orderid])->first();
+            $order = objtoarr($order);
+            $order['content'] = json_decode($order['content'], true);
+
+            #过敏史
+            $allergy = Db::connection('shop_db')->table('prescription_allergy')->where(['pid'=>0])->get();
+            $allergy = objtoarr($allergy);
+            foreach ($allergy as $k=>$v) {
+                $allergy[$k]['children'] = Db::connection('shop_db')->table('prescription_allergy')->where(['pid'=>$v['id']])->get();
+                $allergy[$k]['children'] = objtoarr($allergy[$k]['children']);
+            }
+            $allergy = json_encode($allergy, true);
+
+            #疾病
+            $good = Db::table('goods')->where(['goods_id'=>$order['content']['good_id']])->first();
+            $good = objtoarr($good);
+            $disease = Db::table('category')->where(['parent_id'=>$good['cat_id1']])->get();
+            $disease = objtoarr($disease);
+            foreach ($disease as $k=>$v) {
+                $disease[$k]['children'] = Db::table('category')->where(['parent_id'=>$v['cat_id']])->get();
+                $disease[$k]['children'] = objtoarr($disease[$k]['children']);
+            }
+            $disease = json_encode($disease, true);
+
+            #当前账号的患者信息
+            $patient = Db::table('patient')->where(['uid'=>session('user.gogo_id')])->get();
+            $patient = objtoarr($patient);
+
+            if (empty($patient)) {
+                header('Location: /save_patient?oid='.$orderid);
+            }
+
+            #科目
+            $value = Db::table('ssl_platform_value')->where(['cat_id'=>$good['cat_id1'],'cat_id1'=>$good['cat_id'],'cross_catId'=>$good['crossb_cate1']])->first();
+            $value = objtoarr($value);
+            $value['drug'] = json_decode($value['drug'], true);
+            $tag = '';
+            if (!empty($value['drug']['value']['value2'])) {
+                if ($value['drug']['value']['value2']==5) {
+                    $tag = '普通';
+                } elseif ($value['drug']['value']['value2']==6) {
+                    $tag = '儿科';
+                }
+            } else {
+                if ($value['drug']['value']['value']==7) {
+                    $tag = '麻';
+                } elseif ($value['drug']['value']['value']==8) {
+                    $tag = '精';
+                } elseif ($value['drug']['value']['value']==9) {
+                    $tag = '毒';
+                } elseif ($value['drug']['value']['value']==10) {
+                    $tag = '射';
+                } elseif ($value['drug']['value']['value']==11) {
+                    $tag = '外';
+                }
+            }
+
+            return view('goods.apply', compact('orderid', 'allergy', 'disease', 'patient', 'tag'));
+        }
+    }
+
+    #保存用药人信息
+    public function save_patient(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $orderid = intval($data['oid']);
+
+        if (isset($data['pa'])) {
+            if (session('verify_code') != trim($data['code'])) {
+                return Response()->json(['code'=>-1,'msg'=>'手机验证码错误']);
+            }
+
+            $time = time();
+            DB::beginTransaction();
+            try {
+                #1、患者信息
+                $department = Db::table('category')->where(['cat_id'=>$data['disease_id']])->first()->parent_id;
+                $patient_id = Db::table('patient')->insertGetId([
+                    'uid'=>session('user.gogo_id'),
+                    'name'=>trim($data['name']),
+                    'idcard'=>trim($data['idcard']),
+                    'age'=>trim($data['age']),
+                    'height'=>trim($data['height']),
+                    'weight'=>trim($data['weight']),
+                    'mobile'=>trim($data['mobile']),
+                    'department'=>$department,
+                    'disease'=>$data['disease_id'],
+                    'is_allergy'=>$data['is_allergy'],
+                    'allergy_id'=>$data['is_allergy']==1 ? $data['allergy_id'] : '',
+                    'createtime'=>$time
+                ]);
+
+                #2、处方信息
+                $starttime = strtotime(date('Y-m-d 00:00:00', $time));
+                $endtime = strtotime(date('Y-m-d 23:59:59', $time));
+                $number = Db::table('user_prescription')->whereRaw('createtime>='.$starttime.' and createtime<='.$endtime)->count();
+                if ($number==0) {
+                    $number = 1;
+                }
+                $number = str_pad($number, 3, '0', STR_PAD_LEFT);
+                $ordersn = 'GRP'.date('Ymd').$number;
+                $prescription_id = Db::table('user_prescription')->insertGetId([
+                    'uid'=>session('user.gogo_id'),
+                    'patient_id'=>$patient_id,
+                    'order_id'=>$orderid,
+                    'ordersn'=>$ordersn,
+                    'status'=>0,
+                    'createtime'=>$time
+                ]);
+
+                #3、通知总后台
+                $system = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0])->first();
+                $system = objtoarr($system);
+                $post = json_encode([
+                    'call'=>'confirmCollectionNotice',
+                    'first' =>'处方申请消息，请打开查看！',
+                    'keyword1' => '处方申请消息，请打开查看！',
+                    'keyword2' => '已提交待分配',
+                    'keyword3' => date('Y-m-d H:i:s', $time),
+                    'remark' => '点击查看详情',
+                    'url' => 'https://gadmin.gogo198.cn',
+//                    'url' => 'https://shopping.gogo198.cn/check_prescription?prescription_id='.$prescription_id,
+                    'openid' => $system['account'],
+                    'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
+                ]);
+                httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+
+                DB::commit();
+                return Response()->json(['code'=>0,'msg'=>'添加成功，已提交申请']);
+            } catch (\Exception $e) {
+                DB::rollback();//事务回滚
+                echo $e->getMessage();
+                die;
+//            echo $e->getCode();
+                return Response()->json(['code'=>0,'msg'=>'添加失败']);
+            }
+        } else {
+            $account = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user.gogo_id')])->first();
+            $account = objtoarr($account);
+
+            $order = Db::connection('shop_db')->table('website_order_list')->where(['user_id'=>$account['id'],'id'=>$orderid])->first();
+            $order = objtoarr($order);
+            $order['content'] = json_decode($order['content'], true);
+
+            #过敏史
+            $allergy = Db::connection('shop_db')->table('prescription_allergy')->where(['pid'=>0])->get();
+            $allergy = objtoarr($allergy);
+            foreach ($allergy as $k=>$v) {
+                $allergy[$k]['children'] = Db::connection('shop_db')->table('prescription_allergy')->where(['pid'=>$v['id']])->get();
+                $allergy[$k]['children'] = objtoarr($allergy[$k]['children']);
+            }
+            $allergy = json_encode($allergy, true);
+
+            #疾病
+            $good = Db::table('goods')->where(['goods_id'=>$order['content']['good_id']])->first();
+            $good = objtoarr($good);
+            $disease = Db::table('category')->where(['parent_id'=>$good['cat_id1']])->get();
+            $disease = objtoarr($disease);
+            foreach ($disease as $k=>$v) {
+                $disease[$k]['children'] = Db::table('category')->where(['parent_id'=>$v['cat_id']])->get();
+                $disease[$k]['children'] = objtoarr($disease[$k]['children']);
+            }
+            $disease = json_encode($disease, true);
+
+            return view('goods.save_patient', compact('orderid', 'allergy', 'disease'));
+        }
+    }
+
+    #获取用药人信息
+    public function get_patient_info(Request $request)
+    {
+        $data = $request->except(['_token']);
+
+        #用药人信息
+        $patient = Db::table('patient')->where(['id'=>$data['id']])->first();
+        $patient = objtoarr($patient);
+        $patient['department'] = Db::table('category')->where(['cat_id'=>$patient['department']])->first()->cat_name;
+        $patient['disease'] = Db::table('category')->where(['cat_id'=>$patient['disease']])->first()->cat_name;
+
+        if ($patient['is_allergy']==1) {
+            #有过敏史
+            $patient['allergy_info'] = Db::connection('shop_db')->table('prescription_allergy')->whereRaw('find_in_set(id,?)', [$patient['allergy_id']])->select('name')->get();
+            $patient['allergy_info'] = objtoarr($patient['allergy_info']);
+            $patient['allergy'] = '';
+            foreach ($patient['allergy_info'] as $k=>$v) {
+                $patient['allergy'] .= $v['name'].',';
+            }
+            $patient['allergy'] = rtrim($patient['allergy'], ',');
+        } else {
+            $patient['allergy'] = '未发现';
+        }
+
+        #处方编号
+        $time = time();
+        $starttime = strtotime(date('Y-m-d 00:00:00', $time));
+        $endtime = strtotime(date('Y-m-d 23:59:59', $time));
+        $number = Db::table('user_prescription')->whereRaw('createtime>='.$starttime.' or createtime<='.$endtime)->count();
+        if ($number==0) {
+            $number = 1;
+        }
+        $number = str_pad($number, 3, '0', STR_PAD_LEFT);
+        $ordersn = 'GRP'.date('Ymd').$number;
+
+        return Response()->json(['code'=>0,'data'=>$patient,'ordersn'=>$ordersn]);
+    }
+
+    #医师开具处方
+    public function check_prescription(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $id = intval($data['id']);
+        if (isset($data['pa'])) {
+            #确认签署
+            $prescription = Db::table('user_prescription')->where(['id'=>$id])->first();
+            $prescription = objtoarr($prescription);
+
+            #1、更新处方
+            Db::table('user_prescription')->where(['id'=>$id])->update([
+                'status'=>2,
+                'content'=>json_encode(['opt'=>$data['opt'],'opt_unit'=>$data['opt_unit'],'used_unit'=>$data['used_unit'],'used'=>$data['used']], true)
+            ]);
+
+            #2、更新签名
+            if (isset($data['sign_file'])) {
+                $user = Db::connection('shop_db')->table('website_user')->where(['id'=>$prescription['doctor_id']])->first();
+                $user = objtoarr($user);
+                $user['role_content'] = json_decode($user['role_content'], true);
+                $user['role_content']['sign_file'][0] = $data['sign_file'][0];
+                Db::connection('shop_db')->table('website_user')->where(['id'=>$prescription['doctor_id']])->update([
+                    'role_content'=>json_encode($user['role_content'], true)
+                ]);
+            }
+
+            #3、更新支付单(website_order_list)
+            Db::connection('shop_db')->table('website_order_list')->where(['id'=>$prescription['order_id']])->update([
+                'status'=>0
+            ]);
+
+            #4.1、通知总后台
+            $time = time();
+            $system = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0])->first();
+            $system = objtoarr($system);
+            if ($system['notice_type']==1) {
+                $post = json_encode([
+                    'call'=>'confirmCollectionNotice',
+                    'first' =>'处方开具消息，请打开查看！',
+                    'keyword1' => '处方开具消息，请打开查看！',
+                    'keyword2' => '已开具',
+                    'keyword3' => date('Y-m-d H:i:s', $time),
+                    'remark' => '点击查看详情',
+                    'url' => 'https://gadmin.gogo198.cn',
+//                    'url' => 'https://shopping.gogo198.cn/check_prescription?prescription_id='.$prescription_id,
+                    'openid' => $system['account'],
+                    'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
+                ]);
+                httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+            }
+
+            #4.2、通知买家
+            $user = Db::connection('shop_db')->table('website_user')->where(['id'=>$prescription['doctor_id']])->first();
+            $user = objtoarr($user);
+            if (!empty($user['openid'])) {
+                $post = json_encode([
+                    'call'=>'confirmCollectionNotice',
+                    'first' =>'处方开具消息，请打开查看！',
+                    'keyword1' => '处方开具消息，请打开查看！',
+                    'keyword2' => '已开具',
+                    'keyword3' => date('Y-m-d H:i:s', $time),
+                    'remark' => '点击查看详情',
+                    'url' => 'https://www.gogo198.net/?s=index/tradeflow_buyer&gogo_id='.session('user')['gogo_id'],
+//                    'url' => 'https://shopping.gogo198.cn/check_prescription?prescription_id='.$prescription_id,
+                    'openid' => $user['openid'],
+                    'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
+                ]);
+                httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+            } elseif (!empty($user['phone'])) {
+                $post_data = [
+                    'spid'=>'254560',
+                    'password'=>'J6Dtc4HO',
+                    'ac'=>'1069254560',
+                    'mobiles'=>$user['phone'],
+                    'content'=>'处方开具消息，请打开链接查看：https://www.gogo198.net/?s=index/tradeflow_buyer&gogo_id='.session('user')['gogo_id'].'【GOGO】',
+                ];
+                $post_data = json_encode($post_data, true);
+                httpRequest('https://decl.gogo198.cn/api/sendmsg_jumeng', $post_data, [
+                    'Content-Type: application/json; charset=utf-8',
+                    'Content-Length:' . strlen($post_data),
+                    'Cache-Control: no-cache',
+                    'Pragma: no-cache'
+                ]);
+            }
+
+            return Response()->json(['code'=>0,'msg'=>'签署成功']);
+        } else {
+            #处方
+            $prescription = Db::table('user_prescription')->where(['id'=>$id])->first();
+            $prescription = objtoarr($prescription);
+            if ($prescription['status']==2) {
+                $prescription['content'] = json_decode($prescription['content'], true);
+            }
+
+            #患者
+            $patient = Db::table('patient')->where(['id'=>$prescription['patient_id']])->first();
+            $patient = objtoarr($patient);
+            $patient['department'] = Db::table('category')->where(['cat_id'=>$patient['department']])->first()->cat_name;
+            $patient['disease'] = Db::table('category')->where(['cat_id'=>$patient['disease']])->first()->cat_name;
+            if ($patient['is_allergy']==1) {
+                #有过敏史
+                $patient['allergy_info'] = Db::connection('shop_db')->table('prescription_allergy')->whereRaw('find_in_set(id,?)', [$patient['allergy_id']])->select('name')->get();
+                $patient['allergy_info'] = objtoarr($patient['allergy_info']);
+                $patient['allergy'] = '';
+                foreach ($patient['allergy_info'] as $k=>$v) {
+                    $patient['allergy'] .= $v['name'].',';
+                }
+                $patient['allergy'] = rtrim($patient['allergy'], ',');
+            } else {
+                $patient['allergy'] = '未发现';
+            }
+
+            #订单
+            $order = Db::connection('shop_db')->table('website_order_list')->where(['id'=>$prescription['order_id']])->first();
+            $order = objtoarr($order);
+            $order['content'] = json_decode($order['content'], true);
+            #商品
+            $good = Db::table('goods')->where(['goods_id'=>$order['content']['good_id']])->first();
+            $good = objtoarr($good);
+            $good_unit = Db::table('goods_sku')->where(['sku_id'=>$good['sku_id']])->first();
+            $good_unit = objtoarr($good_unit);
+            $good_unit['sku_prices'] = json_decode($good_unit['sku_prices'], true);
+            $good_unit['unit'] = Db::connection('shop_db')->table('unit')->where(['code_value'=>$good_unit['sku_prices']['unit'][0]])->first()->code_name;
+
+            #科目
+            $value = Db::table('ssl_platform_value')->where(['cat_id'=>$good['cat_id1'],'cat_id1'=>$good['cat_id'],'cross_catId'=>$good['crossb_cate1']])->first();
+            $value = objtoarr($value);
+            $value['drug'] = json_decode($value['drug'], true);
+            $tag = '';
+            if (!empty($value['drug']['value']['value2'])) {
+                if ($value['drug']['value']['value2']==5) {
+                    $tag = '普通';
+                } elseif ($value['drug']['value']['value2']==6) {
+                    $tag = '儿科';
+                }
+            } else {
+                if ($value['drug']['value']['value']==7) {
+                    $tag = '麻';
+                } elseif ($value['drug']['value']['value']==8) {
+                    $tag = '精';
+                } elseif ($value['drug']['value']['value']==9) {
+                    $tag = '毒';
+                } elseif ($value['drug']['value']['value']==10) {
+                    $tag = '射';
+                } elseif ($value['drug']['value']['value']==11) {
+                    $tag = '外';
+                }
+            }
+
+            #数量
+            $unit['num_unit'] = Db::connection('shop_db')->table('prescription_language')->where(['pid'=>16])->get();
+            $unit['num_unit'] = objtoarr($unit['num_unit']);
+            $unit['unit'] = Db::connection('shop_db')->table('unit')->get();
+            $unit['unit'] = objtoarr($unit['unit']);
+            #间隔
+            $unit['interval_unit'] = Db::connection('shop_db')->table('prescription_language')->where(['pid'=>30])->get();
+            $unit['interval_unit'] = objtoarr($unit['interval_unit']);
+            #途径
+            $unit['road_unit'] = Db::connection('shop_db')->table('prescription_language')->where(['pid'=>49])->get();
+            $unit['road_unit'] = objtoarr($unit['road_unit']);
+            #服用时间
+            $unit['eat_unit'] = Db::connection('shop_db')->table('prescription_language')->where(['pid'=>44])->get();
+            $unit['eat_unit'] = objtoarr($unit['eat_unit']);
+
+            #处方签署
+            $doctor = Db::connection('shop_db')->table('website_user')->where(['id'=>$prescription['doctor_id']])->first();
+            $doctor = objtoarr($doctor);
+            $doctor['role_content'] = json_decode($doctor['role_content'], true);
+            if ($prescription['status']==2) {
+                $image_data = file_get_contents("https://shop.gogo198.cn/".$doctor['role_content']['sign_file'][0]);
+                $doctor['role_content']['sign_file'][0] = "data:image/jpeg;base64,".base64_encode($image_data);
+            }
+
+            return view('goods.check_prescription', compact('id', 'prescription', 'patient', 'order', 'good', 'tag', 'good_unit', 'unit', 'value', 'doctor'));
+        }
+    }
+
+    public function verifyTel($tel)
+    {
+        if (preg_match("/^1[34578]\d{9}$/", $tel)) {
+            return true;
+        }
+        return false;
+    }
+
+    #发送验证码
+    public function send_code(Request $request)
+    {
+        $dat = $request->except(['_token']);
+
+
+        $code = mt_rand(11, 99) . mt_rand(11, 99);
+        $res = '';
+        if ($dat['type']==1) {
+            $request->session()->put('verify_code', $code);
+            #手机号码
+            $tel = trim($dat['number']);
+            if (!$this->verifyTel($tel)) {
+                return Response()->json(['code'=>-1,'msg'=>'手机格式错误！']);
+            }
+
+            $post_data = [
+                'spid'=>'254560',
+                'password'=>'J6Dtc4HO',
+                'ac'=>'1069254560',
+                'mobiles'=>$tel,
+                'content'=>'您正在校验手机号码，验证码为：'.$code.'【GOGO】',
+            ];
+            $post_data = json_encode($post_data, true);
+            $res = httpRequest('https://decl.gogo198.cn/api/sendmsg_jumeng', $post_data, [
+                'Content-Type: application/json; charset=utf-8',
+                'Content-Length:' . strlen($post_data),
+                'Cache-Control: no-cache',
+                'Pragma: no-cache'
+            ]);
+        }
+
+        if ($res) {
+            return Response()->json(['code'=>0,'msg'=>'发送成功！']);
+        } else {
+            return Response()->json(['code'=>-1,'msg'=>'发送失败，请联系管理员！']);
+        }
+    }
+
+    #收银台管理列表
+    public function pay_list(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $ordersn = isset($data['key']) ? trim($data['key']) : '';
+        $isframe = isset($data['isframe']) ? intval($data['isframe']) : 0;
+
+        if (isset($data['pa'])) {
+        } else {
+            $order = Db::connection('shop_db')->table('website_order_list')->where(['ordersn'=>$ordersn])->first();
+            $order = objtoarr($order);
+
+            #获取配置信息
+            $website = get_website();
+            $page_info = get_pageinfo('/bill_list');
+            $website['background'] = $page_info['content']['background'];
+            $website['content'] = $page_info['content']['content'];
+            $website['fontcolor'] = $page_info['content']['fontcolor'];
+
+            return view('goods.pay_list', compact('isframe', 'website', 'order'));
+        }
+    }
+
+    #账单管理中心
+    public function bill_list(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $isframe = isset($data['isframe']) ? intval($data['isframe']) : 0;
+
+        if (isset($data['pa'])) {
+            $limit = $request->get('limit');
+            $page = $request->get('page') - 1;
+
+            if ($page != 0) {
+                $page = $limit * $page;
+            }
+
+            $account = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user.gogo_id')])->first();
+            $account = objtoarr($account);
+
+            if (empty($account['openid'])) {
+                $account['openid'] = 's';
+            }
+            if (empty($account['email'])) {
+                $account['email'] = 's';
+            }
+            if (empty($account['phone'])) {
+                $account['phone'] = 's';
+            }
+
+            $count = Db::connection('shop_db')->table('website_order_list')->where(['user_id'=>$account['id']])->whereRaw('status <> -1')->count();
+            $rows = Db::connection('shop_db')->table('website_order_list')->where(['user_id'=>$account['id']])->whereRaw('status <> -1')->orderBy('id', 'desc')->offset($page)->limit($limit)->get();
+            $rows = objtoarr($rows);
+
+            foreach ($rows as $k=>$v) {
+                $rows[$k]['createtime'] = date('Y-m-d H:i', $v['createtime']);
+                $rows[$k]['status_name'] = $this->order_status($v['status']);
+            }
+            return response()->json(['code'=>0,'count'=>$count,'data'=>$rows]);
+        } else {
+            #获取配置信息
+            $website = get_website();
+            $page_info = get_pageinfo('/bill_list');
+            $website['background'] = $page_info['content']['background'];
+            $website['content'] = $page_info['content']['content'];
+            $website['fontcolor'] = $page_info['content']['fontcolor'];
+
+            return view('goods.bill_list', compact('isframe', 'website'));
+        }
+    }
+
+    public function order_status($status)
+    {
+        if ($status==-1) {
+            return '处方待申请';
+        } elseif ($status==-2) {
+            return '待确认';
+        } elseif ($status==-3) {
+            return '申请取消订购';
+        } elseif ($status==-4) {
+            return '已取消';
+        } elseif ($status==-5) {
+            return '申请退货';
+        } elseif ($status==-6) {
+            return '已退货';
+        } elseif ($status==-7) {
+            return '申请换货';
+        } elseif ($status==-8) {
+            return '已换货';
+        } elseif ($status==0) {
+            return '待付款';
+        } elseif ($status==1) {
+            return '待采购';
+        } elseif ($status==2) {
+            return '已发货';
+        } elseif ($status==3) {
+            return '待验货';
+        } elseif ($status==4) {
+            return '待入库';
+        } elseif ($status==5) {
+            return '待集货';
+        } elseif ($status==6) {
+            return '待转运';
+        } elseif ($status==7) {
+            return '待签收';
+        } elseif ($status==8) {
+            return '待评价';
+        } elseif ($status==9) {
+            return '已完成';
+        }
+    }
+
+    #账单详情
+    public function bill_detail(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $isframe = isset($data['isframe']) ? intval($data['isframe']) : 0;
+
+        #1、获取账单信息
+        $order = Db::connection('shop_db')->table('website_order_list')->where(['id'=>$data['id']])->first();
+        $order = objtoarr($order);
+        $order['content'] = json_decode($order['content'], true);
+
+        if ($order['origin_type']==0) {
+            #本商城订单
+            $order['currency'] = '';
+            #2、获取商品信息
+            $goods = Db::table('goods')->where(['goods_id'=>$order['content']['good_id']])->first();
+            $goods = objtoarr($goods);
+            #3、获取商品规格
+            $goods_sku = Db::table('goods_sku')->where(['sku_id'=>$goods['sku_id']])->first();
+            $goods_sku = objtoarr($goods_sku);
+            $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
+
+            $order['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$goods_sku['sku_prices']['currency'][0]])->first()->currency_symbol_standard;
+            $order['unit'] = Db::connection('shop_db')->table('unit')->where(['code_value'=>$goods_sku['sku_prices']['unit'][0]])->first()->code_name;
+            $order['total_num']=0;
+            $order['total_price']=0;
+            foreach ($order['content']['buy_attr'] as $k=>$v) {
+                $order['total_num']+=$v['buy_num'];
+                $order['total_price']+=$v['now_gprice'];
+            }
+        } elseif ($order['origin_type']==1) {
+            #backydrop/其他订单
+            $paylist = Db::connection('shop_db')->table('customs_collection')->where(['id'=>$order['pay_id']])->first();
+            $paylist = objtoarr($paylist);
+            $goods = Db::table('goods')->where(['goods_id'=>$paylist['good_id']])->first();
+            $goods = objtoarr($goods);
+
+            $goods_sku = [];
+            if ($goods['have_specs']==1) {
+                #看看买哪些商品规格
+                $order['content']['good_num'] = explode('@@@', $order['content']['good_num']);
+                $order['content']['good_price'] = explode('@@@', $order['content']['good_price']);
+                $order['content']['value_name'] = explode('@@@', $order['content']['value_name']);
+                $order['content']['skuCode'] = explode('@@@', $order['content']['skuCode']);
+                foreach ($order['content']['good_num'] as $k => $v) {
+                    if (!empty($v)) {
+                        $goods_sku[$k]['value_name'] = $order['content']['value_name'][$k];
+                        $goods_sku[$k]['good_num'] = $order['content']['good_num'][$k];
+                        $goods_sku[$k]['good_price'] = $order['content']['good_price'][$k];
+                        $goods_sku[$k]['skuCode'] = $order['content']['skuCode'][$k];
+                    }
+                }
+            }
+        }
+
+        #获取配置信息
+        $website = get_website();
+        $page_info = get_pageinfo('/bill_list');
+        $website['background'] = $page_info['content']['background'];
+        $website['content'] = $page_info['content']['content'];
+        $website['fontcolor'] = $page_info['content']['fontcolor'];
+
+        return view('goods.bill_detail', compact('order', 'goods', 'goods_sku', 'website', 'isframe'));
+    }
+
+    #创建国内结算二维码
+    public function create_code($type=0, $orderid=0, $good_id=0)
+    {
+        if ($type==1) {
+            $url = 'https://shop.gogo198.cn/app/index.php?i=3&c=entry&do=member&p=custompayment&m=sz_yi&oid='.intval($orderid);
+            #生成报价二维码
+            $folder = $_SERVER['DOCUMENT_ROOT'].'/qrcode/pay_order_qrcode/';
+            $name = 'order_'.session('user.user_id').'_'.$good_id;
+            $img = $this->generate_code($name, $url, $folder);
+            return $img;
+        }
+    }
+
+    //生成二维码
+    public function generate_code($name, $url, $folder)
+    {
+        //链接生成二维码
+        $errorCorrectionLevel = 'L';//错误等级，忽略
+        $matrixPointSize = 4;
+//        require $_SERVER['DOCUMENT_ROOT'].'/qrcode/phpqrcode.php';
+        require_once  __DIR__.'/phpqrcode.php';
+        $path = $folder; //储存的地方
+        if (!is_dir($path)) {
+            mkdirs($path); //创建文件夹
+        }
+
+        $infourl = $url;
+        $filename =  $path.$name.'.png'; //图片文件
+
+        \QRcode::png($infourl, $filename, $errorCorrectionLevel, $matrixPointSize, 2); //生成图片
+
+//        dd($infourl, $filename, $errorCorrectionLevel, $matrixPointSize, 2);
+//    $filename = str_replace('/www/wwwroot/gogo','https://shop.gogo198.cn',$filename);
+        $logo = 'https://shop.gogo198.cn/collect_website/public/logo.png';//准备好的logo图片
+        $QR = $filename;//已经生成的原始二维码图
+        if ($logo !== false) {
+            $QR = imagecreatefromstring(file_get_contents($QR));
+            $logo = imagecreatefromstring(file_get_contents($logo));
+            $QR_width = imagesx($QR);//二维码图片宽度
+            $QR_height = imagesy($QR);//二维码图片高度
+            $logo_width = imagesx($logo);//logo图片宽度
+            $logo_height = imagesy($logo);//logo图片高度
+            $logo_qr_width = $QR_width / 5; //logo图片在二维码图片中宽度大小
+            $scale = $logo_width/$logo_qr_width;
+            $logo_qr_height = $logo_height/$scale; //logo图片在二维码图片中高度大小
+            $from_width = ($QR_width - $logo_qr_width) / 2;
+            //重新组合图片并调整大小
+            imagecopyresampled(
+                $QR,
+                $logo,
+                $from_width,
+                $from_width,
+                0,
+                0,
+                $logo_qr_width,
+                $logo_qr_height,
+                $logo_width,
+                $logo_height
+            );
+        }
+
+        imagepng($QR, $filename); // 保存最终生成的二维码到本地
+
+        //直接输出图片到浏览器
+        Header("Content-type: image/png");
+
+        $qrcode = str_replace('/www/wwwroot/shopping.gogo198.cn/public', 'https://api.gogo198.cn', $filename);
+        return $qrcode;
+    }
+
+    #获取回复
+    public function get_reply(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $reply = Db::table('ssl_chat_content')->where(['chat_pid'=>$data['id']])->first();
+        $reply = objtoarr($reply);
+        return response()->json(['code'=>0,'data'=>$reply]);
+    }
+
+    public function notice($arr)
+    {
+        $data = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0,'system_type'=>1])->first();
+        $data = objtoarr($data);
+        $url = 'https://gadmin.gogo198.cn';
+
+        if ($data['notice_type']==1) {
+            #微信
+            $post = json_encode([
+                'call'=>'confirmCollectionNotice',
+                'find' =>"用户[".$arr['gogo_id']."]发起了在线咨询，请打开查看！",
+                'keyword1' => "用户[".$arr['gogo_id']."]发起了在线咨询，请打开查看！",
+                'keyword2' => '已提交待操作',
+                'keyword3' => date('Y-m-d H:i:s', time()),
+                'remark' => '点击查看详情',
+                'url' => $url,
+                'openid' => $data['account'],
+                'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
+            ]);
+
+            httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+        } elseif ($data['notice_type']==3) {
+            $title = "管理员您好，用户[".$arr['gogo_id'].']发起了在线咨询，请进入总后台进行操作！';
+            $post_data = json_encode(['email'=>$data['account'],'title'=>$title,'content'=>$url], true);
+            $res = httpRequest('https://admin.gogo198.cn/collect_website/public/?s=api/sendemail/index', $post_data, [
+                'Content-Type: application/json; charset=utf-8',
+                'Content-Length:' . strlen($post_data),
+                'Cache-Control: no-cache',
+                'Pragma: no-cache'
+            ]);
+        }
+    }
+
+    #计算价格
+    public function calc(Request $request)
+    {
+        $data = $request->except(['_token']);
+        if (isset($data['attr_ids'])) {
+            #有规格的
+
+            #1、规格区间价格
+            $attr_ids = explode('_', $data['attr_ids']);
+            $attr_ids = array_reverse($attr_ids);
+            $attr_ids = implode('|', $attr_ids);
+
+            $sku = Db::table('goods_sku')->where(['goods_id'=>$data['gid'],'spec_vids'=>$attr_ids])->first();
+            $sku = objtoarr($sku);
+            if (empty($sku)) {
+                $attr_ids = array_reverse(explode('|', $attr_ids));
+                $attr_ids = implode('|', $attr_ids);
+                $sku = Db::table('goods_sku')->where(['goods_id'=>$data['gid'],'spec_vids'=>$attr_ids])->first();
+                $sku = objtoarr($sku);
+            }
+
+            if (empty($sku)) {
+                return response()->json(['code'=>-1,'msg'=>'暂无此规格报价，请选择其他规格']);
+            }
+
+            $sku['sku_prices'] = json_decode($sku['sku_prices'], true);
+            $sku_info = $sku['sku_prices'];
+            $price = 0;
+            foreach ($sku_info['start_num'] as $k=>$v) {
+                if ($sku_info['select_end'][$k] == 1) {
+                    #数值
+                    if ($v<=$data['buy_num'] && $data['buy_num']<=$sku_info['end_num'][$k]) {
+                        $price = number_format($data['buy_num'] * $sku_info['price'][$k], 2);
+                        break;
+                    }
+                } elseif ($sku_info['select_end'][$k] == 2) {
+                    #以上
+                    $price = number_format($data['buy_num'] * $sku_info['price'][$k], 2);
+                    break;
+                }
+            }
+            $price = str_replace(',', '', $price);
+
+            return result(0, ['price'=>$price], '');
+        } else {
+            #无规格的
+
+            $sku = Db::table('goods_sku')->where(['goods_id'=>$data['gid']])->first();
+            $sku = objtoarr($sku);
+            $sku['sku_prices'] = json_decode($sku['sku_prices'], true);
+
+            $sku_info = $sku['sku_prices'];
+            $price = 0;
+            foreach ($sku_info['start_num'] as $k=>$v) {
+                if ($sku_info['select_end'][$k] == 1) {
+                    #数值
+                    if ($v<=$data['buy_num'] && $data['buy_num']<=$sku_info['end_num'][$k]) {
+                        $price = number_format($data['buy_num'] * $sku_info['price'][$k], 2);
+                        break;
+                    }
+                } elseif ($sku_info['select_end'][$k] == 2) {
+                    #以上
+                    $price = number_format($data['buy_num'] * $sku_info['price'][$k], 2);
+                    break;
+                }
+            }
+            $price = str_replace(',', '', $price);
+
+            return result(0, ['price'=>$price], '');
+        }
+    }
+
+    #商品详情页：计算其他费用+优惠减免+优惠随赠
+    public function calc_otherfee(Request $request)
+    {
+        $data = $request->except(['_token']);
+
+        $goods = Db::table('goods')->where(['goods_id'=>$data['gid']])->first();
+        $goods = objtoarr($goods);
+
+        $reduction_arr = [];
+        $gift_arr = [];
+
+        if ($goods['shop_id']>0 && empty($goods['drug_id'])) {
+            #1、其他费用
+            if (!empty($goods['otherfee_content'])) {
+                $goods['otherfee_content'] = json_decode($goods['otherfee_content'], true);
+                $goods['otherfee_total'] = 0;
+                $goods['otherfee_currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$goods['otherfee_content']['currency'][0]])->first()->currency_symbol_standard;
+
+                foreach ($goods['otherfee_content']['standard'] as $k=>$v) {
+                    if ($v==1) {
+                        #按订单数量(1张)
+                        $goods['otherfee_total'] += $goods['otherfee_content']['price'][$k];
+                        $goods['otherfee_content']['otherfee_standard_name'][$k] = '按订单数量';
+                    } elseif ($v==2) {
+                        #按包裹数量（1个）
+                        $goods['otherfee_total'] += $goods['otherfee_content']['price'][$k];
+                        $goods['otherfee_content']['otherfee_standard_name'][$k] = '按包裹数量';
+                    } elseif ($v==3) {
+                        #按商品数量
+                        $goods['otherfee_content']['price'][$k] = str_replace(',', '', number_format(intval($data['total']) * $goods['otherfee_content']['price'][$k], 2));
+                        $goods['otherfee_total'] += $goods['otherfee_content']['price'][$k];
+                        $goods['otherfee_content']['otherfee_standard_name'][$k] = '按商品数量';
+                    } elseif ($v==4) {
+                        #按服务次数（1次）
+                        $goods['otherfee_total'] += $goods['otherfee_content']['price'][$k];
+                        $goods['otherfee_content']['otherfee_standard_name'][$k] = '按服务次数';
+                    } elseif ($v==5) {
+                        #按商品总价比率
+                        $goods['otherfee_content']['price'][$k] = str_replace(',', '', number_format($data['total_price'] * $goods['otherfee_content']['price'][$k], 2));
+                        $goods['otherfee_total'] += $goods['otherfee_content']['price'][$k];
+                        $goods['otherfee_content']['otherfee_standard_name'][$k] = '按商品总价比率';
+                    }
+                }
+            } else {
+                $goods['otherfee_content'] = [];
+                $goods['otherfee_total'] = 0;
+                $goods['otherfee_currency'] = '';
+            }
+
+            #2、优惠减免
+            $reduction_arr = [];
+
+            #废弃
+            if (!empty($goods['reduction_content']) && 1>2) {
+                $goods['reduction_content'] = json_decode($goods['reduction_content'], true);
+                $reduction = $goods['reduction_content'];
+                foreach ($reduction['type'] as $k=>$v) {
+                    #减免项目名称
+                    $rule = Db::table('ssl_reduction_rule')->where(['id'=>$v])->first();
+                    $rule = json_decode(json_encode($rule, true), true);
+                    $rule['content'] = json_decode($rule['content'], true);
+                    $reduction['project_name'][$k] = $rule['name'];
+
+                    #优惠归属类别
+                    if ($reduction['preferential_blong'][$k]==1) {
+                        $reduction['preferential_blong_name'][$k] = '商家优惠';
+                    } elseif ($reduction['preferential_blong'][$k]==2) {
+                        $reduction['preferential_blong_name'][$k] = '平台优惠';
+                    } elseif ($reduction['preferential_blong'][$k]==3) {
+                        $reduction['preferential_blong_name'][$k] = '其他优惠';
+                    }
+
+                    #判断当前总价是否大于等于第一个价格
+                    if ($data['total_price'] >= $reduction['price1'][$k][0]) {
+                        $reduction['currency1'][$k][0] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$reduction['currency1'][$k][0]])->first()->currency_symbol_standard;
+
+                        #减免限制
+                        if ($reduction['strict'][$k]==1) {
+                            $reduction['strict_name'][$k] = '不能与其他优惠同时使用';
+                        } elseif ($reduction['strict'][$k]==2) {
+                            $reduction['strict_name'][$k] = '允许与其他优惠同时使用';
+                        }
+
+                        #判断当前总金额是否满足条件金额
+                        array_push($reduction_arr, [
+                            'preferential_blong'=>$reduction['preferential_blong'][$k],
+                            'preferential_blong_name'=>$reduction['preferential_blong_name'][$k],
+                            'type'=>$reduction['type'][$k],
+                            'strict'=>$reduction['strict'][$k],
+                            'strict_name'=>$reduction['strict_name'][$k],
+                            'currency1'=>$reduction['currency1'][$k],
+                            'price1'=>$reduction['price1'][$k],
+                            'currency2'=>$reduction['currency2'][$k],
+                            'price2'=>$reduction['price2'][$k],
+                            'project_name'=>$reduction['project_name'][$k],
+                            'content'=>$rule['content']
+                        ]);
+                    }
+                }
+            }
+
+            #3、优惠随赠
+            $gift_arr = [];
+            if (!empty($goods['gift_content']) && 1>2) {
+                $goods['gift_content'] = json_decode($goods['gift_content'], true);
+                $gift_content = $goods['gift_content'];
+                foreach ($gift_content['type'] as $k=>$v) {
+                    #运营商
+                    if ($gift_content['operaer'][$k]==1) {
+                        $gift_content['operaer_name'][$k] = '平台';
+                    } elseif ($gift_content['operaer'][$k]==2) {
+                        $gift_content['operaer_name'][$k] = '卖家';
+                    } elseif ($gift_content['operaer'][$k]==3) {
+                        $gift_content['operaer_name'][$k] = '他方';
+                    }
+                    #优惠归属类别
+                    if ($gift_content['preferential_blong'][$k]==1) {
+                        $gift_content['preferential_blong_name'][$k] = '商家优惠';
+                    } elseif ($gift_content['preferential_blong'][$k]==2) {
+                        $gift_content['preferential_blong_name'][$k] = '平台优惠';
+                    } elseif ($gift_content['preferential_blong'][$k]==3) {
+                        $gift_content['preferential_blong_name'][$k] = '其他优惠';
+                    }
+                    #随赠限制
+                    if ($gift_content['strict'][$k]==1) {
+                        $gift_content['strict_name'][$k] = '不能与其他优惠同时使用';
+                    } elseif ($gift_content['strict'][$k]==2) {
+                        $gift_content['strict_name'][$k] = '允许与其他优惠同时使用';
+                    }
+
+                    if ($v==1) {
+                        #积分
+                        $gift_content['type_name'][$k] = '积分';
+                        $gift_content['points_currency'][$k] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['points_currency'][$k]])->first()->currency_symbol_standard;
+                        if ($gift_content['points_type'][$k]==1) {
+                            #按每订单/次送x积分
+                            $gift_content['points_typeName'][$k] = '按每订单/次送';
+                        } elseif ($gift_content['points_type'][$k]==2) {
+                            #按每币种+金额送x积分
+                            $gift_content['points_typeName'][$k] = '按每'.$gift_content['points_currency'][$k].$gift_content['points_money'][$k].'送';
+                        }
+                    } elseif ($v==2) {
+                        #卡券
+                        $gift_content['type_name'][$k] = '卡券';
+                        $gift_content['coupon_currency'][$k] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['coupon_currency'][$k]])->first()->currency_symbol_standard;
+                    } elseif ($v==3) {
+                        #赠品
+                        $gift_content['type_name'][$k] = '随赠';
+                        if ($gift_content['accgift_type'][$k]==1) {
+                            $gift_content['accgift_typeName'][$k] = '虚拟';
+                        } elseif ($gift_content['accgift_type'][$k]==2) {
+                            $gift_content['accgift_typeName'][$k] = '服务';
+                        } elseif ($gift_content['accgift_type'][$k]==3) {
+                            $gift_content['accgift_typeName'][$k] = '实物';
+                        }
+                    }
+
+                    array_push($gift_arr, [
+                        'preferential_blong'=>$gift_content['preferential_blong'][$k],
+                        'preferential_blong_name'=>isset($gift_content['preferential_blong_name'][$k]) ? $gift_content['preferential_blong_name'][$k] : '',
+                        'type'=>$gift_content['type'][$k],
+                        'type_name'=>$gift_content['type_name'][$k],
+                        'operaer'=>$gift_content['operaer'][$k],
+                        'operaer_name'=>$gift_content['operaer_name'][$k],
+                        'points_type'=>$gift_content['points_type'][$k],
+                        'points_typeName'=>isset($gift_content['points_typeName'][$k]) ? $gift_content['points_typeName'][$k] : '',
+                        'points_currency'=>$gift_content['points_currency'][$k],
+                        'points_money'=>$gift_content['points_money'][$k],
+                        'points_send'=>$gift_content['points_send'][$k],
+                        'coupon_currency'=>$gift_content['coupon_currency'][$k],
+                        'coupon_money'=>$gift_content['coupon_money'][$k],
+                        'coupon_num'=>$gift_content['coupon_num'][$k],
+                        'accgift_type'=>$gift_content['accgift_type'][$k],
+                        'accgift_typeName'=>isset($gift_content['accgift_typeName'][$k]) ? $gift_content['accgift_typeName'][$k] : '',
+                        'accgift_content'=>$gift_content['accgift_content'][$k],
+                        'accgift_num'=>$gift_content['accgift_num'][$k],
+                        'strict'=>$gift_content['strict'][$k],
+                        'strict_name'=>$gift_content['strict_name'][$k],
+                    ]);
+                }
+            }
+        } else {
+            $goods['otherfee_content'] = [];
+            $goods['otherfee_total'] = 0;
+            $goods['otherfee_currency'] = '';
+        }
+
+
+        return result(0, ['otherfee_content'=>$goods['otherfee_content'],'otherfee_total'=>str_replace(',', '', number_format($goods['otherfee_total'], 2)),'otherfee_currency'=>$goods['otherfee_currency'],'reduction'=>$reduction_arr,'gift'=>$gift_arr], '');
+    }
+
+    public function upload_file(Request $request)
+    {
+        $data = $request->except(['_token']);
+
+        $file = $request->file('file');
+        // 准备要上传的文件
+        $file_name = $file->getClientOriginalName(); // 获取文件名
+        $file_size = $file->getSize(); // 获取文件大小
+        try {
+            $file_data = [
+                "name" => $file_name,
+                "type" => $_FILES["file"]['type'],
+                "tmp_name" => $_FILES['file']['tmp_name'],
+                "error" => 0,
+                "size" => $file_size,
+            ];
+            $post_data = json_encode(['folder' => $data['folder'], 'type' => $data['type'], 'file' => $file_data], true);
+            $res = httpRequest('https://shop.gogo198.cn/collect_website/public/?s=api/uploadfile/index', $post_data, [
+                'Content-Type: application/json; charset=utf-8',
+                'Content-Length:' . strlen($post_data),
+                'Cache-Control: no-cache',
+                'Pragma: no-cache'
+            ]);
+            $res = json_decode($res, true);
+            if ($res['code']==1) {
+                return json_encode(["code" => 1, "message" => "上传成功", "file_path" => $res['file_path'] ], true);
+            } else {
+                return json_encode(["code" => 0, "message" => "上传失败", "path" => "" ], true);
+            }
+        } catch (\Exception $e) {
+            dd($e);
+        }
+    }
+
+    #计算更多服务费用
+    public function calc_services(Request $request)
+    {
+        $datas = $request->except(['_token']);
+        #增值服务id
+        $id = intval($datas['id']);
+        #购物清单id
+        $cart_id = intval($datas['now_cart_id']);
+        #所有购物清单ids
+        $cart_ids = trim($datas['cart_ids']);
+        #拍照数量
+        $num = isset($datas['num']) ? $datas['num'] : 0;
+        #拍照要求
+        $photoRequest = isset($datas['photoRequest']) ? rtrim($datas['photoRequest'], '@@@') : '';
+        #已选1，未选0
+        $val = isset($datas['val']) ? $datas['val'] : 0;
+        #当前购物清单id的增值服务金额
+        $price = FloatVal($datas['price']);
+
+        #增值服务
+        $services = Db::table('goods_services')->where(['id'=>$id])->first();
+        $services = objtoarr($services);
+
+        $parent_services = Db::table('cost_service')->where(['id'=>$services['service_id'],'company_id'=>0])->first();
+        $parent_services = objtoarr($parent_services);
+        $all_services = Db::table('cost_service')->where(['pid'=>$parent_services['pid']])->get();
+        $all_services = objtoarr($all_services);
+        $all_services_arr = '';
+        foreach ($all_services as $sk=>$sv) {
+            $all_services_arr .= $sv['id'].',';
+        }
+
+        #必选增值服务
+        $must_selected_services = Db::table('goods_services')->whereRaw('company_id='.$services['company_id'].' and is_select=1 and find_in_set(service_id,"'.rtrim($all_services_arr, ',').'")')->get();
+        $must_selected_services = objtoarr($must_selected_services);
+        //插入例子到购物清单的增值服务（services）字段中
+//        array:5 [
+//          0 => array:3 [
+//            "service_id" => "1"
+//            "photonum" => "2"
+//            "photoRequest" => "123@@@456@@@"
+//          ]
+//          1 => array:1 [
+//            "service_id" => "2"
+//          ]
+//          2 => array:1 [
+//            "service_id" => "3"
+//          ]
+//          3 => array:1 [
+//            "service_id" => "4"
+//          ]
+//          4 => array:1 [
+//            "service_id" => "5"
+//          ]
+//        ]
+
+        $cart_info = Db::table('cart')->where(['cart_id'=>$cart_id])->first();
+        $cart_info = objtoarr($cart_info);
+
+        $servicesArr = [];
+        if (!empty($cart_info['services'])) {
+            #已选增值服务
+            $cart_info['services'] = json_decode($cart_info['services'], true);
+            $isAdd = 0;
+            foreach ($cart_info['services'] as $k=>$v) {
+                if ($val==0) {
+                    #添加
+                    if ($v['service_id']==$id) {
+                        if ($services['type']==1) {
+                            #重置拍照信息
+                            $cart_info['services'][$k] = ['service_id'=>$id,'photonum'=>$num,'photoRequest'=>$photoRequest];
+                        }
+                        $isAdd = 1;
+                    }
+                } elseif ($val==1) {
+                    #剔除
+                    if ($v['service_id']==$id) {
+                        if ($services['is_select']!=1) {
+                            #非必选，可剔除
+                            array_splice($cart_info['services'], $k, 1);
+                        }
+                    }
+                    $isAdd = 1;
+                }
+            }
+
+            #除拍照外，添加时需判断表中清单有无出现重复字段，出现时，不添加
+            if ($isAdd==0) {
+                if ($services['type']==1) {
+                    array_push($cart_info['services'], ['service_id'=>$id,'photonum'=>$num,'photoRequest'=>$photoRequest]);
+                } else {
+                    array_push($cart_info['services'], ['service_id'=>$id]);
+                }
+            }
+
+            #重新排序增值服务字段
+            if (empty($cart_info['services'])) {
+                $cart_info['services'] = '';
+            } else {
+                ksort($cart_info['services']);
+                $cart_info['services'] = json_encode($cart_info['services'], true);
+            }
+
+            //选择了增值服务后，计算当前服务金额，当前增值服务总金额，当前购物清单金额，当前订单金额
+            Db::table('cart')->where(['cart_id'=>$cart_id])->update([
+                'services'=>$cart_info['services']
+            ]);
+        } else {
+            #未选过增值服务
+            if ($services['type']==1) {
+                $servicesArr = [['service_id'=>$id,'photonum'=>$num,'photoRequest'=>$photoRequest]];
+            } else {
+                $servicesArr = [['service_id'=>$id]];
+            }
+
+            #必选增值服务(到时候加入清单/立即购买时默认选择)
+            foreach ($must_selected_services as $k=>$v) {
+                array_push($servicesArr, ['service_id'=>$v['id']]);
+            }
+
+            //选择了增值服务后，计算当前服务金额，当前增值服务总金额，当前购物清单金额，当前订单金额
+            Db::table('cart')->where(['cart_id'=>$cart_id])->update([
+                'services'=>json_encode($servicesArr, true)
+            ]);
+        }
+
+        $website_user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user')['gogo_id']])->first();
+
+        $data = Db::table('cart')->whereRaw('cart_id in ('.$cart_ids.') and user_id='.$website_user->id)->get();
+        $data = objtoarr($data);
+
+        $final['final_price'] = 0;
+        $final['final_currency']='';#此订单（包含已选购物清单）最终价格
+        $goods_sumprice = 0;
+        $services_sumprice = 0;
+        $services_price = 0;
+        foreach ($data as $k=>$v) {
+            if (empty($v['services'])) {
+                $data[$k]['services_old']=[];
+                $data[$k]['services'] = [];
+            } else {
+                $data[$k]['services_old'] = $v['services'];
+                $data[$k]['services'] = json_decode($v['services']);
+            }
+
+            #这层相当于在店铺
+            $data[$k]['sku_info'] = Db::table('cart_sku')->where(['cart_id'=>$v['cart_id'],'selected'=>1,'is_buy'=>0])->get();
+            $data[$k]['sku_info'] = objtoarr($data[$k]['sku_info']);
+
+            #当前购物车的商品价格
+            $goods_price = 0;
+            #附加费用
+            $data[$k]['services']['additional_money'] = 0;
+            $freight_num=0;
+            $goods_freight_fee=0;
+            foreach ($data[$k]['sku_info'] as $k2=>$v2) {
+                #这层相当于是该店铺下的各规格商品
+                $goods_sku = Db::table('goods_sku')->where(['sku_id'=>$v2['sku_id']])->first();
+                $goods_sku = objtoarr($goods_sku);
+                $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
+
+                $goods = Db::table('goods')->where(['goods_id'=>$goods_sku['goods_id']])->first();
+                $goods = objtoarr($goods);
+                $goods['other_shop'] = json_decode($goods['other_shop'], true);
+
+                #店铺名称
+                $data[$k]['shop_name'] = $goods['other_shop']['shopName'];
+                #规格/商品图片
+                if (!empty($goods_sku['sku_images'])) {
+                    $data[$k]['goods_image'] = $goods_sku['sku_images'];
+                } else {
+                    $data[$k]['goods_image'] = $goods['goods_image'];
+                }
+                #商品名称
+                $data[$k]['goods_name'] = $goods['goods_name'];
+                #商品id
+                $data[$k]['goods_id'] = $goods['goods_id'];
+
+                #商品（规格）信息==============================start
+                $data[$k]['sku_info'][$k2]['bgoods_name'] = $goods['goods_name'];
+                if (empty($goods_sku['spec_names'])) {
+                    #无规格商品
+                    $data[$k]['sku_info'][$k2]['boption_name'] = $goods['goods_name'];
+                } else {
+                    #有规格商品
+                    $data[$k]['sku_info'][$k2]['boption_name'] = $goods_sku['spec_names'];
+                }
+                #商品规格名称
+                if (empty($goods_sku['spec_names'])) {
+                    #无规格商品
+                    $data[$k]['sku_info'][$k2]['soption_name'] = $goods['goods_name'];
+                } else {
+                    #有规格商品
+                    $data[$k]['sku_info'][$k2]['soption_name'] = $goods_sku['spec_names'];
+                }
+                #商品（规格）币种&数量&价格（不用重复计算价格了，已经计算了）
+                $data[$k]['sku_info'][$k2]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v2['currency']])->first()->currency_symbol_standard;
+                $data[$k]['sku_info'][$k2]['price'] = $v2['price'];
+                $data[$k]['sku_info'][$k2]['num'] = $v2['goods_num'];
+                #商品（规格）信息==============================end
+
+                #附加费用（国内运费）=====================================start
+                $freight_num += $v2['goods_num'];
+                $goods_freight_fee += $goods['goods_freight_fee'];
+                #附加费用（国内运费）=====================================end
+
+                #当前购物车的商品价格
+                $goods_price += $v2['price'];
+                $data[$k]['currency'] = $data[$k]['sku_info'][$k2]['currency'];
+                $data[$k]['price'] = number_format($goods_price, 2);
+
+                #最终价格的币种
+                $final['final_currency']=$data[$k]['currency'];
+            }
+
+            #商品附加费用：卖家运费/卖家要的费用
+            #附加费用=======================================start
+            $data[$k]['services']['additional_money'] = 0;
+            if ($goods['shop_id']==0) {
+                $services_ids = Db::table('cost_service')->where(['pid' => 2, 'company_id' => 0])->get();
+                $services_ids = objtoarr($services_ids);
+                $service_ids_arr = '';
+                foreach ($services_ids as $sk => $sv) {
+                    $service_ids_arr .= $sv['id'] . ',';
+                }
+
+                $data[$k]['services']['additional'] = Db::table('goods_services')->whereRaw('company_id=0 and find_in_set(service_id,"' . rtrim($service_ids_arr, ',') . '")')->get();
+                $data[$k]['services']['additional'] = objtoarr($data[$k]['services']['additional']);
+                foreach ($data[$k]['services']['additional'] as $k2 => $v2) {
+                    $data[$k]['services']['additional'][$k2]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id' => $v2['currency']])->first()->currency_symbol_standard;
+                    if ($v2['is_select'] == 1) {
+                        $data[$k]['services']['additional_money'] += $v2['price'];
+                    }
+                }
+
+//            $data[$k]['services']['additional222'] = [
+//                ['name'=>'国内运费','num'=>1,'currency'=>'CNY','price'=>number_format($goods_freight_fee,2)]
+//            ];
+            } else {
+                #商户企业id
+                if (empty($goods['otherfees_content']) && empty($goods['reduction_content']) && empty($goods['gift_content']) && empty($goods['noinclude_content'])) {
+                    $data[$k]['services']['additional'] = [];
+                } else {
+                    if (!empty($goods['otherfees_content'])) {
+                        #1、其他费用判断
+                        $otherfees_content = json_decode($goods['otherfees_content'], true);
+
+                        foreach ($otherfees_content['fees_name'] as $k3=>$v3) {
+                            if ($otherfees_content['fees_condition'][$k3]==2) {
+                                #有条件触发
+
+                                if ($otherfees_content['fees_trigger'][$k3]==1) {
+                                    #要素触发
+                                    if ($otherfees_content['fees_trigger2_equal'][$k3]==1) {
+                                        #少于
+
+                                        #大于/等于就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                            #购买数量
+                                            if ($v2['goods_num']>=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                            #购买金额
+                                            if ($v2['price']>=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==2) {
+                                        #少于或等于
+
+                                        #大于就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                            #购买数量
+                                            if ($v2['goods_num']>$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                            #购买金额
+                                            if ($v2['price']>$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==3) {
+                                        #等于
+
+                                        #不等于就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                            #购买数量
+                                            if ($v2['goods_num']!=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                            #购买金额
+                                            if ($v2['price']!=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==4) {
+                                        #大于
+
+                                        #少于/等于就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                            #购买数量
+                                            if ($v2['goods_num']<=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                            #购买金额
+                                            if ($v2['price']<=$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        }
+                                    } elseif ($otherfees_content['fees_trigger2_equal'][$k3]==5) {
+                                        #大于或等于
+
+                                        #少于就退出当前循环，进行下一个循环（不满足条件）
+                                        if ($otherfees_content['fees_trigger2'][$k3]==1) {
+                                            #购买数量
+                                            if ($v2['goods_num']<$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        } elseif ($otherfees_content['fees_trigger2'][$k3]==2) {
+                                            #购买金额
+                                            if ($v2['price']<$otherfees_content['fees_trigger2_num'][$k3]) {
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                } elseif ($otherfees_content['fees_trigger'][$k3]==2) {
+                                    #型号触发
+                                    if ($otherfees_content['fees_options'][$k3]==-1) {
+                                        continue;
+                                    }
+                                    #首先找到商户商品表id和规格
+                                    $goods_merchant = Db::table('goods_merchant')->where(['shelf_id'=>$v['goods_id']])->first();
+                                    $goods_sku_merchant = Db::table('goods_sku_merchant')->where(['goods_id'=>$goods_merchant->id,'sku_id'=>$otherfees_content['fees_options'][$k3]])->first();
+                                    $goods_sku_merchant = objtoarr($goods_sku_merchant);
+
+                                    #不是当前规格就退出当前循环，进行下一个循环（不满足条件）
+                                    if ($goods_sku['spec_names']!=$goods_sku_merchant['spec_names']) {
+                                        continue;
+                                    }
+                                } elseif ($otherfees_content['fees_trigger'][$k3]==3) {
+                                    #物流触发（待做）
+                                }
+                            }
+
+                            #收费标准
+                            if ($otherfees_content['fees_standard'][$k3]==1) {
+                                #定额计价
+                                $data[$k]['services']['additional'][] = [
+                                    'name'=>$otherfees_content['fees_name'][$k3],
+                                    'desc'=>$otherfees_content['fees_desc'][$k3],
+                                    'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                    'price'=>number_format($otherfees_content['fees_standard_price'][$k3], 2)
+                                ];
+                                $data[$k]['services']['additional_money'] += $otherfees_content['fees_standard_price'][$k3];
+                            } elseif ($otherfees_content['fees_standard'][$k3]==2) {
+                                #比例计价
+                                if ($otherfees_content['fees_standard_ratio'][$k3]==1) {
+                                    #计费基数
+                                    $data[$k]['services']['additional'][] = [
+                                        'name'=>$otherfees_content['fees_name'][$k3],
+                                        'desc'=>$otherfees_content['fees_desc'][$k3],
+                                        'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                        'price'=>number_format($otherfees_content['fees_standard_ratio_price'][$k3], 2)
+                                    ];
+                                    $data[$k]['services']['additional_money'] += $otherfees_content['fees_standard_ratio_price'][$k3];
+                                } elseif ($otherfees_content['fees_standard_ratio'][$k3]==2) {
+                                    #计费比率
+                                    $ratio_price = ($otherfees_content['fees_standard_ratio_ratio'][$k3] / 100) * $v2['price'];
+                                    $data[$k]['services']['additional'][] = [
+                                        'name'=>$otherfees_content['fees_name'][$k3],
+                                        'desc'=>$otherfees_content['fees_desc'][$k3],
+                                        'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$otherfees_content['fees_standard_currency'][$k3]])->first()->currency_symbol_standard,
+                                        'price'=>number_format($ratio_price, 2)
+                                    ];
+                                    $data[$k]['services']['additional_money'] += $ratio_price;
+                                }
+                            }
+                        }
+                    }
+                    if (!empty($goods['reduction_content'])) {
+                        #2、销售优惠减免判断
+                        $reduction_content = json_decode($goods['reduction_content'], true);
+
+                        $reduction_strict = 0;
+                        $reduction_arr = [];
+                        foreach ($reduction_content['preferential_blong'] as $k3=>$v3) {
+                            $rule_name = Db::table('ssl_reduction_rule')->where(['id'=>$reduction_content['type'][$k3]])->first();
+                            $rule_name = objtoarr($rule_name);
+                            $rule_name['content'] = json_decode($rule_name['content'], true);
+
+                            $name = '';
+                            if ($v3==1) {
+                                $name = '卖家优惠';
+                            } elseif ($v3==2) {
+                                $name = '平台优惠';
+                            } elseif ($v3==3) {
+                                $name = '他方优惠';
+                            }
+
+                            if ($reduction_content['strict'][$k3]==1 && $reduction_strict==0) {
+                                #单独
+                                if ($v2['price']>$reduction_content['price1'][$k3]) {
+                                    $reduction_arr = [
+                                        'name'=>$name,
+                                        'desc'=>$rule_name['content'][0].$reduction_content['price1'][$k3].$rule_name['content'][2].$reduction_content['price2'][$k3],
+                                        'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$reduction_content['currency1']])->first()->currency_symbol_standard,
+                                        'price'=>'-'.number_format($reduction_content['price2'][$k3], 2)
+                                    ];
+                                    $data[$k]['services']['additional'][] = $reduction_arr;
+                                    $data[$k]['services']['additional_money'] -= $reduction_content['price2'][$k3];
+                                    break;
+                                }
+                                $reduction_strict=1;
+                            } elseif ($reduction_content['strice'][$k3]==2 && ($reduction_strict==0 || $reduction_strict==2)) {
+                                #叠加
+                                if ($v2['price']>$reduction_content['price1'][$k3]) {
+                                    $reduction_arr = [
+                                        'name' => $name,
+                                        'desc' => $rule_name['content'][0] . $reduction_content['price1'][$k3] . $rule_name['content'][2] . $reduction_content['price2'][$k3],
+                                        'currency' => Db::connection('shop_db')->table('centralize_currency')->where(['id' => $reduction_content['currency1']])->first()->currency_symbol_standard,
+                                        'price' => '-'.number_format($reduction_content['price2'][$k3], 2)
+                                    ];
+                                    $data[$k]['services']['additional'][] = $reduction_arr;
+                                    $data[$k]['services']['additional_money'] -= $otherfees_content['price2'][$k3];
+                                }
+                                $reduction_strict=2;
+                            }
+                        }
+                    }
+                    if (!empty($goods['gift_content'])) {
+                        #3、随赠优惠判断
+                        $gift_content = json_decode($goods['gift_content'], true);
+
+                        $gift_strict = 0;
+                        foreach ($gift_content['preferential_blong'] as $k3=>$v3) {
+                            $name = '';
+                            if ($v3==1) {
+                                $name = '卖家优惠';
+                            } elseif ($v3==2) {
+                                $name = '平台优惠';
+                            } elseif ($v3==3) {
+                                $name = '他方优惠';
+                            }
+
+                            if ($gift_content['strict'][$k3]==1 && $gift_strict==0) {
+                                #单独
+                                $gift_strict=1;
+                            } elseif ($gift_content['strict'][$k3]==2 && ($gift_strict==0 || $gift_strict==2)) {
+                                #叠加
+                                $gift_strict=2;
+                            } else {
+                                continue;
+                            }
+
+                            $gift_project = '随赠项目：';
+                            if ($gift_content['type'][$k3]==1) {
+                                $gift_project .= '积分；';
+
+                                if ($gift_content['points_type'][$k3]==1) {
+                                    $gift_project .= '按每订单/次，赠送'.$gift_content['points_send'][$k3].'积分；';
+                                } elseif ($gift_content['points_type'][$k3]==2) {
+                                    if ($v2['price']>=$gift_content['points_money'][$k3]) {
+                                        $points_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['points_currency']])->first()->currency_symbol_standard;
+                                        $gift_project .= '按金额满 '.$points_currency.' '.number_format($gift_content['points_money'][$k3], 2).'，赠送'.$gift_content['points_send'][$k3].'积分；';
+                                    }
+                                }
+                            } elseif ($gift_content['type'][$k3]==2) {
+                                $gift_project .= '卡券；';
+                                $coupon_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['coupon_currency']])->first()->currency_symbol_standard;
+                                $gift_project .= '赠送价值 '.$coupon_currency.' '.$gift_content['coupon_money'][$k3].' *'.$gift_content['coupon_num'][$k].'张；';
+                            } elseif ($gift_content['type'][$k3]==3) {
+                                $gift_project .= '随赠；';
+
+                                if ($gift_content['accgift_type'][$k3]==1) {
+                                    $gift_project .= '虚拟物品：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'个';
+                                } elseif ($gift_content['accgift_type'][$k3]==2) {
+                                    $gift_project .= '额外服务：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'次';
+                                } elseif ($gift_content['accgift_type'][$k3]==3) {
+                                    $gift_project .= '实物赠品：'.$gift_content['accgift_content'][$k3].' *'.$gift_content['accgift_num'][$k3].'个';
+                                }
+                            }
+
+                            $gift_arr = [
+                                'name'=>$name,
+                                'desc'=>$gift_project,
+                                'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$gift_content['points_currency']])->first()->currency_symbol_standard,
+                                'price'=>'0.00'
+                            ];
+                            $data[$k]['services']['additional'][] = $gift_arr;
+//                            $data[$k]['services']['additional_money'] = $gift_content['price2'][$k3];
+                        }
+                    }
+                    if (!empty($goods['noinclude_content'])) {
+                        #4、价格未含
+                        $noinclude_content = json_decode($goods['noinclude_content'], true);
+
+                        foreach ($noinclude_content['name'] as $k3=>$v3) {
+                            $data[$k]['services']['additional'][] = [
+                                'name'=>$v3,
+                                'desc'=>$noinclude_content['desc'][$k3],
+                                'currency'=>Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$noinclude_content['currency'][$k3]])->first()->currency_symbol_standard,
+                                'price'=>number_format($noinclude_content['price'][$k3], 2)
+                            ];
+                            $data[$k]['services']['additional_money'] += $noinclude_content['price'][$k3];
+                        }
+                    }
+//                    $data[$k]['services']['additional'] = $data[$k]['services']['additional'];
+//                    dd($data[$k]['services']['additional']);
+                }
+//                dd($goods);
+            }
+
+            $data[$k]['services']['additional_money'] = number_format($data[$k]['services']['additional_money'], 2);
+            #附加费用=======================================end
+
+            #增值服务=======================================start
+            $data[$k]['services']['increment_money'] = 0;
+
+            $services_ids = Db::table('cost_service')->where(['pid'=>1,'company_id'=>0])->get();
+            $services_ids = objtoarr($services_ids);
+            $service_ids_arr = '';
+            foreach ($services_ids as $sk=>$sv) {
+                $service_ids_arr .= $sv['id'].',';
+            }
+
+            $data[$k]['services']['increment'] = Db::table('goods_services')->whereRaw('company_id=0 and find_in_set(service_id,"'.rtrim($service_ids_arr, ',').'")')->get();
+            $data[$k]['services']['increment'] = objtoarr($data[$k]['services']['increment']);
+
+            foreach ($data[$k]['services']['increment'] as $k2=>$v2) {
+                $data[$k]['services']['increment'][$k2]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v2['currency']])->first()->currency_symbol_standard;
+                if ($v2['is_select']==1) {
+                    $data[$k]['services']['increment'][$k2]['final_money'] = $v2['price'];
+                } else {
+                    $data[$k]['services']['increment'][$k2]['final_money'] = '0.00';
+                }
+            }
+
+            #查看当前购物清单的增值服务
+            if (!empty($data[$k]['services_old'])) {
+                #已选服务
+                $data[$k]['services_old'] = json_decode($data[$k]['services_old'], true);
+
+                foreach ($data[$k]['services_old'] as $k2=>$v2) {
+                    $services = Db::table('goods_services')->where(['id'=>$v2['service_id']])->first();
+                    $services = objtoarr($services);
+
+                    if ($services['type']==1) {
+                        #照片服务/价格递增
+                        if ($v2['photonum']>=1) {
+                            if ($v2['photonum']>=$services['num']) {
+                                $services['price'] = $services['price'] + (($v2['photonum'] - $services['num']) * $services['interval_price']);
+                                $data[$k]['services']['increment_money'] += $services['price'];
+                                $data[$k]['services']['increment'][$k2]['final_money'] = $services['price'];
+
+                                #只保留当前服务价格
+                                if ($services_price==0 && $v2['service_id']==$id) {
+                                    $services_price = $services['price'];
+                                }
+                            }
+                        }
+                    } else {
+                        #其他服务
+                        $data[$k]['services']['increment_money'] += $services['price'];
+                        $data[$k]['services']['increment'][$k2]['final_money'] = $services['price'];
+
+                        #只保留当前服务价格
+                        if ($services_price==0 && $v2['service_id']==$id) {
+                            $services_price = $services['price'];
+                        }
+                    }
+                }
+            } else {
+                #未选服务
+                foreach ($data[$k]['services']['increment'] as $k2=>$v2) {
+                    if ($v2['is_select']==1) {
+                        $data[$k]['services']['increment_money'] += $v2['price'];
+                    }
+                }
+            }
+
+            $data[$k]['services']['increment_money'] = number_format($data[$k]['services']['increment_money'], 2);
+            #增值服务=======================================end
+
+            #潜在费用=======================================start
+            $data[$k]['services']['potential_money'] = 0;#到时候要循环获取金额（待改）
+
+            if ($goods['shop_id']==0) {
+                $services_ids = Db::table('cost_service')->where(['pid'=>3,'company_id'=>0])->get();
+                $services_ids = objtoarr($services_ids);
+                $service_ids_arr = '';
+                foreach ($services_ids as $sk=>$sv) {
+                    $service_ids_arr .= $sv['id'].',';
+                }
+
+                $data[$k]['services']['potential'] = Db::table('goods_services')->whereRaw('company_id=0 and find_in_set(service_id,"'.rtrim($service_ids_arr, ',').'")')->get();
+                $data[$k]['services']['potential'] = objtoarr($data[$k]['services']['potential']);
+                foreach ($data[$k]['services']['potential'] as $k2=>$v2) {
+                    $data[$k]['services']['potential'][$k2]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v2['currency']])->first()->currency_symbol_standard;
+                    if ($v2['is_select']==1) {
+                        $data[$k]['services']['potential_money'] += $v2['price'];
+                    }
+                }
+            } else {
+                #商户企业id
+
+                if (empty($goods['potential_content'])) {
+                    $data[$k]['services']['potential'] = [];
+                } else {
+                    if (!empty($goods['potential_content'])) {
+                        #1、潜在收费判断
+                        $potential_content = json_decode($goods['potential_content'], true);
+
+                        foreach ($potential_content['name'] as $k3 => $v3) {
+                            $data[$k]['services']['potential'][] = [
+                                'name' => $v3,
+                                'desc' => $potential_content['desc'][$k3],
+                                'currency' => Db::connection('shop_db')->table('centralize_currency')->where(['id' => $potential_content['currency'][$k3]])->first()->currency_symbol_standard,
+                                'price' => number_format($potential_content['price'][$k3], 2)
+                            ];
+                            $data[$k]['services']['potential_money'] += $potential_content['price'][$k3];
+                        }
+                    }
+                }
+            }
+
+            $data[$k]['services']['potential_money'] = number_format($data[$k]['services']['potential_money'], 2);
+            #潜在费用=======================================end
+
+            #当前购物车id的商品（规格）总价（商品（规格）单价+各服务费用）
+            $data[$k]['total_price'] = number_format($goods_price+$data[$k]['services']['additional_money']+$data[$k]['services']['increment_money']+$data[$k]['services']['potential_money'], 2);
+
+            #所有购物清单的最终价格
+            $final['final_price'] += $goods_price+$data[$k]['services']['additional_money']+$data[$k]['services']['increment_money']+$data[$k]['services']['potential_money'];
+
+            if ($cart_id==$v['cart_id']) {
+                #避免下一个购物清单刷新
+                if ($goods_sumprice==0) {
+                    #商品总价
+                    $goods_sumprice = number_format($goods_price+$data[$k]['services']['additional_money']+$data[$k]['services']['increment_money']+$data[$k]['services']['potential_money'], 2);
+                    #增值服务总价
+                    $services_sumprice = $data[$k]['services']['increment_money'];
+                }
+            }
+        }
+
+        #所有购物清单的最终价格
+        $final['final_price'] = number_format($final['final_price'], 2);
+        return Response()->json(['code'=>0,'data'=>['final'=>$final,'goods_sumprice'=>$goods_sumprice,'services_sumprice'=>$services_sumprice,'services_price'=>number_format($services_price, 2)]]);
+    }
+    public function calc_services2(Request $request)
+    {
+        $data = $request->except(['_token']);
+        $id = intval($data['id']);
+        $num = isset($data['num']) ? $data['num'] : 0;
+        $val = isset($data['val']) ? $data['val'] : 0;
+        $price = FloatVal($data['price']);
+
+        $services = Db::table('goods_services')->where(['id'=>$id])->first();
+        $services = objtoarr($services);
+
+        if ($services['type']==1) {
+            #照片服务/价格递增
+            if ($num>1) {
+                if ($num>=$services['num']) {
+                    $services['price'] = $services['price'] + (($num - $services['num']) * $services['interval_price']);
+                }
+            }
+        } else {
+            #其他服务
+            if ($val==0) {
+                $services['price'] += $price;
+            } elseif ($val==1) {
+                $services['price'] = $price - $services['price'];
+            }
+        }
+
+        return Response()->json(['code'=>0,'data'=>$services]);
+    }
+    //自定义请求方法-end
+
+    /**
+     * 商品详情 选择规格
+     * ajax加载sku相关信息
+     *
+     * @param Request $request
+     * @return mixed
+     */
+    public function sku(Request $request)
+    {
+        $sku_id = $request->get('sku_id');
+        $attr_id = ltrim($request->get('attr_id'), '|');
+        $goods_id = $this->goods->getGoodsId($sku_id);
+        $goods_info = $this->goods->getById($goods_id)->toArray();
+        $shop_info = [];
+        if ($goods_info['shop_id']>0) {
+            // 店铺信息
+//            $shop_info = Shop::where('shop_id',$goods_info['shop_id'])->first()->toArray();
+//            $shop_info['opening_hour'] = unserialize($shop_info['opening_hour']);
+        }
+        // 默认sku
+//        $default_sku = GoodsSku::where('sku_id',$sku_id)->first()->toArray();
+        if ($goods_info['shop_id']>0) {
+            $attr_id = implode('|', array_reverse(explode('|', $attr_id)));
+            $default_sku = GoodsSku::where([['goods_id',$goods_id],['spec_vids',$attr_id]])->first()->toArray();
+        } else {
+            $attr_id = implode('|', array_reverse(explode('|', $attr_id)));
+            $default_sku = GoodsSku::where([['goods_id', $goods_id], ['spec_vids', $attr_id]])->first();
+            $default_sku = objtoarr($default_sku);
+
+            if (empty($default_sku)) {
+                $attr_id = implode('|', array_reverse(explode('|', $attr_id)));
+                $default_sku = GoodsSku::where([['goods_id', $goods_id], ['spec_vids', $attr_id]])->first();
+                $default_sku = objtoarr($default_sku);
+            }
+        }
+        if (empty($default_sku)) {
+            return response()->json(['code'=>-1,'msg'=>'暂无此规格报价，请选择其他规格']);
+        }
+        $sku_id = $default_sku['sku_id'];
+        $spec_ids = explode('|', $default_sku['spec_ids']);
+        $selected_spec_names = $default_sku['spec_names'];
+        $selected_spec_id = explode('|', $default_sku['spec_vids'])[0];
+
+        //这里是根据规格来更换图片
+//        $selected_spec_id = Db::table('goods_spec')->where([['goods_id',$goods_id],['attr_vid',$selected_spec_id]])->first()->spec_id;
+//        $goods_images = $this->goods->getGoodsImages($goods_id, $selected_spec_id);
+//
+//        // 商品图片相册
+//        $goods_images = array_column($goods_images->toArray(), 'path');
+        $goods_images_list = [];
+//        foreach ($goods_images as $image) {
+//            $goods_images_list[] = [
+//                get_image_url($image).'?x-oss-process=image\/resize,m_pad,limit_0,h_80,w_80',
+//                get_image_url($image).'?x-oss-process=image\/resize,m_pad,limit_0,h_450,w_450',
+//                get_image_url($image)
+//            ];
+//        }
+
+        $sku_image = '';
+        if ($goods_info['shop_id']>0) {
+//            $sku_image = $goods_images[0];
+            $sku_image = [];
+        }
+        $sku_images = $goods_images_list;
+
+        #===========================规格名称start
+        $spec_attr_value = [];
+        $ik = 0;
+        $selected_spec_names = explode(' ', $selected_spec_names);
+        $new_spec_names = [];
+        foreach ($selected_spec_names as $key => $item) {
+            if (count(explode(':', $item))==1) {
+                $new_spec_names[$key-1] = $selected_spec_names[$ik-1].' '.$item;
+            } else {
+                array_push($new_spec_names, $item);
+                $ik +=1;
+            }
+        }
+        foreach ($new_spec_names as $item) {
+            if (isset(explode(':', $item)[1])) {
+                $spec_attr_value[] = explode(':', $item)[1];
+            }
+        }
+        $spec_attr_value2 = implode(' ', $spec_attr_value);
+//        $spec_attr_value = $spec_attr_value;
+        $sku_name = $goods_info['goods_name'].' '.$spec_attr_value2;
+        #===========================规格名称end
+
+        #商品规格区间
+        $sku_prices = json_decode($default_sku['sku_prices'], true);
+        foreach ($sku_prices['unit'] as $k=>$v) {
+            $sku_prices['unit'][$k] = Db::connection('shop_db')->table('unit')->where('code_value', $v)->first()->code_name;
+            $sku_prices['currency'][$k] = Db::connection('shop_db')->table('centralize_currency')->where('id', $sku_prices['currency'][$k])->first()->currency_symbol_standard;
+        }
+
+        $low_price = $sku_prices['price'][0];
+        foreach ($sku_prices['price'] as $k=>$v) {
+            $sku_prices['price'][$k] = number_format($v, 2);
+            if ($low_price>$v) {
+                $low_price = $v;
+            }
+        }
+        if ($goods_info['shop_id']>0) {
+            $low_price = [$sku_prices['currency'][0],number_format($sku_prices['price'][0], 2)];
+        } else {
+            $low_price = [$sku_prices['currency'][0],number_format($low_price, 2)];
+        }
+
+        $data = [
+            'act_id' => "0",
+            'activity' => null,
+            'button_content' => isset($shop_info['button_content']) ? $shop_info['button_content'] : '', // 购买按钮显示内容
+            'button_url' => null,
+            'buy_enable' => ['code'=>1],
+            'freight_id' => $goods_info['freight_id'],
+            'gift_list' => [],
+            'sku_prices' => $sku_prices,
+            'goods_audit' => $goods_info['goods_audit'],
+            'goods_id' => $goods_info['goods_id'],
+            'goods_image' => $goods_info['goods_image'],
+            'goods_mix' => [],
+            'goods_moq' => $goods_info['goods_moq'],
+            'goods_number' => $default_sku['goods_number'],
+            'goods_price' => number_format($default_sku['goods_price'], 2),
+            'goods_price_format' => "￥".number_format($default_sku['goods_price'], 2),
+            'goods_status' => $goods_info['goods_status'],
+            'is_enable' => 1,
+            'is_supply' => isset($shop_info['is_supply']) ? $shop_info['is_supply'] : '',
+            'market_price' => number_format($default_sku['market_price'], 2),
+            'market_price_format' => "￥".number_format($default_sku['market_price'], 2),
+            'order_act_id' => "0",
+            'order_activity' => null,
+            'original_number' => 2, // 商品表添加字段
+            'original_price' => "1.00", // 商品表添加字段
+            'original_price_format' => "￥1.00",
+            'price_show' => ['code'=>1],
+            'purchase_num' => 0,
+            'rank_prices' => null,
+            'sales_model' => $goods_info['sales_model'],
+            'shop_id' => $goods_info['shop_id'],
+            'show_content' => isset($shop_info['show_content']) ? $shop_info['show_content'] : '', // 店铺价格显示内容
+            'show_price' => isset($shop_info['show_price']) ? $shop_info['show_price'] : '', // 店铺价格是否显示
+            'sku_id' => $sku_id,
+            'sku_image' => $sku_image,
+            'sku_images' => $sku_images,
+            'sku_name' => $sku_name,
+            'spec_attr_value' => $spec_attr_value,
+            'spec_ids' => $spec_ids,
+            'start_price' => isset($shop_info['start_price']) ? $shop_info['start_price'] : '', // 起送金额
+            'unit_name' => $goods_info['goods_unit'], // 商品单位id
+            'user_discount' => "0",
+            'low_price' => $low_price
+        ];
+//        dd($data,$sku_id);
+
+        return result(0, $data);
+    }
+
+    #有商户id的计算价格区间
+    public function calc_price_interval(Request $request)
+    {
+        $data = $request->except(['_token']);
+
+        $sku_id = intval($data['sku_id']);
+        $num = intval($data['num']);
+
+//        $goods_id = $this->goods->getGoodsId($sku_id);
+//        $goods_info = $this->goods->getById($goods_id)->toArray();
+
+        $sku = Db::table('goods_sku')->where(['sku_id'=>$sku_id])->first();
+        $sku = objtoarr($sku);
+        $sku['sku_prices'] = json_decode($sku['sku_prices'], true);
+
+        $price = 0;
+        foreach ($sku['sku_prices']['start_num'] as $k=>$v) {
+            if ($sku['sku_prices']['select_end'][$k]==1) {
+                #数值
+                if ($num>=$v and $num<=$sku['sku_prices']['end_num'][$k]) {
+                    $price = $sku['sku_prices']['price'][$k];
+                    break;
+                }
+            } elseif ($sku['sku_prices']['select_end'][$k]==2) {
+                #以上
+                if ($num>=$v) {
+                    $price = $sku['sku_prices']['price'][$k];
+                    break;
+                }
+            }
+        }
+
+        return response()->json(['code'=>0,'price'=>number_format($price, 2)]);
+    }
+}
