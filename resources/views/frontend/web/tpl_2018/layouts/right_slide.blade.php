@@ -31,15 +31,15 @@
     .windowBox .windowDiv{width: 100%;height:100%;overflow: hidden;}
     .windowBox .leftBox{width: 30%;height:100%;border-top-left-radius: 22px;border-bottom-left-radius: 22px;overflow: hidden;cursor:pointer;}
     .windowBox .leftBox img{width: 100%;height:100%;}
-    .windowBox .rightBox{width: 71%;height:100%;background:{{$website['color']}};border-bottom-right-radius: 25px;}
+    .windowBox .rightBox{width: 71%;height:100%;background:{{$website['color']}};border-bottom-right-radius: 25px;border-bottom-left-radius: 25px;border-top-right-radius: 25px;border-top-left-radius: 25px;}
     .windowBox .rightBox .levelList1{width:97%;padding: 0 10px 0 30px;position: relative;box-sizing: border-box;}
     .windowBox .rightBox .levelList1 .innerContent{width: 100%;overflow: hidden;border: 1px solid #fff;border-top:0;border-bottom: 0;}
-    .windowBox .rightBox .levelList1 .turnleft{position: absolute;border-top: 2px solid #fff;border-right: 2px solid #fff;width: 12px;height: 12px;top: 35%;left: 2%;transform: rotate(225deg);cursor:pointer;}
-    .windowBox .rightBox .levelList1 .turnright{position: absolute;border-top: 2px solid #fff;border-right: 2px solid #fff;width: 12px;height: 12px;top: 35%;right: -1%;transform: rotate(45deg);cursor:pointer;}
-    .windowBox .rightBox .levelList1 .levelItem{padding:10px 39.85px;font-size: 18px;font-weight:800;display: table-cell;color:#fff;background:{{$website['color']}};border-right:1px solid #fff;cursor: pointer;white-space: nowrap;box-sizing: border-box;}
+    .windowBox .rightBox .levelList1 .turnleft{position: absolute;border-top: 2px solid #000;border-right: 2px solid #000;width: 12px;height: 12px;top: 35%;left: 2%;transform: rotate(225deg);cursor:pointer;}
+    .windowBox .rightBox .levelList1 .turnright{position: absolute;border-top: 2px solid #000;border-right: 2px solid #000;width: 12px;height: 12px;top: 35%;right: -1%;transform: rotate(45deg);cursor:pointer;}
+    .windowBox .rightBox .levelList1 .levelItem{padding:10px 39.85px;font-size: 18px;font-weight:800;display: table-cell;color:#000;background:{{$website['color']}};border-right:1px solid #fff;cursor: pointer;white-space: nowrap;box-sizing: border-box;}
     .windowBox .rightBox .levelList1 .levelItem:last-child{/**border-right: 0;**/}
     .windowBox .rightBox .levelList1 .levelItem:hover{background:#e60000;position: relative;}
-    .windowBox .rightBox .levelList1 .levelActive{background:#e60000;position: relative;}
+    .windowBox .rightBox .levelList1 .levelActive{background:#e60000;color:#fff;position: relative;}
     .windowBox .rightBox .levelList1 .levelActive:after{content:'';position: absolute;top: 13px;right: 15px;width: 10px;height: 10px;border-top: 2px solid #fff;border-right: 2px solid #fff;transform: rotate(135deg);}
     .windowBox .rightBox .levelList2{/**padding:10px 30px 10px 72px;background: #cbc9c9;**/border-bottom:1px solid #cdcccc;}
     .windowBox .rightBox .levelList2 .item{min-height:25px;}
@@ -47,7 +47,7 @@
     .windowBox .rightBox .levelList2 .levelItem:hover{color:#fff;position: relative;}
     .windowBox .rightBox .levelList2 .levelActive{color:#fff;position: relative;}
     .windowBox .rightBox .levelList2 .levelActive:after{content:'';position:absolute;bottom:-10px;left:0;background:#fff;width:100%;height:2px;}
-    .windowBox .windowContent{padding:20px 30px;background:#8f8f8f;height: 93%;border-bottom-right-radius: 25px;box-sizing: border-box;}
+    .windowBox .windowContent{padding:20px 30px;background:#8f8f8f;height: 93%;border-bottom-right-radius: 25px;border-bottom-left-radius: 25px;box-sizing: border-box;}
     .windowBox .windowContent .windowDiv{width:100%;height:100%;border-radius: 10px;background: #fff;}
     .windowBox .windowContent .newsDiv{width:100%;height:8%;border-radius: 10px;background: #fff;margin-top:15px;padding:10px;}
     .windowBox .windowContent .newsDiv .icon{position: relative;}
@@ -56,6 +56,20 @@
     .windowBox .windowContent .newsDiv .newsContent{width: 100%;margin-left: 25px;}
     .windowBox .windowContent .newsDiv .newsContent .cont7{height:20px;overflow: hidden;}
     .windowBox .windowContent .newsDiv .newsContent .cont7 a{font-size: 15px;color:{{$website['color']}};display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;overflow: hidden;text-overflow: ellipsis;}
+    
+    @media (max-width: 992px ){
+        .windowBox{width:90%;height:50%;}
+        .windowBox .close img{width:35px;height:35px;}
+        .windowBox .close{top:-15px;right:-15px;}
+        .windowBox .rightBox .levelList1{width:92%;}
+        .windowBox .rightBox .levelList1 .levelItem{padding:10px 32.85px;}
+        .windowBox .leftBox{display:none;}
+        .windowBox .rightBox .levelList1 .turnleft{left:4%;}
+        .windowBox .rightBox{width:100%;}
+        .windowBox .windowContent{padding:20px;height:89.5%;}
+        .searchContent .inputBox .nameBox input{font-size:18px;}
+        .searchContent .inputBox .btnBox{font-size:16px;}
+    } 
 </style>
 
 <!--右侧滑动-->

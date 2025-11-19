@@ -482,7 +482,7 @@
                             <div class="searchContent disf">
                                 <div class="inputBox disf">
                                     <div class="nameBox">
-                                        <input type="text" name="name" placeholder="{{$website['search']['search_title']}}" class="f15" id="searchInput">
+                                        <input type="text" name="name" placeholder="{{$website['search']['search_title']}}" class="f15 pc_search_title" id="searchInput">
                                     </div>
                                     <div class="btnBox" onclick="search_info(this)">
                                         <img src="/assets/d2eace91/images/newhome/search_icon.png">
@@ -547,7 +547,7 @@
                                         <div class="searchContent disf">
                                             <div class="inputBox disf">
                                                 <div class="nameBox">
-                                                    <input type="text" name="name" placeholder="{{$website['search']['search_title']}}" class="f15" id="searchInput">
+                                                    <input type="text" name="name" placeholder="{{$website['search']['search_title']}}" class="f15 mobile_search_title" id="searchInput">
                                                 </div>
                                                 <div class="btnBox" onclick="search_info(this)">
                                                     <img src="/assets/d2eace91/images/newhome/search_icon.png">

@@ -154,8 +154,9 @@
 
             /*环球节庆*/
             .festivalDiv{margin-top:60px;}
+            .cont4-bg{height: 585px;overflow-y: auto;}
             .cont4-bg .hsColumn{grid-template-columns:repeat(1,1fr);}
-            .cont4-bg .hsDiv{height:320px;}
+            .cont4-bg .hsDiv{height:280px;}
             .cont4-bg .hsMask{height:32%;bottom:0;}
             .cont4-bg .hsDiv .hsContent{bottom:1%;transform: unset;top:unset;}
             .cont4-bg .hsDiv .hsContent .title{font-size:15px;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-line-clamp: 1;-webkit-box-orient: vertical;padding:0;}
@@ -322,7 +323,7 @@
                             </div>
                             <div class="cont4-bg section">
                                 <div class="w1200" style="height:100%;">
-                                    <div class="hsContent" style="height: 80%;overflow: hidden;">
+                                    <div class="hsContent" style="height: 100%;">
                                         <div class="swiper-container guide2_content">
                                             <div class="swiper-wrapper">
                                                 @foreach($data['guide']['children'] as $k2=>$v2)

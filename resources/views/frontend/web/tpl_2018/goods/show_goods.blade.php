@@ -404,6 +404,7 @@
             .detailContent .detailHead .detailBtmBox .detailBtmDiv .detailBtmTxt{width: 105px;margin-right:0;}
             /*商品基本信息===end*/
 
+            .MagicZoomBigImageCont{display:none;}
         }
     </style>
     <div class="w1210">
@@ -3569,7 +3570,7 @@
                                             <tr>
                                                 <td>{{$v}}</td>
                                                 <td>{{$goods['potential_content']['desc'][$k]}}</td>
-                                                <td>{{$goods['potential_content']['currency']}} {{$goods['potential_content']['price'][$k]}}</td>
+                                                <td>{{$goods['potential_content']['currency'][$k]}} {{$goods['potential_content']['price'][$k]}}</td>
                                             </tr>
                                         @endforeach
                                         </tbody>
@@ -3577,24 +3578,24 @@
                                 </div>
                             @endif
                             @if($goods['shop_id']>0 && !empty($goods['activity_info']))
-                            <div class="detailBtmTitle activityInfoDiv">活动参与</div>
-                            <div class="detailBtmInfo">
-                                <table class="layui-table">
-                                    <thead>
-                                    <th>活动名称</th>
-                                    <th>#</th>
-                                    </thead>
-                                    <tbody>
-                                    @foreach($goods['activity_info'] as $k=>$v)
-                                        <tr>
-                                            <td>{{$v['name']}}</td>
-                                            <td><div class="layui-btn layui-btn-xs layui-btn-normal" style="background:{{$website['color']}};color:{{$website['color_word']}};border:1px solid {{$website['color_word']}};">进入活动</div></td>
-                                        </tr>
-                                    @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        @endif
+                                <div class="detailBtmTitle activityInfoDiv">活动参与</div>
+                                <div class="detailBtmInfo">
+                                    <table class="layui-table">
+                                        <thead>
+                                        <th>活动名称</th>
+                                        <th>#</th>
+                                        </thead>
+                                        <tbody>
+                                        @foreach($goods['activity_info'] as $k=>$v)
+                                            <tr>
+                                                <td>{{$v['name']}}</td>
+                                                <td><div class="layui-btn layui-btn-xs layui-btn-normal" style="background:{{$website['color']}};color:{{$website['color_word']}};border:1px solid {{$website['color_word']}};">进入活动</div></td>
+                                            </tr>
+                                        @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
                         </div>
                     @endif
                 </div>

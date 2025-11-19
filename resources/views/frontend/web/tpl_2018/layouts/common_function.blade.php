@@ -14,7 +14,12 @@
     //搜索提交
     function search_info(t){
         // let method = $('#method').val();
-        let title = $('#searchInput').val();
+        var title = '';
+        if(IsPhone()){
+            title = $('.mobile_search_title').val();
+        }else{
+            title = $('.pc_search_title').val();
+        }
         var layer = layui.layer;
 
         layer.load();

@@ -132,6 +132,7 @@
         .x3-move {margin-left: 0;border-bottom:1px solid #fff;border-right:0;}
         .input-group .addon{width:20%;}
         .box_content{display:flex;align-items:center;justify-content:space-evenly;}
+        .need_service_box{right:-70px;}
     }
 
     @media (min-width: 1000px){
