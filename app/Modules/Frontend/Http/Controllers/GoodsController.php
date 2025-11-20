@@ -977,7 +977,12 @@ class GoodsController extends Frontend
                     $goods['rule']['preamble_con'] = json_decode($goods['rule']['preamble_con'],true);
                 }
                 $goods['rule']['title'] = json_decode($goods['rule']['title'],true);
-                $goods['rule']['content'] = json_decode($goods['rule']['content'],true);
+                if(isset($goods['rule']['content'])){
+                    $goods['rule']['content'] = json_decode($goods['rule']['content'],true);    
+                }else{
+                    $goods['rule']['content'] = [];
+                }
+                
                 
                 #整理商品规则树形结构代码
                 if(isset($goods['rule']['type'])){
@@ -1043,6 +1048,7 @@ class GoodsController extends Frontend
                         }
                     }
                 }
+                
                 if (!empty($goods['sales'])) {
                     $goods['sales'] = json_decode($goods['sales'], true);
                     if (isset($goods['sales']['country'])) {
