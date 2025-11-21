@@ -573,7 +573,7 @@ class GoodsController extends Frontend
             // 商品sku列表（保持原 Repository 调用）
             $sku_list = $this->goods->getFrontendSkuList($goods_id);
             $base_sku_list = array_values($sku_list);
-    
+            
             // 商品规格列表 + has_sku 判断（优化 N+1）
             $spec_list = $this->goods->getGoodsSpecList($goods_info);
     
@@ -601,7 +601,7 @@ class GoodsController extends Frontend
                     }
                 }
             }
-    
+            
             // 商品属性列表
             $attr_list = $this->goods->getGoodsAttrList($goods_id);
     

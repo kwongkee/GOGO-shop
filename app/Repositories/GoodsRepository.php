@@ -1540,7 +1540,7 @@ class GoodsRepository
     {
         $goods_id = $goods_info->goods_id;
         $cat_id = $goods_info->cat_id;
-
+        
         $where[] = ['goods_id',$goods_id];
         $condition = [
             'where' => $where,
@@ -1662,13 +1662,31 @@ class GoodsRepository
                             }
                         }
                     }
-//                    dd($data2);
+                    // dd($data2);
                     #2、整理规格型号文本
                     foreach ($data2 as $k=>$v) {
                         $attr_values = [];
                         foreach ($v['children'] as $k2=>$v2) {
                             $attr_value = Db::table('attr_value')->where(['attr_vid'=>$v2['attr_id']])->first();
-                            $spec_id = Db::table('goods_spec')->where(['goods_id'=>$goods_info['goods_id'],'attr_id'=>$v['spec_id'],'attr_vid'=>$attr_value->attr_vid])->select(['spec_id'])->first()->spec_id;
+                            $spec_id2 = Db::table('goods_spec')->where(['goods_id'=>$goods_info['goods_id'],'attr_id'=>$v['spec_id'],'attr_vid'=>$attr_value->attr_vid])->select(['spec_id'])->first();
+                            if(empty($spec_id2)){
+                                #补漏
+                                $res = Db::table('goods_spec')->insert([
+                                    'goods_id'=>$goods_info['goods_id'],
+                                    'attr_id'=>$v['spec_id'],
+                                    'attr_vid'=>$attr_value->attr_vid,
+                                    'attr_value'=>$attr_value->attr_vname,
+                                    'created_at'=>date('Y-m-d H:i:s'),
+                                    'updated_at'=>date('Y-m-d H:i:s')
+                                ]);
+                                
+                                if($res){
+                                    $spec_id = Db::table('goods_spec')->where(['goods_id'=>$goods_info['goods_id'],'attr_id'=>$v['spec_id'],'attr_vid'=>$attr_value->attr_vid])->select(['spec_id'])->first()->spec_id;    
+                                }
+                            }else{
+                                $spec_id = $spec_id2->spec_id;
+                            }
+                            
                             $attr_value_children = [];
                             if (!empty($v2['have_child'])) {
                                 foreach ($v2['have_child'] as $k3=>$v3) {
