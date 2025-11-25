@@ -973,6 +973,43 @@ function httpRequest2($url, $data, $head=[])
     curl_close($ch);
     return $output;
 }
+function httpRequest_wx($url, $data = null) {
+    $ch = curl_init();
+    
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        CURLOPT_ENCODING => 'gzip, deflate', // 处理压缩响应
+    ]);
+    
+    if (!empty($data)) {
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $data,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($data)
+            ]
+        ]);
+    }
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+    
+    // 如果请求失败，返回空字符串而不是错误信息（避免编码问题）
+    if ($httpCode !== 200) {
+        return "";
+    }
+    
+    return $response;
+}
 function sendWechat($msg=[])
 {
     $time = time();

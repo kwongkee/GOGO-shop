@@ -56,7 +56,7 @@ Route::group(['domain' => env('FRONTEND_DOMAIN')], function ($router) {
     Route::any('/guide_page', 'HomeController@guide_page'); // 导页
     Route::any('/search_info', 'HomeController@search_info'); // 搜索
     Route::any('/user_record', 'HomeController@user_record'); // 记录用户行为
-
+    
     #会员中心
     Route::any('/members/member_center', 'MembersController@member_center'); //会员中心页面
     Route::any('/members/system_manage', 'MembersController@system_manage');
@@ -290,6 +290,7 @@ Route::group(['domain' => env('FRONTEND_DOMAIN')], function ($router) {
         });
     } else {
         Route::get('/goods-{goods_id}.html', 'GoodsController@showGoods')->name('pc_show_goods'); // showGoods
+        Route::get('/goodsdetail-{goods_id}.html', 'GoodsController@showGoodsDetail')->name('pc_show_goods'); // showGoodsDetail
         Route::get('/list-{filter_str?}.html', 'GoodsController@lists')->name('pc_goods_list'); // goodsList
         Route::get('/list.html', 'GoodsController@lists'); // goodsList
 //    Route::get('/list-{cat_id}-{p1?}-{p2?}-{is_platform?}-{is_free_shipping?}-{is_offpay?}-{has_goods_number?}-{sort_type?}-{p9?}-{area_code?}-{p11?}-{brand_id?}-{min_price?}-{max_price?}.html', 'GoodsController@goodsList')->name('goods_list'); // 商品列表 筛选条件
@@ -319,7 +320,8 @@ Route::group(['domain' => env('FRONTEND_DOMAIN')], function ($router) {
         Route::any('/apply_order', 'GoodsController@apply_order'); // 确认订单页-申请订购
         Route::any('/cashier', 'GoodsController@cashier'); // 收银台
         Route::any('/get_cashier_country', 'GoodsController@get_cashier_country'); // 收银台-获取国家收银配置
-
+        Route::any('/get_miniprogram', 'GoodsController@get_miniprogram'); //分享小程序码
+        
         Route::any('/taozg', 'FuncController@tao_zhongguo'); // 淘中国
         Route::any('/goods_list', 'FuncController@goods_list'); // 淘中国商品列表
         Route::any('/taozg_detail', 'FuncController@taozg_detail'); // 淘中国商品详情

@@ -29,6 +29,7 @@ use Illuminate\Support\Str;
 use Nexmo\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Session;
 
 header('Access-Control-Allow-Origin: *'); //设置http://www.baidu.com允许跨域访问
 header('Access-Control-Allow-Headers: X-Requested-With,X_Requested_With'); //设置允许的跨域header
@@ -542,9 +543,63 @@ class GoodsController extends Frontend
         return $this->displayData(); // 模板渲染及APP客户端返回数据
     }
     
+    #展示商品卡片
     public function showGoods(Request $request, $goods_id){
+        $data = $request->except(['_token']);
+        
+        $goods = Db::table('goods')->where(['goods_id'=>intval($goods_id)])->select('goods_id','sku_id','goods_name','goods_image','shop_id','goods_currency')->first();
+        
+        #商品分享词（限制41个词）
+        $characters = mb_str_split($goods->goods_name, 1, 'UTF-8');
+        $result = array_chunk($characters, 26);
+        // 将每组字符重新组合成字符串
+        $goods_share_words = array_map(function($chunk) {
+            return implode('', $chunk);
+        }, $result);
+     
+        $shop_name = 'Gogo淘中国';
+        $shop_logo = 'https://shop.gogo198.cn/collect_website/public/uploads/centralize/website_index/679357cc06e93.png';
+        if($goods->shop_id>0){
+            $shop_name = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods->shop_id])->field('company')->first()->company;
+            $shop_logo = Db::connection('shop_db')->table('website_basic')->where(['company_id'=>$goods->shop_id,'company_type'=>0])->select('logo')->first()->logo;
+            $shop_logo = '//dtc.gogo198.net'.$shop_logo;
+        }
+        $goods_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$goods->goods_currency])->select('currency_symbol_standard')->first();
+        $goods_sku = Db::table('goods_sku')->where(['goods_id'=>$goods_id])->get();
+        
+        $low_price = 0;// 最低价
+        foreach($goods_sku as $k=>$v){
+            $goods_sku[$k]->sku_prices = json_decode($v->sku_prices,true);
+            foreach($goods_sku[$k]->sku_prices['price'] as $k2=>$v2){
+                if(empty($low_price)){
+                    $low_price = $v2;
+                }else{
+                    if($low_price>$v2){
+                        $low_price = $v2;
+                    }    
+                }
+            }
+        }
+        $true_low_price = $goods_currency->currency_symbol_standard.' '.$low_price;//最低价和币种
+        
+        //随机颜色
+        $color = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid'=>12])->inRandomOrder()->select('param1','param2','param3')->first();
+        
+        $website = get_website();
+        $page_info = get_pageinfo('/goods');
+        $website['background'] = $page_info['content']['background'] ?? '';
+        $website['content'] = $page_info['content']['content'] ?? '';
+        $website['fontcolor'] = $page_info['content']['fontcolor'] ?? '';
+        $website['agentLink'] = $page_info['content']['agent_link'] ?? '';
+        $origin_page = '/goods-'.$goods_id.'.html';
+        
+        return view('goods.goods_home',compact('color','goods','true_low_price','shop_logo','shop_name','website','origin_page','goods_share_words'));
+    }
+    
+    #展示商品详情
+    public function showGoodsDetail(Request $request, $goods_id){
         $goods_id = intval($goods_id);
-
+        
         if ($request->routeIs('pc_show_goods') || $request->routeIs('mobile_show_goods')) {
             $sku_id = $this->goods->getSkuId($goods_id);
         } else {
@@ -1204,7 +1259,7 @@ class GoodsController extends Frontend
         $this->setData($cached);
     
         $this->show_seo('seo_goods', ['name' => $cached['app_prefix_data']['goods']['goods_name']]);
-    
+        
         return $this->displayData();
     }
     
@@ -7077,5 +7132,561 @@ class GoodsController extends Frontend
         $render = view('goods.goods_share', compact('goods', 'uuid', 'goods_qrcode'))->render();
 
         return result(0, $render, '', ['uuid'=> $uuid]);
+    }
+    
+    // 创建圆角图片函数
+    private function create_rounded_image($image, $radius) {
+        $width = imagesx($image);
+        $height = imagesy($image);
+        
+        // 创建新图像
+        $rounded = imagecreatetruecolor($width, $height);
+        imagealphablending($rounded, false);
+        $transparent = imagecolorallocatealpha($rounded, 0, 0, 0, 127);
+        imagefill($rounded, 0, 0, $transparent);
+        imagesavealpha($rounded, true);
+        
+        // 创建圆角遮罩
+        $mask = imagecreatetruecolor($width, $height);
+        $black = imagecolorallocate($mask, 0, 0, 0);
+        $white = imagecolorallocate($mask, 255, 255, 255);
+        imagefill($mask, 0, 0, $black);
+        
+        // 绘制圆角矩形
+        imagefilledrectangle($mask, $radius, 0, $width - $radius - 1, $height - 1, $white);
+        imagefilledrectangle($mask, 0, $radius, $width - 1, $height - $radius - 1, $white);
+        imagefilledellipse($mask, $radius, $radius, $radius * 2, $radius * 2, $white);
+        imagefilledellipse($mask, $width - $radius - 1, $radius, $radius * 2, $radius * 2, $white);
+        imagefilledellipse($mask, $radius, $height - $radius - 1, $radius * 2, $radius * 2, $white);
+        imagefilledellipse($mask, $width - $radius - 1, $height - $radius - 1, $radius * 2, $radius * 2, $white);
+        
+        // 应用遮罩
+        for($x = 0; $x < $width; $x++) {
+            for($y = 0; $y < $height; $y++) {
+                $mask_pixel = imagecolorat($mask, $x, $y);
+                if($mask_pixel == 0) { // 如果是黑色（遮罩外部）
+                    imagesetpixel($rounded, $x, $y, $transparent);
+                } else {
+                    $source_pixel = imagecolorat($image, $x, $y);
+                    imagesetpixel($rounded, $x, $y, $source_pixel);
+                }
+            }
+        }
+        
+        imagedestroy($mask);
+        return $rounded;
+    }
+    
+    // 添加圆形图片创建函数
+    private function create_circular_image($image, $radius) {
+        $diameter = $radius * 2;
+        
+        // 创建新图像
+        $circular = imagecreatetruecolor($diameter, $diameter);
+        imagealphablending($circular, false);
+        $transparent = imagecolorallocatealpha($circular, 0, 0, 0, 127);
+        imagefill($circular, 0, 0, $transparent);
+        imagesavealpha($circular, true);
+        
+        // 创建圆形遮罩
+        $mask = imagecreatetruecolor($diameter, $diameter);
+        $black = imagecolorallocate($mask, 0, 0, 0);
+        $white = imagecolorallocate($mask, 255, 255, 255);
+        imagefill($mask, 0, 0, $black);
+        
+        // 绘制圆形
+        imagefilledellipse($mask, $radius, $radius, $diameter, $diameter, $white);
+        
+        // 调整原图尺寸以匹配圆形
+        $resized_image = imagecreatetruecolor($diameter, $diameter);
+        imagecopyresampled($resized_image, $image, 0, 0, 0, 0, $diameter, $diameter, imagesx($image), imagesy($image));
+        
+        // 应用圆形遮罩
+        for($x = 0; $x < $diameter; $x++) {
+            for($y = 0; $y < $diameter; $y++) {
+                $mask_pixel = imagecolorat($mask, $x, $y);
+                if($mask_pixel == 0) { // 如果是黑色（遮罩外部）
+                    imagesetpixel($circular, $x, $y, $transparent);
+                } else {
+                    $source_pixel = imagecolorat($resized_image, $x, $y);
+                    imagesetpixel($circular, $x, $y, $source_pixel);
+                }
+            }
+        }
+        
+        imagedestroy($mask);
+        imagedestroy($resized_image);
+        return $circular;
+    }
+    
+    #获取商品小程序码
+    public function get_miniprogram(Request $request){
+        $data = $request->except(['_token']);
+        
+        $time = time();
+        $goods_id = intval($data['goods_id']);
+        
+        #1、获取商品名称、商品主图、币种和最低价
+        $goods = Db::table('goods')->where(['goods_id'=>$goods_id])->select('goods_image','goods_name','goods_currency','shop_id')->first();
+        $goods_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$goods->goods_currency])->select('currency_symbol_standard')->first();
+        $goods_sku = Db::table('goods_sku')->where(['goods_id'=>$goods_id])->get();
+        $low_price = 0;// 最低价
+        foreach($goods_sku as $k=>$v){
+            $goods_sku[$k]->sku_prices = json_decode($v->sku_prices,true);
+            foreach($goods_sku[$k]->sku_prices['price'] as $k2=>$v2){
+                if(empty($low_price)){
+                    $low_price = $v2;
+                }else{
+                    if($low_price>$v2){
+                        $low_price = $v2;
+                    }    
+                }
+            }
+        }
+        $true_low_price = $goods_currency->currency_symbol_standard.' '.$low_price;//最低价和币种
+        
+        #2、获取店铺logo和名称
+        $shop_name = 'Gogo淘中国';
+        $shop_logo = 'https://shop.gogo198.cn/collect_website/public/uploads/centralize/website_index/679357cc06e93.png';
+        if($goods->shop_id>0){
+            $shop_name = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods->shop_id])->field('company')->first()->company;
+            $shop_logo = Db::connection('shop_db')->table('website_basic')->where(['company_id'=>$goods->shop_id,'company_type'=>0])->select('logo')->first()->logo;
+            $shop_logo = 'https://dtc.gogo198.net'.$shop_logo;
+        }
+        
+        #3、随机颜色
+        $color = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid'=>12])->inRandomOrder()->select('param1','param2','param3')->first();
+        
+        #4、开始制作海报图
+        header("Content-type: text/html; charset=utf-8");
+        
+        #4.1、 创建图像
+        $height = 1700; //图像高度
+        $width = 1000; //图像宽度
+        $im = imagecreatetruecolor($width,$height); //创建一个真彩色的图像
+        
+        $random_color = imagecolorallocate($im, $color->param1, $color->param2, $color->param3);
+        $font_color1 = imagecolorallocate($im, 255, 255, 255);//白
+        $font_color2 = imagecolorallocate($im, 206, 0, 2);//红
+        $font_color3 = imagecolorallocate($im, 0, 0, 0);//黑
+        $font_color4 = imagecolorallocate($im, 106, 106, 106);//灰
+        $font_color5 = imagecolorallocate($im, 71, 1, 2);//红
+        $shadow_color = imagecolorallocatealpha($im, 0, 0, 0, 60); // 阴影颜色（半透明黑）
+        
+        //保存海报图路径
+        $path = $_SERVER['DOCUMENT_ROOT'].'/images/goods_share/';
+        if(!file_exists($path)) {
+            mkdir($path,0777,true);
+        }
+        
+        // 保存路径
+        $savePath = $path.'goods_'.$goods_id.'_'.session('user.gogo_id').'.png';
+        // 准备字体
+        $font = $_SERVER['DOCUMENT_ROOT'].'/fonts/msyh.ttf';
+        
+        #4.2、将背景设置为白色
+        imagefill($im, 0, 0, $random_color);
+    
+        #4.3、商品图片准备
+        $goods_image = getimagesize($goods->goods_image);
+        //判断png或jpg
+        $judge_format = explode('.',$goods->goods_image)[3];
+        $true_goods_image = '';
+        if($judge_format=='jpg' || $judge_format=='jpeg'){
+            $true_goods_image = imagecreatefromjpeg($goods->goods_image);
+        }elseif($judge_format=='png'){
+            $true_goods_image = imagecreatefrompng($goods->goods_image);
+        }
+        // 创建圆角商品图片
+        $rounded_goods_image = $this->create_rounded_image($true_goods_image, 15);
+        // 添加白色阴影效果
+        $shadow_offset = 3; // 白色阴影偏移量
+        for($i = 1; $i <= $shadow_offset; $i++) {
+            // 绘制四个方向的白色边框来模拟阴影
+            imagecopyresampled($im, $rounded_goods_image, 
+                65 - $i, 65, 0, 0, 
+                855, 855, 
+                $goods_image[0], $goods_image[1]); // 左
+            
+            imagecopyresampled($im, $rounded_goods_image, 
+                65 + $i, 65, 0, 0, 
+                855, 855, 
+                $goods_image[0], $goods_image[1]); // 右
+            
+            imagecopyresampled($im, $rounded_goods_image, 
+                65, 65 - $i, 0, 0, 
+                855, 855, 
+                $goods_image[0], $goods_image[1]); // 上
+            
+            imagecopyresampled($im, $rounded_goods_image, 
+                65, 65 + $i, 0, 0, 
+                855, 855, 
+                $goods_image[0], $goods_image[1]); // 下
+        }
+        //组合商品图片到画布
+        imagecopyresampled($im, $rounded_goods_image, 70, 70, 0, 0, 860, 860, $goods_image[0], $goods_image[1]);
+        
+        #4.4、店铺logo和名称展示位置
+        //店铺logo展示
+        $logo_image = getimagesize($shop_logo);
+        //判断png或jpg
+        $judge_format = explode('.',$shop_logo)[3];
+        $true_logo_image = '';
+        if($judge_format=='jpg' || $judge_format=='jpeg'){
+            $true_logo_image = imagecreatefromjpeg($shop_logo);
+        }elseif($judge_format=='png'){
+            $true_logo_image = imagecreatefrompng($shop_logo);
+        }
+        imagecopyresampled($im, $true_logo_image, 120, 850, 0, 0, 50, 50, $logo_image[0], $logo_image[1]);
+        imagettftext($im, 20, 0, 190, 885, $font_color3, $font, $shop_name);
+
+        
+        #4.5、商品名称位置
+        // 将字符串分割为单个字符数组，然后每19个一组
+        $characters = mb_str_split($goods->goods_name, 1, 'UTF-8');
+        $result = array_chunk($characters, 19);
+        // 将每组字符重新组合成字符串
+        $result = array_map(function($chunk) {
+            return implode('', $chunk);
+        }, $result);
+        if(count($result)==1){
+            //商品名称只有一行
+            imagettftext($im, 30, 0, 120+1, 1040, $font_color1, $font, $result[0]);   // 右
+            imagettftext($im, 30, 0, 120-1, 1040, $font_color1, $font, $result[0]);   // 左
+            imagettftext($im, 30, 0, 120, 1040+1, $font_color1, $font, $result[0]);   // 下
+            imagettftext($im, 30, 0, 120, 1040-1, $font_color1, $font, $result[0]);   // 上
+            imagettftext($im, 30, 0, 120, 1040, $font_color1, $font, $result[0]);     // 中心
+        }
+        elseif(count($result)==2){
+            //商品名称只有一行
+            imagettftext($im, 30, 0, 120+1, 1040, $font_color1, $font, $result[0]);   // 右
+            imagettftext($im, 30, 0, 120-1, 1040, $font_color1, $font, $result[0]);   // 左
+            imagettftext($im, 30, 0, 120, 1040+1, $font_color1, $font, $result[0]);   // 下
+            imagettftext($im, 30, 0, 120, 1040-1, $font_color1, $font, $result[0]);   // 上
+            imagettftext($im, 30, 0, 120, 1040, $font_color1, $font, $result[0]);     // 中心
+            
+            imagettftext($im, 30, 0, 120+1, 1100, $font_color1, $font, $result[1]);   // 右
+            imagettftext($im, 30, 0, 120-1, 1100, $font_color1, $font, $result[1]);   // 左
+            imagettftext($im, 30, 0, 120, 1100+1, $font_color1, $font, $result[1]);   // 下
+            imagettftext($im, 30, 0, 120, 1100-1, $font_color1, $font, $result[1]);   // 上
+            imagettftext($im, 30, 0, 120, 1100, $font_color1, $font, $result[1]);     // 中心
+        }
+        elseif(count($result)>=3){
+            //商品名称只有三行
+            imagettftext($im, 30, 0, 120+1, 1040, $font_color1, $font, $result[0]);   // 右
+            imagettftext($im, 30, 0, 120-1, 1040, $font_color1, $font, $result[0]);   // 左
+            imagettftext($im, 30, 0, 120, 1040+1, $font_color1, $font, $result[0]);   // 下
+            imagettftext($im, 30, 0, 120, 1040-1, $font_color1, $font, $result[0]);   // 上
+            imagettftext($im, 30, 0, 120, 1040, $font_color1, $font, $result[0]);     // 中心
+            
+            imagettftext($im, 30, 0, 120+1, 1100, $font_color1, $font, $result[1] . '...');   // 右
+            imagettftext($im, 30, 0, 120-1, 1100, $font_color1, $font, $result[1] . '...');   // 左
+            imagettftext($im, 30, 0, 120, 1100+1, $font_color1, $font, $result[1] . '...');   // 下
+            imagettftext($im, 30, 0, 120, 1100-1, $font_color1, $font, $result[1] . '...');   // 上
+            imagettftext($im, 30, 0, 120, 1100, $font_color1, $font, $result[1] . '...');     // 中心
+        }
+        
+        #4.6、商品分享词
+        $characters = mb_str_split($goods->goods_name, 1, 'UTF-8');
+        $result2 = array_chunk($characters, 24);
+        // 将每组字符重新组合成字符串
+        $result2 = array_map(function($chunk) {
+            return implode('', $chunk);
+        }, $result2);
+        if(count($result)==1){
+            #商品名称一行
+            if(count($result2)==1){
+                imagettftext($im, 20, 0, 120, 1140, $font_color1, $font, $result2[0]);
+            }
+            elseif(count($result2)==2){
+                imagettftext($im, 20, 0, 120, 1140, $font_color1, $font, $result2[0]);
+                imagettftext($im, 20, 0, 120, 1200, $font_color1, $font, $result2[1]);
+            }
+            elseif(count($result2)==3){
+                imagettftext($im, 20, 0, 120, 1140, $font_color1, $font, $result2[0]);
+                imagettftext($im, 20, 0, 120, 1200, $font_color1, $font, $result2[1] . '...');
+            }
+        }
+        elseif(count($result)>=2){
+            #商品名称两行
+            if(count($result2)==1){
+                imagettftext($im, 24, 0, 120, 1200, $font_color1, $font, $result2[0]);
+            }
+            elseif(count($result2)==2){
+                imagettftext($im, 24, 0, 120, 1200, $font_color1, $font, $result2[0]);
+                imagettftext($im, 24, 0, 120, 1260, $font_color1, $font, $result2[1]);
+            }
+            elseif(count($result2)==3){
+                imagettftext($im, 24, 0, 120, 1200, $font_color1, $font, $result2[0]);
+                imagettftext($im, 24, 0, 120, 1260, $font_color1, $font, $result2[1] . '...');
+            }
+        }
+        
+        #4.7、商品价格
+        $low_price_num = strlen(explode('.',$low_price)[0]);
+        
+        if($low_price_num==1){
+            //9
+            if(count($result)==1){
+                imagettftext($im, 30, 0, 690+1, 1200, $font_color1, $font, "|");   // “|” 字符
+                imagettftext($im, 30, 0, 690-1, 1200, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 690, 1200+1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 690, 1200-1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 690, 1200, $font_color1, $font, "|");
+                
+                imagettftext($im, 30, 0, 710+1, 1200, $font_color1, $font, $true_low_price);   // 右
+                imagettftext($im, 30, 0, 710-1, 1200, $font_color1, $font, $true_low_price);   // 左
+                imagettftext($im, 30, 0, 710, 1200+1, $font_color1, $font, $true_low_price);   // 下
+                imagettftext($im, 30, 0, 710, 1200-1, $font_color1, $font, $true_low_price);   // 上
+                imagettftext($im, 30, 0, 710, 1200, $font_color1, $font, $true_low_price);     // 中心
+            }
+            elseif(count($result)>=2){
+                imagettftext($im, 30, 0, 690+1, 1260, $font_color1, $font, "|");   // “|” 字符
+                imagettftext($im, 30, 0, 690-1, 1260, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 690, 1260+1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 690, 1260-1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 690, 1260, $font_color1, $font, "|");
+                
+                imagettftext($im, 30, 0, 710+1, 1260, $font_color1, $font, $true_low_price);   // 右
+                imagettftext($im, 30, 0, 710-1, 1260, $font_color1, $font, $true_low_price);   // 左
+                imagettftext($im, 30, 0, 710, 1260+1, $font_color1, $font, $true_low_price);   // 下
+                imagettftext($im, 30, 0, 710, 1260-1, $font_color1, $font, $true_low_price);   // 上
+                imagettftext($im, 30, 0, 710, 1260, $font_color1, $font, $true_low_price);     // 中心
+            }
+        }
+        elseif($low_price_num==2){
+            //99
+            if(count($result)==1){
+                imagettftext($im, 30, 0, 670+1, 1200, $font_color1, $font, "|");   // “|” 字符
+                imagettftext($im, 30, 0, 670-1, 1200, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 670, 1200+1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 670, 1200-1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 670, 1200, $font_color1, $font, "|");
+                
+                imagettftext($im, 30, 0, 690+1, 1200, $font_color1, $font, $true_low_price);   // 右
+                imagettftext($im, 30, 0, 690-1, 1200, $font_color1, $font, $true_low_price);   // 左
+                imagettftext($im, 30, 0, 690, 1200+1, $font_color1, $font, $true_low_price);   // 下
+                imagettftext($im, 30, 0, 690, 1200-1, $font_color1, $font, $true_low_price);   // 上
+                imagettftext($im, 30, 0, 690, 1200, $font_color1, $font, $true_low_price);     // 中心
+            }
+            elseif(count($result)>=2){
+                imagettftext($im, 30, 0, 670+1, 1260, $font_color1, $font, "|");   // “|” 字符
+                imagettftext($im, 30, 0, 670-1, 1260, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 670, 1260+1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 670, 1260-1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 670, 1260, $font_color1, $font, "|");
+                
+                imagettftext($im, 30, 0, 690+1, 1260, $font_color1, $font, $true_low_price);   // 右
+                imagettftext($im, 30, 0, 690-1, 1260, $font_color1, $font, $true_low_price);   // 左
+                imagettftext($im, 30, 0, 690, 1260+1, $font_color1, $font, $true_low_price);   // 下
+                imagettftext($im, 30, 0, 690, 1260-1, $font_color1, $font, $true_low_price);   // 上
+                imagettftext($im, 30, 0, 690, 1260, $font_color1, $font, $true_low_price);     // 中心
+            }
+        }
+        elseif($low_price_num==3){
+            //999
+            if(count($result)==1){
+                imagettftext($im, 30, 0, 650+1, 1200, $font_color1, $font, "|");   // “|” 字符
+                imagettftext($im, 30, 0, 650-1, 1200, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 650, 1200+1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 650, 1200-1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 650, 1200, $font_color1, $font, "|");
+                
+                imagettftext($im, 30, 0, 670+1, 1200, $font_color1, $font, $true_low_price);   // 右
+                imagettftext($im, 30, 0, 670-1, 1200, $font_color1, $font, $true_low_price);   // 左
+                imagettftext($im, 30, 0, 670, 1200+1, $font_color1, $font, $true_low_price);   // 下
+                imagettftext($im, 30, 0, 670, 1200-1, $font_color1, $font, $true_low_price);   // 上
+                imagettftext($im, 30, 0, 670, 1200, $font_color1, $font, $true_low_price);     // 中心
+            }
+            elseif(count($result)>=2){
+                imagettftext($im, 30, 0, 650+1, 1260, $font_color1, $font, "|");   // “|” 字符
+                imagettftext($im, 30, 0, 650-1, 1260, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 650, 1260+1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 650, 1260-1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 650, 1260, $font_color1, $font, "|");
+                
+                imagettftext($im, 30, 0, 670+1, 1260, $font_color1, $font, $true_low_price);   // 右
+                imagettftext($im, 30, 0, 670-1, 1260, $font_color1, $font, $true_low_price);   // 左
+                imagettftext($im, 30, 0, 670, 1260+1, $font_color1, $font, $true_low_price);   // 下
+                imagettftext($im, 30, 0, 670, 1260-1, $font_color1, $font, $true_low_price);   // 上
+                imagettftext($im, 30, 0, 670, 1260, $font_color1, $font, $true_low_price);     // 中心
+            }
+        }
+        elseif($low_price_num==4){
+            //9999
+            if(count($result)==1){
+                imagettftext($im, 30, 0, 630+1, 1200, $font_color1, $font, "|");   // “|” 字符
+                imagettftext($im, 30, 0, 630-1, 1200, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 630, 1200+1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 630, 1200-1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 630, 1200, $font_color1, $font, "|");
+                
+                imagettftext($im, 30, 0, 650+1, 1200, $font_color1, $font, $true_low_price);   // 右
+                imagettftext($im, 30, 0, 650-1, 1200, $font_color1, $font, $true_low_price);   // 左
+                imagettftext($im, 30, 0, 650, 1200+1, $font_color1, $font, $true_low_price);   // 下
+                imagettftext($im, 30, 0, 650, 1200-1, $font_color1, $font, $true_low_price);   // 上
+                imagettftext($im, 30, 0, 650, 1200, $font_color1, $font, $true_low_price);     // 中心
+            }
+            elseif(count($result)>=2){
+                imagettftext($im, 30, 0, 630+1, 1260, $font_color1, $font, "|");   // “|” 字符
+                imagettftext($im, 30, 0, 630-1, 1260, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 630, 1260+1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 630, 1260-1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 630, 1260, $font_color1, $font, "|");
+                
+                imagettftext($im, 30, 0, 650+1, 1260, $font_color1, $font, $true_low_price);   // 右
+                imagettftext($im, 30, 0, 650-1, 1260, $font_color1, $font, $true_low_price);   // 左
+                imagettftext($im, 30, 0, 650, 1260+1, $font_color1, $font, $true_low_price);   // 下
+                imagettftext($im, 30, 0, 650, 1260-1, $font_color1, $font, $true_low_price);   // 上
+                imagettftext($im, 30, 0, 650, 1260, $font_color1, $font, $true_low_price);     // 中心
+            }
+        }
+        elseif($low_price_num>=5){
+            //9999
+            if(count($result)==1){
+                imagettftext($im, 30, 0, 610+1, 1200, $font_color1, $font, "|");   // “|” 字符
+                imagettftext($im, 30, 0, 610-1, 1200, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 610, 1200+1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 610, 1200-1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 610, 1200, $font_color1, $font, "|");
+                
+                imagettftext($im, 30, 0, 630+1, 1200, $font_color1, $font, $true_low_price);   // 右
+                imagettftext($im, 30, 0, 630-1, 1200, $font_color1, $font, $true_low_price);   // 左
+                imagettftext($im, 30, 0, 630, 1200+1, $font_color1, $font, $true_low_price);   // 下
+                imagettftext($im, 30, 0, 630, 1200-1, $font_color1, $font, $true_low_price);   // 上
+                imagettftext($im, 30, 0, 630, 1200, $font_color1, $font, $true_low_price);     // 中心
+            }
+            elseif(count($result)>=2){
+                imagettftext($im, 30, 0, 610+1, 1260, $font_color1, $font, "|");   // “|” 字符
+                imagettftext($im, 30, 0, 610-1, 1260, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 610, 1260+1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 610, 1260-1, $font_color1, $font, "|");
+                imagettftext($im, 30, 0, 610, 1260, $font_color1, $font, "|");
+                
+                imagettftext($im, 30, 0, 630+1, 1260, $font_color1, $font, $true_low_price);   // 右
+                imagettftext($im, 30, 0, 630-1, 1260, $font_color1, $font, $true_low_price);   // 左
+                imagettftext($im, 30, 0, 630, 1260+1, $font_color1, $font, $true_low_price);   // 下
+                imagettftext($im, 30, 0, 630, 1260-1, $font_color1, $font, $true_low_price);   // 上
+                imagettftext($im, 30, 0, 630, 1260, $font_color1, $font, $true_low_price);     // 中心
+            }
+        }
+        
+        #4.8、小程序二维码
+        $mini_code = $_SERVER['DOCUMENT_ROOT'].'/images/goods_miniprogram/wxmini_to_shop_img_'.$goods_id.'_'.session('user.gogo_id').'.jpg';// 小程序码
+        $true_mini_code = 'https://www.gogo198.cn/images/goods_miniprogram/wxmini_to_shop_img_'.$goods_id.'_'.session('user.gogo_id').'.jpg';
+        if (!file_exists($mini_code)) {
+            // 获取小程序码
+            $res = $this->get_miniprogram_code($goods_id,session('user.user_id'));
+            if($res['code'] == 0){
+                $mini_code = $res['img'];
+            }else{
+                return Response()->json(['code'=>-1,'msg'=>$res['msg']]);
+            }
+            sleep(1);
+        }
+        
+        // $true_mini_code = '';
+        // $res = $this->get_miniprogram_code($goods_id,base64_encode(session('user.gogo_id')));
+        // if($res['code'] == 0){
+        //     $true_mini_code = $res['img'];
+        // }else{
+        //     return Response()->json(['code'=>-1,'msg'=>$res['msg']]);
+        // }
+        // sleep(2);
+        
+        $mini_image = getimagesize($true_mini_code);
+        //判断png或jpg
+        $judge_format = explode('.',$true_mini_code)[3];
+        $true_mini_image = '';
+        if($judge_format=='jpg' || $judge_format=='jpeg'){
+            $true_mini_image = imagecreatefromjpeg($true_mini_code);
+        }elseif($judge_format=='png'){
+            $true_mini_image = imagecreatefrompng($true_mini_code);
+        }
+        // 创建圆角商品图片
+        $rounded_mini_image = $this->create_rounded_image($true_mini_image, 210);
+        imagecopyresampled($im, $rounded_mini_image, 400, 1400, 0, 0, 200, 200, $mini_image[0], $mini_image[1]);
+        
+        header("cotent-type:image/png"); //输出图像的MIME类型
+        imagepng($im,$savePath); //输出一个png图像数据
+        
+        return Response()->json(['code'=>0,'msg'=>'生成推广图片成功','img'=>'/images/goods_share/goods_'.$goods_id.'_'.session('user.gogo_id').'.png']);
+    }
+    
+    # 获取小程序码
+    public function get_miniprogram_code($goods_id,$uid){
+        $time = time();
+        
+        #获取accesstoken
+        $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wx6d1af256d76896ba&secret=d19a96d909c1a167c12bb899d0c10da6";
+        $res = file_get_contents($url);
+        $result = json_decode($res, true);
+        
+        if(!isset($result['access_token'])){
+            $error_msg = isset($result['errmsg']) ? $result['errmsg'] : '未知错误';
+            // 确保错误消息是UTF-8编码
+            $error_msg = mb_convert_encoding($error_msg, 'UTF-8', 'auto');
+            return ['code' => -1, 'msg' => '获取access_token失败: ' . $error_msg];
+        }
+        
+        $access_token = $result['access_token'];
+        
+        #获取微信小程序码
+        $url = "https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=" . $access_token;
+        $datas = array(
+            "page" => "pages/agreement/index",
+            "scene" => "goods_id=" . $goods_id . "&share_uid=". base64_encode($uid),
+            "check_path" => false,
+            "env_version" => 'release',//release develop trial体验
+            'width' => 430,
+        );
+        
+        // 使用改进的httpRequest函数
+        $img = httpRequest_wx($url, json_encode($datas));
+        
+        // 首先检查是否是JSON错误响应
+        if (substr($img, 0, 1) === '{') {
+            $error_result = json_decode($img, true);
+            if (isset($error_result['errcode'])) {
+                $error_msg = isset($error_result['errmsg']) ? $error_result['errmsg'] : '未知错误';
+                // 确保错误消息是UTF-8编码
+                $error_msg = mb_convert_encoding($error_msg, 'UTF-8', 'auto');
+                return ['code' => -1, 'msg' => '微信API错误: ' . $error_msg . ' (错误码: ' . $error_result['errcode'] . ')'];
+            }
+        }
+        
+        // 检查返回的是否是有效的图片数据
+        if (empty($img) || strlen($img) < 100) {
+            return ['code' => -1, 'msg' => '小程序码生成失败，返回数据异常，数据长度: ' . strlen($img)];
+        }
+        
+        // 检查是否是PNG文件（PNG文件以特定字节开头）
+        // $png_header = substr($img, 0, 8);
+        // $expected_header = "\x89PNG\r\n\x1a\n";
+        // if ($png_header !== $expected_header) {
+        //     // 使用安全的调试信息，避免非UTF-8字符
+        //     $debug_info = '文件头: ' . bin2hex($png_header) . ' (期望: ' . bin2hex($expected_header) . ')';
+        //     return ['code' => -1, 'msg' => '生成的内容不是有效的PNG文件。' . $debug_info];
+        // }
+        
+        $savepath = $_SERVER['DOCUMENT_ROOT'] . '/images/goods_miniprogram/wxmini_to_shop_img_'.$goods_id.'_'.session('user.gogo_id').'.jpg';
+        
+        // 确保目录存在
+        $dir = dirname($savepath);
+        if (!file_exists($dir)) {
+            mkdir($dir, 0777, true);
+        }
+        
+        // 保存文件
+        if (file_put_contents($savepath, $img) === false) {
+            return ['code' => -1, 'msg' => '保存小程序码文件失败'];
+        }
+        
+        // 验证保存的文件
+        if (!file_exists($savepath) || filesize($savepath) == 0) {
+            return ['code' => -1, 'msg' => '小程序码文件保存失败'];
+        }
+        
+        return ['code' => 0, 'img' => 'https://www.gogo198.cn/images/goods_miniprogram/wxmini_to_shop_img_'.$goods_id.'_'.session('user.gogo_id').'.jpg'];
     }
 }

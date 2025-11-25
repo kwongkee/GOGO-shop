@@ -167,15 +167,15 @@ class CollectController extends UserCenter
                 $collect_count = Shop::where('shop_id', $shop_id)->value('collect_num');
             }
         } elseif ($goods_id && $sku_id) { // 商品收藏/取消收藏
-            if ($this->collect->checkIsCollected($this->user_id, 0, 0, $goods_id)) {
+            if ($this->collect->checkIsCollected(session('user.user_id'), 0, 0, $goods_id)) {
                 // 取消收藏
                 $msg = '取消收藏';
             } else {
                 // 收藏
                 $msg = '收藏';
             }
-
-            $ret = $this->collect->toggle($this->user_id, 0, 0, $goods_id, $sku_id);
+            
+            $ret = $this->collect->toggle(session('user.user_id'), 0, 0, $goods_id, $sku_id);
             if ($ret === false) {
                 // 失败
                 return result(-1, null, $msg.'失败');
@@ -190,7 +190,7 @@ class CollectController extends UserCenter
             $ret = 1;
             $msg = '收藏';
         }
-
+        
         // 成功
         $extra = [
             'bonus_info' => null,

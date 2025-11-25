@@ -456,10 +456,19 @@
                         </a>
 
                         {{--分享积分--}}
+                        <!--<div class="bdsharebuttonbox fr">-->
+                        <!--    <a class="bds_more" href="#" data-cmd="more" style="background: none; color: #999; line-height: 25px; height: 25px; display: block;">-->
+                        <!--        <i class="iconfont">&#xe6ac;</i>-->
+                        <!--        分享积分-->
+                        <!--    </a>-->
+                        <!--</div>-->
+                        
+                        {{--分享小程序--}}
                         <div class="bdsharebuttonbox fr">
-                            <a class="bds_more" href="#" data-cmd="more" style="background: none; color: #999; line-height: 25px; height: 25px; display: block;">
-                                <i class="iconfont">&#xe6ac;</i>
-                                分享积分
+                            <a class="bds_more2" href="javascript:get_miniprogram();" style="background: none; color: #999; line-height: 25px; height: 25px; display: block;margin-left:5px;">
+                                <!--<i class="iconfont">&#xe6ac;</i>-->
+                                <img src="/static/api/img/share/weixin_miniprogram.ico" style="width:15px;height:15px;">
+                                分享小程序
                             </a>
                         </div>
                     </div>
@@ -4729,6 +4738,26 @@
         });
     </script>
     <script type="text/javascript">
+        function get_miniprogram(){
+            var $ = layui.$
+                , form = layui.form
+                , layer = layui.layer;
+           
+            $.getJSON('/get_miniprogram',{'goods_id':"{{$goods['goods_id']}}",'_token':"{{csrf_token()}}"},function(res){
+                layer.closeAll('loading');
+                layer.msg(res.msg,{time:2000}, function () {
+                    if (res.code == 0) {
+                        layer.open({
+                            type: 1,
+                            title: '推广图片',
+                            area: ['300px', '300px'],
+                            content: '<div style="padding:20px;box-sizing: border-box;text-align:center;"><img src="'+res.img+'?v=<?php echo time();?>" style="width:150px;height:200px;"><p style="margin-top:5px;font-size:15px;font-weight:600;">长按保存推广图片</p></div>'
+                        });
+                    }
+                });
+            });
+        }
+        
         $().ready(function() {
             @if($goods['shop_id']>1000000)
                 var desc_container = $(".goods-detail-content");

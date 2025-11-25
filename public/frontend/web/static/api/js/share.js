@@ -511,6 +511,7 @@ function() {
         "/js/trans/trans_bdxc.js?v=7ac21555.js": ["trans/trans_bdxc"],
         "/js/trans/trans_bdysc.js?v=fc21acaa.js": ["trans/trans_bdysc"],
         "/js/trans/trans_weixin.js?v=080be124.js": ["trans/trans_weixin"],
+        "/js/trans/trans_weixin_miniprogram.js?v=080be124.js": ["trans/trans_weixin_miniprogram"],
         "/js/share/combine_api.js?v=8d37a7b3.js": ["share/combine_api"],
         "/js/share/like_api.js?v=d3693f0a.js": ["share/like_api"],
         "/js/share/likeshare.js?v=e1f4fbf1.js": ["share/likeshare"],
@@ -731,6 +732,9 @@ function(e, t) {
         case "weixin":
             f(s);
             break;
+        case "weixin_miniprogram":
+            wm(s);
+            break;
         default:
             o(e, s)
         }
@@ -781,6 +785,12 @@ function(e, t) {
     },
     f = function(e) {
         window._bd_share_main.F.use("trans/trans_weixin",
+        function(t) {
+            t && t.run(e)
+        })
+    },
+    wm = function(e) {
+        window._bd_share_main.F.use("trans/trans_weixin_miniprogram",
         function(t) {
             t && t.run(e)
         })
