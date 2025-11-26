@@ -546,6 +546,14 @@ class GoodsController extends Frontend
     #展示商品卡片
     public function showGoods(Request $request, $goods_id){
         $data = $request->except(['_token']);
+        $share_uid = isset($data['share_uid'])?base64_decode($data['share_uid']):0;#分享者uid
+        
+        if($share_uid > 0 && empty(session('user')) ){
+            # 小程序扫码时要求登录
+            session('share_uid',$share_uid);
+            $origin_page = '/login.html?open=4&param2='.base64_encode('/goods-'.$goods_id.'.html?share_uid='.$share_uid);   
+            header('Location: '.$origin_page);exit;
+        }
         
         $goods = Db::table('goods')->where(['goods_id'=>intval($goods_id)])->select('goods_id','sku_id','goods_name','goods_image','shop_id','goods_currency')->first();
         
@@ -591,7 +599,12 @@ class GoodsController extends Frontend
         $website['content'] = $page_info['content']['content'] ?? '';
         $website['fontcolor'] = $page_info['content']['fontcolor'] ?? '';
         $website['agentLink'] = $page_info['content']['agent_link'] ?? '';
-        $origin_page = '/goods-'.$goods_id.'.html';
+        if($share_uid>0){
+            $origin_page = '/login.html?open=4&param2='.base64_encode('/goods-'.$goods_id.'.html?share_uid='.$share_uid);    
+        }else{
+            $origin_page = '/login.html?open=4&param2='.base64_encode('/goods-'.$goods_id.'.html');
+        }
+        
         
         return view('goods.goods_home',compact('color','goods','true_low_price','shop_logo','shop_name','website','origin_page','goods_share_words'));
     }
@@ -1203,7 +1216,7 @@ class GoodsController extends Frontend
                 $timeInterval[$k]['typeName'] = $typeName;
             }
             
-            $origin_page = '/login.html?open=4&param2='.base64_encode('/goods-'.$goods['goods_id'].'.html');
+            $origin_page = '/login.html?open=4&param2='.base64_encode('/goodsdetail-'.$goods['goods_id'].'.html');
             
             $country = objtoarr($country);
             $goods_category = objtoarr($goods_category);
@@ -7298,33 +7311,33 @@ class GoodsController extends Frontend
             $true_goods_image = imagecreatefrompng($goods->goods_image);
         }
         // 创建圆角商品图片
-        $rounded_goods_image = $this->create_rounded_image($true_goods_image, 15);
-        // 添加白色阴影效果
-        $shadow_offset = 3; // 白色阴影偏移量
-        for($i = 1; $i <= $shadow_offset; $i++) {
-            // 绘制四个方向的白色边框来模拟阴影
-            imagecopyresampled($im, $rounded_goods_image, 
-                65 - $i, 65, 0, 0, 
-                855, 855, 
-                $goods_image[0], $goods_image[1]); // 左
+        // $rounded_goods_image = $this->create_rounded_image($true_goods_image, 15);
+        // // 添加白色阴影效果
+        // $shadow_offset = 3; // 白色阴影偏移量
+        // for($i = 1; $i <= $shadow_offset; $i++) {
+        //     // 绘制四个方向的白色边框来模拟阴影
+        //     imagecopyresampled($im, $rounded_goods_image, 
+        //         65 - $i, 65, 0, 0, 
+        //         855, 855, 
+        //         $goods_image[0], $goods_image[1]); // 左
             
-            imagecopyresampled($im, $rounded_goods_image, 
-                65 + $i, 65, 0, 0, 
-                855, 855, 
-                $goods_image[0], $goods_image[1]); // 右
+        //     imagecopyresampled($im, $rounded_goods_image, 
+        //         65 + $i, 65, 0, 0, 
+        //         855, 855, 
+        //         $goods_image[0], $goods_image[1]); // 右
             
-            imagecopyresampled($im, $rounded_goods_image, 
-                65, 65 - $i, 0, 0, 
-                855, 855, 
-                $goods_image[0], $goods_image[1]); // 上
+        //     imagecopyresampled($im, $rounded_goods_image, 
+        //         65, 65 - $i, 0, 0, 
+        //         855, 855, 
+        //         $goods_image[0], $goods_image[1]); // 上
             
-            imagecopyresampled($im, $rounded_goods_image, 
-                65, 65 + $i, 0, 0, 
-                855, 855, 
-                $goods_image[0], $goods_image[1]); // 下
-        }
+        //     imagecopyresampled($im, $rounded_goods_image, 
+        //         65, 65 + $i, 0, 0, 
+        //         855, 855, 
+        //         $goods_image[0], $goods_image[1]); // 下
+        // }
         //组合商品图片到画布
-        imagecopyresampled($im, $rounded_goods_image, 70, 70, 0, 0, 860, 860, $goods_image[0], $goods_image[1]);
+        imagecopyresampled($im, $true_goods_image, 70, 70, 0, 0, 860, 860, $goods_image[0], $goods_image[1]);
         
         #4.4、店铺logo和名称展示位置
         //店铺logo展示
