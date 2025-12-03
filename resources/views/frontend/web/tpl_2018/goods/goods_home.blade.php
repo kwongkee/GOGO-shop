@@ -81,7 +81,7 @@
         }
         .news-image img{border-radius:10px;}
         
-        .news-footer {box-sizing:border-box;margin-bottom:25px;display: flex;justify-content: center;align-items: center;}
+        .news-footer {box-sizing:border-box;margin-bottom:25px;margin-top:20px;display: flex;justify-content: center;align-items: center;}
         
         .news-source {font-size: 14px;color: #888;position: absolute;left: 10px;bottom: 10px;border-radius: 15px;padding:2px 10px;}
         .news-source .shop_logo{width:20px;height:20px;border-radius:50%;margin-right:10px;border:1px solid #fff;}
@@ -199,7 +199,15 @@
             </div>
             <div style="padding:0 20px;box-sizing:border-box;position:relative;">
                 <p class="goods_title">{{$goods->goods_name}}</p>
-                <p class="goods_desc">{{$goods_share_words[0]}}<span class="pc_show_word">{{$goods_share_words[1]}}</span><span class="mobile_show_word">...</span></p>
+                <p class="goods_desc">
+                    {{$goods_share_words[0]}}
+                    <span class="pc_show_word">
+                        @if(isset($goods_share_words[1]))
+                            {{$goods_share_words[1]}}
+                        @endif
+                    </span>
+                    <span class="mobile_show_word">...</span>
+                </p>
                 <p class="goods_price">{{$true_low_price}}</p>
             </div>
         </div>
@@ -207,7 +215,7 @@
         <div class="news-footer">
             
             <div class="news-views disf">
-                <a href="/goodsdetail-{{$goods->goods_id}}.html" target="_blank">
+                <a href="/goodsdetail-{{$goods->goods_id}}.html?share_uid={{$share_uid}}&campaign_id={{$campaign_id}}" target="_blank">
                     <div class="action-btn detail" title="详情">
                         <img src="/images/goods_miniprogram/detail.png">
                     </div>
@@ -217,17 +225,38 @@
                         <img src="/images/goods_miniprogram/cart.png">
                     </div>
                 </a>
-                <div class="action-btn favorite" title="收藏" onclick="_collect()">
-                    <img src="/images/goods_miniprogram/collect.png">
+                <div class="action-btn favorite" title="点赞" onclick="_collect()">
+                    <img src="/images/goods_miniprogram/goods.png">
                 </div>
-                <div class="action-btn download" title="下载" onclick="_download()">
-                    <img src="/images/goods_miniprogram/download.png">
-                </div>
-                <div class="action-btn share" title="分享" onclick="_share()">
+                <div class="action-btn share" title="分享" onclick="_share2()">
                     <img src="/images/goods_miniprogram/share.png">
+                </div>
+                
+                <div class="action-btn comment" title="评论" onclick="_comment()">
+                    <img src="/images/goods_miniprogram/comment.png">
                 </div>
             </div>
         </div>
+    </div>
+    
+    <div id="select_share" style="display:none;padding:20px;box-sizing:border-box;text-align:center;">
+        <div class="disf" style="justify-content:center;" onclick="_download()">
+            <div class="action-btn download" title="下载">
+                <img src="/images/goods_miniprogram/download.png">
+            </div>
+            <span style="font-size: 15px;font-weight: 800;">下载</span>
+        </div>
+        <div class="disf" style="justify-content:center;margin-top:20px;" onclick="_share()">
+            <div class="action-btn share" title="分享">
+                <img src="/images/goods_miniprogram/share.png">
+            </div>
+            <span style="font-size: 15px;font-weight: 800;">分享</span>
+        </div>
+    </div>
+    
+    <div id="comment_send" style="display:none;padding:20px;box-sizing:border-box;text-align:center;">
+        <textarea class="layui-textarea" id="comment_area" placeholder="请留下你对此商品的评论..."></textarea>
+        <div class="btn comment_submit" id="comment_submit" style="margin-top:10px;background: #ff2222;color: #fff;font-size: 15px;font-weight: 800;">立即提交</div>
     </div>
     
     @include('layouts.right_slide_show')
@@ -280,6 +309,21 @@
                 , form = layui.form
                 , upload = layui.upload;
                 
+            $('#comment_submit').click(function(){
+                let comment_area = $('#comment_area').val();
+                if(comment_area==''){
+                    layer.msg('请输入评论内容');return false;
+                }
+                
+                $.post('/goodscomment',{'goods_id':"{{$goods->goods_id}}",'_token':"{{csrf_token()}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}",'comment':comment_area},function(res){
+                    layer.closeAll('loading');
+                    layer.msg(res.msg,{time:2000}, function () {
+                        if (res.code == 0) {
+                            window.location.reload();
+                        }
+                    });
+                });
+            });
         });
         
         function _collect(){
@@ -289,7 +333,7 @@
                 
             layer.load();
             
-            $.post('/user/collect/toggle.html',{'goods_id':"{{$goods->goods_id}}",'sku_id':"{{$goods->sku_id}}",'show_count':1,'_token':"{{csrf_token()}}"},function(res){
+            $.post('/user/collect/toggle.html',{'goods_id':"{{$goods->goods_id}}",'sku_id':"{{$goods->sku_id}}",'show_count':1,'_token':"{{csrf_token()}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}"},function(res){
                 layer.closeAll('loading');
                 res = JSON.parse(res);
                 layer.msg(res.message,{time:2000}, function () {
@@ -300,6 +344,20 @@
             });
         }
         
+        //评论
+        function _comment(){
+            var $ = layui.$
+                , form = layui.form
+                , layer = layui.layer;
+                
+            layer.open({
+               type:1,
+               title:'立即评论',
+               area:['300px','300px'],
+               content:$('#comment_send')
+            });
+        }
+        
         function _download(){
             var $ = layui.$
                 , form = layui.form
@@ -307,7 +365,7 @@
             
             layer.load();
             
-            $.getJSON('/get_miniprogram',{'goods_id':"{{$goods->goods_id}}",'_token':"{{csrf_token()}}"},function(res){
+            $.getJSON('/get_miniprogram',{'goods_id':"{{$goods->goods_id}}",'_token':"{{csrf_token()}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}"},function(res){
                 layer.closeAll('loading');
                 layer.msg(res.msg,{time:2000}, function () {
                     if (res.code == 0) {
@@ -336,12 +394,28 @@
             });
         }
         
+        //分享新版
+        function _share2(){
+            var $ = layui.$
+                , form = layui.form
+                , layer = layui.layer;
+                
+            layer.open({
+               type:1,
+               title:'选择分享',
+               area:['300px','300px'],
+               content:$('#select_share')
+            });
+        }
+        
         function copy_btn(typ){
             var $ = layui.$
                 , form = layui.form
                 , layer = layui.layer;
             let src = window.location.href;
             if(typ==1){
+                $.getJSON('/get_miniprogram',{'goods_id':"{{$goods->goods_id}}",'_token':"{{csrf_token()}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}",'method':2},function(res){
+                });
                 document.getElementById("cs").innerHTML=src;
             
                 //開始複製

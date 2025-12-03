@@ -4032,7 +4032,7 @@
                 $.ajax({
                     url: "/join_cart",
                     method: 'post',
-                    data: {'data':data,'_token':"{{csrf_token()}}"},
+                    data: {'data':data,'_token':"{{csrf_token()}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}"},
                     dataType: 'JSON',
                     success: function (res) {
                         layer.closeAll('loading');

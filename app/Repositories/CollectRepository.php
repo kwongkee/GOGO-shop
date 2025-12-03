@@ -138,7 +138,7 @@ class CollectRepository
      * @param int $skuId
      * @return bool|int
      */
-    public function toggle($userId, $collectType = 0, $shopId = 0, $goodsId = 0, $skuId = 0)
+    public function toggle($userId, $collectType = 0, $shopId = 0, $goodsId = 0, $skuId = 0, $share_uid=0, $campaign_id=0)
     {
         DB::beginTransaction();
         try {
@@ -164,6 +164,9 @@ class CollectRepository
                     $insert['goods_id'] = $goodsId;
                     $insert['sku_id'] = $skuId;
                     Goods::where('goods_id', $goodsId)->increment('collect_num', 1);
+                    
+                    //任务操作日志
+                    task_campaign(['share_uid'=>$share_uid,'goods_id'=>$goodsId,'campaign_id'=>$campaign_id,'campaign_type'=>5]);
                 } elseif ($collectType == 1) { // 店铺收藏
                     $insert['shop_id'] = $shopId;
                     Shop::where('shop_id', $shopId)->increment('collect_num', 1);

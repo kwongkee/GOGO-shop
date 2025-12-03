@@ -546,12 +546,13 @@ class GoodsController extends Frontend
     #展示商品卡片
     public function showGoods(Request $request, $goods_id){
         $data = $request->except(['_token']);
-        $share_uid = isset($data['share_uid'])?base64_decode($data['share_uid']):0;#分享者uid
+        $share_uid = isset($data['share_uid'])?intval($data['share_uid']):0;#分享者uid
+        $campaign_id = isset($data['campaign_id'])?intval($data['campaign_id']):0;#用户参与活动id
         
         if($share_uid > 0 && empty(session('user')) ){
             # 小程序扫码时要求登录
             session('share_uid',$share_uid);
-            $origin_page = '/login.html?open=4&param2='.base64_encode('/goods-'.$goods_id.'.html?share_uid='.$share_uid);   
+            $origin_page = '/login.html?open=4&param2='.base64_encode('/goods-'.$goods_id.'.html?campaign_id='.$campaign_id.'&share_uid='.$share_uid);   
             header('Location: '.$origin_page);exit;
         }
         
@@ -568,7 +569,7 @@ class GoodsController extends Frontend
         $shop_name = 'Gogo淘中国';
         $shop_logo = 'https://shop.gogo198.cn/collect_website/public/uploads/centralize/website_index/679357cc06e93.png';
         if($goods->shop_id>0){
-            $shop_name = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods->shop_id])->field('company')->first()->company;
+            $shop_name = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods->shop_id])->select('company')->first()->company;
             $shop_logo = Db::connection('shop_db')->table('website_basic')->where(['company_id'=>$goods->shop_id,'company_type'=>0])->select('logo')->first()->logo;
             $shop_logo = '//dtc.gogo198.net'.$shop_logo;
         }
@@ -605,13 +606,45 @@ class GoodsController extends Frontend
             $origin_page = '/login.html?open=4&param2='.base64_encode('/goods-'.$goods_id.'.html');
         }
         
+        return view('goods.goods_home',compact('color','goods','true_low_price','shop_logo','shop_name','website','origin_page','goods_share_words','share_uid','campaign_id'));
+    }
+    
+    #商品评论
+    public function goodsComment(Request $request){
+        $data = $request->except(['_token']);
+        $share_uid = $data['share_uid'];
+        $goods_id = $data['goods_id'];
+        $campaign_id = $data['campaign_id'];
+        $comment = trim($data['comment']);
         
-        return view('goods.goods_home',compact('color','goods','true_low_price','shop_logo','shop_name','website','origin_page','goods_share_words'));
+        $res = Db::table('goods_comment')->insert([
+            'user_id'=>session('user.user_id'),
+            'user_nick'=>session('user.user_name'),
+            'goods_id'=>$goods_id,
+            'comment_desc'=>$comment,
+            'is_show'=>1,
+            'created_at'=>time()
+        ]);
+        
+        if($res){
+            //任务操作日志
+            task_campaign(['share_uid'=>$share_uid,'goods_id'=>$goods_id,'campaign_id'=>$campaign_id,'campaign_type'=>4]);
+            
+            return Response()->json(['code'=>0,'msg'=>'评论成功']);
+        }else{
+            return Response()->json(['code'=>-1,'msg'=>'评论失败']);
+        }
     }
     
     #展示商品详情
     public function showGoodsDetail(Request $request, $goods_id){
+        $info = $request->except(['_token']);
         $goods_id = intval($goods_id);
+        $share_uid = isset($info['share_uid'])?intval($info['share_uid']):0;
+        $campaign_id = isset($info['campaign_id'])?intval($info['campaign_id']):0;
+        
+        //任务操作日志
+        task_campaign(['share_uid'=>$share_uid,'goods_id'=>$goods_id,'campaign_id'=>$campaign_id,'campaign_type'=>1]);
         
         if ($request->routeIs('pc_show_goods') || $request->routeIs('mobile_show_goods')) {
             $sku_id = $this->goods->getSkuId($goods_id);
@@ -1269,8 +1302,10 @@ class GoodsController extends Frontend
         }
         Goods::where('goods_id', $goods_id)->increment('click_count', 1);
         
+        $cached['compact_data']['share_uid'] = $share_uid;
+        $cached['compact_data']['campaign_id'] = $campaign_id;
         $this->setData($cached);
-    
+        
         $this->show_seo('seo_goods', ['name' => $cached['app_prefix_data']['goods']['goods_name']]);
         
         return $this->displayData();
@@ -2059,7 +2094,7 @@ class GoodsController extends Frontend
     public function join_cart(Request $request)
     {
         $data = $request->except(['_token']);
-
+        
         if (!isset($data['data']['buy_attr'])) {
             return Response()->json(['code'=>-1,'msg'=>'请选择商品规格']);
         }
@@ -2371,6 +2406,9 @@ class GoodsController extends Frontend
         $type = 3;
         log_user_behavior(['type'=>$type,'ip'=>$ip,'user'=>$user,'goods_id'=>$goods['goods_id'],'second'=>0]);
 
+        //任务操作日志
+        task_campaign(['share_uid'=>$data['share_uid'],'goods_id'=>$data['data']['id'],'campaign_id'=>$data['campaign_id'],'campaign_type'=>2]);
+
         return Response()->json(['code'=>0,'msg'=>'恭喜你！商品已添加至选购中心']);
     }
 
@@ -2490,7 +2528,7 @@ class GoodsController extends Frontend
     public function order_confirm(Request $request)
     {
         $data = $request->except(['_token']);
-
+        
         $mid = !empty($data['mid']) ? base64_decode($data['mid']) : 0;
         if ($mid>0) {
             #默认登录
@@ -7235,9 +7273,24 @@ class GoodsController extends Frontend
     #获取商品小程序码
     public function get_miniprogram(Request $request){
         $data = $request->except(['_token']);
-        
         $time = time();
         $goods_id = intval($data['goods_id']);
+        $method = isset($data['method'])?intval($data['method']):0;
+        $share_uid = intval($data['share_uid']);
+        $campaign_id = intval($data['campaign_id']);
+        
+        if($method==2){
+            //转发链接
+            
+            //任务操作日志
+            task_campaign(['share_uid'=>$share_uid,'goods_id'=>$goods_id,'campaign_id'=>$campaign_id,'campaign_type'=>3]);
+        }elseif($method==0){
+            //分享海报图
+            
+            //任务操作日志
+            task_campaign(['share_uid'=>$share_uid,'goods_id'=>$goods_id,'campaign_id'=>$campaign_id,'campaign_type'=>3]);
+        }
+        
         
         #1、获取商品名称、商品主图、币种和最低价
         $goods = Db::table('goods')->where(['goods_id'=>$goods_id])->select('goods_image','goods_name','goods_currency','shop_id')->first();
@@ -7262,7 +7315,7 @@ class GoodsController extends Frontend
         $shop_name = 'Gogo淘中国';
         $shop_logo = 'https://shop.gogo198.cn/collect_website/public/uploads/centralize/website_index/679357cc06e93.png';
         if($goods->shop_id>0){
-            $shop_name = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods->shop_id])->field('company')->first()->company;
+            $shop_name = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods->shop_id])->select('company')->first()->company;
             $shop_logo = Db::connection('shop_db')->table('website_basic')->where(['company_id'=>$goods->shop_id,'company_type'=>0])->select('logo')->first()->logo;
             $shop_logo = 'https://dtc.gogo198.net'.$shop_logo;
         }
@@ -7301,6 +7354,9 @@ class GoodsController extends Frontend
         imagefill($im, 0, 0, $random_color);
     
         #4.3、商品图片准备
+        if(strpos($goods->goods_image,'https:') === false){
+            $goods->goods_image = 'https:'.$goods->goods_image;
+        }
         $goods_image = getimagesize($goods->goods_image);
         //判断png或jpg
         $judge_format = explode('.',$goods->goods_image)[3];

@@ -140,7 +140,9 @@ class CollectController extends UserCenter
         $sku_id = $request->input('sku_id', 0);
         $show_count = $request->input('show_count', 0);
         $shop_id = $request->input('shop_id', 0);
-
+        $share_uid = $request->input('share_uid', 0);
+        $campaign_id = $request->input('campaign_id', 0);
+        
         #记录用户行为操作
         $ip = $_SERVER['REMOTE_ADDR'];
         $user = $request->session()->get('user');
@@ -168,27 +170,27 @@ class CollectController extends UserCenter
             }
         } elseif ($goods_id && $sku_id) { // 商品收藏/取消收藏
             if ($this->collect->checkIsCollected(session('user.user_id'), 0, 0, $goods_id)) {
-                // 取消收藏
-                $msg = '取消收藏';
+                // 取消点赞
+                $msg = '取消点赞';
             } else {
-                // 收藏
-                $msg = '收藏';
+                // 点赞
+                $msg = '点赞';
             }
             
-            $ret = $this->collect->toggle(session('user.user_id'), 0, 0, $goods_id, $sku_id);
+            $ret = $this->collect->toggle(session('user.user_id'), 0, 0, $goods_id, $sku_id, $share_uid, $campaign_id);
             if ($ret === false) {
                 // 失败
                 return result(-1, null, $msg.'失败');
             }
             if ($show_count == 1) {
-                // 显示收藏数量
+                // 显示点赞数量
                 $collect_count = Goods::where('goods_id', $goods_id)->value('collect_num');
             }
         } else {
             // todo ...
 
             $ret = 1;
-            $msg = '收藏';
+            $msg = '点赞';
         }
         
         // 成功

@@ -291,6 +291,8 @@ Route::group(['domain' => env('FRONTEND_DOMAIN')], function ($router) {
     } else {
         Route::get('/goods-{goods_id}.html', 'GoodsController@showGoods')->name('pc_show_goods'); // showGoods
         Route::get('/goodsdetail-{goods_id}.html', 'GoodsController@showGoodsDetail')->name('pc_show_goods'); // showGoodsDetail
+        Route::post('/goodscomment', 'GoodsController@goodsComment')
+        ; // showGoodsDetail
         Route::get('/list-{filter_str?}.html', 'GoodsController@lists')->name('pc_goods_list'); // goodsList
         Route::get('/list.html', 'GoodsController@lists'); // goodsList
 //    Route::get('/list-{cat_id}-{p1?}-{p2?}-{is_platform?}-{is_free_shipping?}-{is_offpay?}-{has_goods_number?}-{sort_type?}-{p9?}-{area_code?}-{p11?}-{brand_id?}-{min_price?}-{max_price?}.html', 'GoodsController@goodsList')->name('goods_list'); // 商品列表 筛选条件
