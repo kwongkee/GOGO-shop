@@ -1389,21 +1389,23 @@ function task_campaign($data){
     if($campaign_id!=0 && $share_uid!=0 && $goods_id!=0){
         #1、查找分享人活动任务（无需检验登录）
         $campaign_info = Db::connection('shop_db')->table('website_campaign_user_list')->where(['user_id'=>$share_uid,'product_id'=>$goods_id,'id'=>$campaign_id])->first();
-        $campaign_info = objtoarr($campaign_info);
-        $campaign_info['task_info'] = json_decode($campaign_info['task_info'],true);
-        
-        #2、判断任务类型
-        foreach($campaign_info['task_info'] as $k=>$v){
-            if($campaign_type==$v['task_type']){
-                $campaign_info['task_info'][$k]['status'] = 1;
-                break;
+        if(!empty($campaign_info)){
+            $campaign_info = objtoarr($campaign_info);
+            $campaign_info['task_info'] = json_decode($campaign_info['task_info'],true);
+            
+            #2、判断任务类型
+            foreach($campaign_info['task_info'] as $k=>$v){
+                if($campaign_type==$v['task_type']){
+                    $campaign_info['task_info'][$k]['status'] = 1;
+                    break;
+                }
             }
+            
+            #3、记录任务类型到活动中
+            Db::connection('shop_db')->table('website_campaign_user_list')->where(['id'=>$campaign_info['id']])->update([
+                'task_info'=>json_encode($campaign_info['task_info'],true)
+            ]);   
         }
-        
-        #3、记录任务类型到活动中
-        Db::connection('shop_db')->table('website_campaign_user_list')->where(['id'=>$campaign_info['id']])->update([
-            'task_info'=>json_encode($campaign_info['task_info'],true)
-        ]);   
     }
 }
 //====自定义方法 END====

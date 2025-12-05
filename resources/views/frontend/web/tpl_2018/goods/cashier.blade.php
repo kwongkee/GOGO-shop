@@ -246,7 +246,7 @@
 
         if(val>0){
             $.post('/get_cashier_country', {'country':val,'orderid':{{$order['id']}},'cash_on_delivery':1}, function(res) {
-                order_template(res);
+                order_template(res,val);
             }, 'json');
         }
     }
@@ -259,7 +259,7 @@
     }
 
     //循环支付通道相应信息
-    function order_template(res){
+    function order_template(res,country_id=0){
         var $ = layui.$
             , layer = layui.layer
             , form = layui.form;
@@ -349,169 +349,172 @@
                                 '                                </div>\n' +
                                 '                            </div>\n';
 
-                            if(res.data[i].children[i2].pay_id==3){
-                                //paypal支付
-                                window.paypal.Buttons({
-                                    style: {
-                                        shape: "rect",
-                                        layout: "vertical",
-                                        color: "gold",
-                                        label: "paypal",
-                                    },
-                                    message: {
-                                        amount: 100,
-                                    },
-                                    async createOrder() {
-                                        try {
-                                            //https://shop.gogo198.cn/collect_website/public/?s=/api/paypal
-                                            //https://shop.gogo198.cn/collect_website/public/paypal.php
-                                            // return new Promise((resolve, reject) => {
-                                            //     $.ajax({
-                                            //         url: "https://shop.gogo198.cn/collect_website/public/?s=/api/paypal/index",
-                                            //         method: 'POST',
-                                            //         data: {
-                                            //             cart: [
-                                            //                 {
-                                            //                     id: "2",
-                                            //                     quantity: "2",
-                                            //                 },
-                                            //             ],
-                                            //             type: 'orders',
-                                            //         },
-                                            //         dataType: 'JSON',
-                                            //         async: false,
-                                            //         success: function (responseData) {
-                                            //             if (responseData.id) {
-                                            //                 // 这里需要根据你的上下文决定如何处理返回值
-                                            //                 console.log("Order ID:", responseData.id);
-                                            //                 return responseData.id; // 需要配合 Promise 使用才能正确返回
-                                            //             }
-                                            //
-                                            //             const errorDetail = responseData?.details?.[0];
-                                            //             const errorMessage = errorDetail
-                                            //                 ? `${errorDetail.issue} ${errorDetail.description} (${responseData.debug_id})`
-                                            //                 : JSON.stringify(responseData);
-                                            //
-                                            //             throw new Error(errorMessage);
-                                            //         },
-                                            //         error: function (data) {
-                                            //             layer.msg('系统错误', {time: 2000});
-                                            //         }
-                                            //     });
-                                            // });
-
-
-                                            //原生paypal请求
-                                            const response = await fetch("https://shop.gogo198.cn/collect_website/public/?s=/api/paypal/index", {
-                                                method: "POST",
-                                                headers: {
-                                                    "Content-Type": "application/x-www-form-urlencoded",
-                                                },
-                                                body: JSON.stringify({
-                                                    info:{
-                                                        id:"{{$order['id']}}",//订单id
-                                                        currency:"{{$order['currency']}}",//订单币种
-                                                        true_money:"{{$order['true_money']}}",//订单总金额
-                                                        handing_fee:res.data[i].children[i2].rate_money,//手续费
-                                                    },
-                                                    {{--cart: [--}}
-                                                    {{--    {--}}
-                                                    {{--        id: "$order['id']",--}}
-                                                    {{--        quantity: 2,--}}
-                                                    {{--        currency:"$order['currency']",--}}
-                                                    {{--        true_money:"$order['true_money']"--}}
-                                                    {{--    },--}}
-                                                    {{--],--}}
-                                                    type: 'orders',//创建类型
-                                                }),
-                                            });
-                                            const orderData = await response.json();
-
-                                            if (orderData.id) {
-                                                return orderData.id;
-                                            }
-                                            const errorDetail = orderData?.details?.[0];
-                                            const errorMessage = errorDetail
-                                                ? `${errorDetail.issue} ${errorDetail.description} (${orderData.debug_id})`
-                                                : JSON.stringify(orderData);
-
-                                            throw new Error(errorMessage);
-                                        } catch (error) {
-                                            console.log(error);
-                                            // resultMessage(`Could not initiate PayPal Checkout...<br><br>${error}`);
-                                        }
-                                    } ,
-                                    async onApprove(data, actions) {
-                                        // console.log(data,111);
-                                        try {
-                                            // const response = await fetch(`/api/orders/${data.orderID}/capture`,
-                                            const response = await fetch(`https://shop.gogo198.cn/collect_website/public/?s=/api/paypal/index`,
-                                                {
+                            if(country_id!=162){
+                                if(res.data[i].children[i2].pay_id==3){
+                                    //paypal支付
+                                    window.paypal.Buttons({
+                                        style: {
+                                            shape: "rect",
+                                            layout: "vertical",
+                                            color: "gold",
+                                            label: "paypal",
+                                        },
+                                        message: {
+                                            amount: 100,
+                                        },
+                                        async createOrder() {
+                                            try {
+                                                //https://shop.gogo198.cn/collect_website/public/?s=/api/paypal
+                                                //https://shop.gogo198.cn/collect_website/public/paypal.php
+                                                // return new Promise((resolve, reject) => {
+                                                //     $.ajax({
+                                                //         url: "https://shop.gogo198.cn/collect_website/public/?s=/api/paypal/index",
+                                                //         method: 'POST',
+                                                //         data: {
+                                                //             cart: [
+                                                //                 {
+                                                //                     id: "2",
+                                                //                     quantity: "2",
+                                                //                 },
+                                                //             ],
+                                                //             type: 'orders',
+                                                //         },
+                                                //         dataType: 'JSON',
+                                                //         async: false,
+                                                //         success: function (responseData) {
+                                                //             if (responseData.id) {
+                                                //                 // 这里需要根据你的上下文决定如何处理返回值
+                                                //                 console.log("Order ID:", responseData.id);
+                                                //                 return responseData.id; // 需要配合 Promise 使用才能正确返回
+                                                //             }
+                                                //
+                                                //             const errorDetail = responseData?.details?.[0];
+                                                //             const errorMessage = errorDetail
+                                                //                 ? `${errorDetail.issue} ${errorDetail.description} (${responseData.debug_id})`
+                                                //                 : JSON.stringify(responseData);
+                                                //
+                                                //             throw new Error(errorMessage);
+                                                //         },
+                                                //         error: function (data) {
+                                                //             layer.msg('系统错误', {time: 2000});
+                                                //         }
+                                                //     });
+                                                // });
+    
+    
+                                                //原生paypal请求
+                                                const response = await fetch("https://shop.gogo198.cn/collect_website/public/?s=/api/paypal/index", {
                                                     method: "POST",
                                                     headers: {
                                                         "Content-Type": "application/x-www-form-urlencoded",
                                                     },
-                                                    body:JSON.stringify({
-                                                        type:data.orderID+'/capture',
-                                                        paymentSource:data.paymentSource,
+                                                    body: JSON.stringify({
+                                                        info:{
+                                                            id:"{{$order['id']}}",//订单id
+                                                            currency:"{{$order['currency']}}",//订单币种
+                                                            true_money:"{{$order['true_money']}}",//订单总金额
+                                                            handing_fee:res.data[i].children[i2].rate_money,//手续费
+                                                        },
+                                                        {{--cart: [--}}
+                                                        {{--    {--}}
+                                                        {{--        id: "$order['id']",--}}
+                                                        {{--        quantity: 2,--}}
+                                                        {{--        currency:"$order['currency']",--}}
+                                                        {{--        true_money:"$order['true_money']"--}}
+                                                        {{--    },--}}
+                                                        {{--],--}}
+                                                        type: 'orders',//创建类型
                                                     }),
+                                                });
+                                                const orderData = await response.json();
+    
+                                                if (orderData.id) {
+                                                    return orderData.id;
                                                 }
-                                            );
-
-                                            const orderData = await response.json();
-                                            // Three cases to handle:
-                                            //   (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
-                                            //   (2) Other non-recoverable errors -> Show a failure message
-                                            //   (3) Successful transaction -> Show confirmation or thank you message
-
-                                            const errorDetail = orderData?.details?.[0];
-
-                                            if (errorDetail?.issue === "INSTRUMENT_DECLINED") {
-                                                // (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
-                                                // recoverable state, per
-                                                // https://developer.paypal.com/docs/checkout/standard/customize/handle-funding-failures/
-                                                return actions.restart();
-                                            } else if (errorDetail) {
-                                                // (2) Other non-recoverable errors -> Show a failure message
-                                                throw new Error(
-                                                    `${errorDetail.description} (${orderData.debug_id})`
-                                                );
-                                            } else if (!orderData.purchase_units) {
-                                                throw new Error(JSON.stringify(orderData));
-                                            } else {
-                                                // (3) Successful transaction -> Show confirmation or thank you message
-                                                // Or go to another URL:  actions.redirect('thank_you.html');
-                                                const transaction =
-                                                    orderData?.purchase_units?.[0]?.payments
-                                                        ?.captures?.[0] ||
-                                                    orderData?.purchase_units?.[0]?.payments
-                                                        ?.authorizations?.[0];
-                                                resultMessage(
-                                                    `Transaction ${transaction.status}: ${transaction.id}<br/>
-          <br/>See console for all available details`
-                                                );
-                                                console.log(
-                                                    "Capture result",
-                                                    orderData,
-                                                    JSON.stringify(orderData, null, 2)
-                                                );
-
-                                                //支付完成后跳转到已结账中心
-                                                if(orderData['status']=='COMPLETED'){
-                                                    layer.msg('支付成功!正在跳转订购中心【已结算】',{time:2000}, function () {
-                                                        window.location.href='/cart.html?selected=3';
-                                                    });
-                                                }
+                                                const errorDetail = orderData?.details?.[0];
+                                                const errorMessage = errorDetail
+                                                    ? `${errorDetail.issue} ${errorDetail.description} (${orderData.debug_id})`
+                                                    : JSON.stringify(orderData);
+    
+                                                throw new Error(errorMessage);
+                                            } catch (error) {
+                                                console.log(error);
+                                                // resultMessage(`Could not initiate PayPal Checkout...<br><br>${error}`);
                                             }
-                                        } catch (error) {
-                                            console.log(error);
-                                            resultMessage(
-                                                `Sorry, your transaction could not be processed...<br/><br/>${error}`
-                                            );
-                                        }
-                                    } ,
-                                }).render('#paypal_pay');
+                                        } ,
+                                        async onApprove(data, actions) {
+                                            // console.log(data,111);
+                                            try {
+                                                // const response = await fetch(`/api/orders/${data.orderID}/capture`,
+                                                const response = await fetch(`https://shop.gogo198.cn/collect_website/public/?s=/api/paypal/index`,
+                                                    {
+                                                        method: "POST",
+                                                        headers: {
+                                                            "Content-Type": "application/x-www-form-urlencoded",
+                                                        },
+                                                        body:JSON.stringify({
+                                                            type:data.orderID+'/capture',
+                                                            paymentSource:data.paymentSource,
+                                                        }),
+                                                    }
+                                                );
+    
+                                                const orderData = await response.json();
+                                                // Three cases to handle:
+                                                //   (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
+                                                //   (2) Other non-recoverable errors -> Show a failure message
+                                                //   (3) Successful transaction -> Show confirmation or thank you message
+    
+                                                const errorDetail = orderData?.details?.[0];
+    
+                                                if (errorDetail?.issue === "INSTRUMENT_DECLINED") {
+                                                    // (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
+                                                    // recoverable state, per
+                                                    // https://developer.paypal.com/docs/checkout/standard/customize/handle-funding-failures/
+                                                    return actions.restart();
+                                                } else if (errorDetail) {
+                                                    // (2) Other non-recoverable errors -> Show a failure message
+                                                    throw new Error(
+                                                        `${errorDetail.description} (${orderData.debug_id})`
+                                                    );
+                                                } else if (!orderData.purchase_units) {
+                                                    throw new Error(JSON.stringify(orderData));
+                                                } else {
+                                                    // (3) Successful transaction -> Show confirmation or thank you message
+                                                    // Or go to another URL:  actions.redirect('thank_you.html');
+                                                    const transaction =
+                                                        orderData?.purchase_units?.[0]?.payments
+                                                            ?.captures?.[0] ||
+                                                        orderData?.purchase_units?.[0]?.payments
+                                                            ?.authorizations?.[0];
+                                                    resultMessage(
+                                                        `Transaction ${transaction.status}: ${transaction.id}<br/>
+              <br/>See console for all available details`
+                                                    );
+                                                    console.log(
+                                                        "Capture result",
+                                                        orderData,
+                                                        JSON.stringify(orderData, null, 2)
+                                                    );
+    
+                                                    //支付完成后跳转到已结账中心
+                                                    if(orderData['status']=='COMPLETED'){
+                                                        layer.msg('支付成功!正在跳转订购中心【已结算】',{time:2000}, function () {
+                                                            window.location.href='/cart.html?selected=3';
+                                                        });
+                                                    }
+                                                }
+                                            } catch (error) {
+                                                console.log(error);
+                                                resultMessage(
+                                                    `Sorry, your transaction could not be processed...<br/><br/>${error}`
+                                                );
+                                            }
+                                        } ,
+                                    }).render('#paypal_pay');
+                                }    
                             }
+                            
 
                             //paypal消息打印
                             function resultMessage(message) {

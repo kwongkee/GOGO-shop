@@ -258,7 +258,7 @@
         .buy_div .select_buy .select_buy_btmBox .SZY-CURRENCY{font-size:15px;color:#fff;background:#db1d18;padding:2px 5px;box-sizing: border-box;font-weight: 800;width: 48px;min-width: 48px;max-width: 48px;text-align: center;}
         .buy_div .select_buy .select_buy_btmBox .SZY-PRICE{font-size:15px;font-weight:800;background:#fff;color:#db1d18;border: 1px solid #a7a6ac;padding: 2px 16px;box-sizing: border-box;min-width: 100px;text-align: center;}
         .buy_div .select_buy .btn_buy{padding:3px 10px;box-sizing: border-box;margin-right:10px;color:#fff;cursor:pointer;}
-        .buy_div .select_buy .buy-goods,.buy_div .select_buy .buy-goods-soon{background:#db1d18;margin-right:0;float:right;font-weight: 800;}
+        .buy_div .select_buy .buy-goods,.buy_div .select_buy .buy-goods-soon{background:#db1d18;margin-right:0;float:right;font-weight: 800;white-space:nowrap;}
         .buy_div .select_buy .join_list{background:{{$website['color']}};color:{{$website['color_word']}};font-weight:800;white-space: nowrap;}
         .buy_div .select_buy .show_list{background:unset;padding: 0;margin-right: 0;}
         .buy_div .select_buy .amount_num{margin-right:10px;}

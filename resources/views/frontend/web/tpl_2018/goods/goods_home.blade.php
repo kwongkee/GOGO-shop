@@ -176,19 +176,14 @@
                 right: 20px;
             }
             
-            .action-btn {
-                width: 25px;
-                height: 25px;
-                font-size: 15px;
-            }
-            
+            .news-views .action-btn{width: 35px;height: 35px;margin-right:20px;font-size: 15px;}
+            .news-views .action-btn.comment{margin-right:0;}
             .news-footer{padding:0 40px;box-sizing:border-box;margin-bottom:25px;}
             .news-source .shop_name{font-size:12px;white-space: nowrap;width: 200px;text-overflow: ellipsis;overflow: hidden;}
         }
     </style>
     <div id="cs" style="display:none;"></div>
     <div class="news-card">
-        
         <div class="news-content">
             <div class="news-image">
                 <img src="{{$goods->goods_image}}" style="width:100%;height:100%;"/>
@@ -213,7 +208,6 @@
         </div>
         
         <div class="news-footer">
-            
             <div class="news-views disf">
                 <a href="/goodsdetail-{{$goods->goods_id}}.html?share_uid={{$share_uid}}&campaign_id={{$campaign_id}}" target="_blank">
                     <div class="action-btn detail" title="详情">
