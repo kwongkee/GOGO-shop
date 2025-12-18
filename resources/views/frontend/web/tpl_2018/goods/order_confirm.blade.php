@@ -179,6 +179,16 @@
         <div class="w1210">
             <div class="sure_detail_title">
                 <span style="font-size:22px;margin-right:5px;">③</span><span>结算中心&nbsp;&gt;&nbsp;订单确认</span>
+                
+                <div class="addr_div default_div" style="font-size: 15px;text-align: right;">
+                    收货地址：
+                    <select id="selectAddr" onchange="selectAddr(this)" class="chosen-select addr-select" style="max-width:150px;">
+                        <option value="-1">--新增地址--</option>
+                        @foreach($addr as $k=>$v)
+                            <option value="{{$v['id']}}" @if($v['is_default']==1) selected @endif>{{$v['country_name']}}{{$v['detail_addr']}}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
             <div class="content">
                 <div class="goods_list">
@@ -558,6 +568,17 @@
             form.render(null,'glist-element');
         });
 
+        //--新增地址--
+        function selectAddr(t){
+            var $ = layui.$
+                , layer = layui.layer;
+                
+            if($(t).val()==-1){
+                window.open("https://boss.gogo198.cn/?s=members/member_center&mid={{$website_user->id}}&first_idx=11&second_idx=16");
+            }
+        }
+
+        
         //计算价格
         function calc_fee(type=0,t,type1){
             var $ = layui.$
@@ -902,8 +923,13 @@
                 @endif
             @endif
 
+            var addr_id = $('#selectAddr').val();
+            if(addr_id=='-1' || addr_id==''){
+                layer.msg('请选择收货地址');return false;
+            }
+
             layer.load();
-            $.post('/apply_order',{'cart_id':"{{$cart_id}}",'_token':"{{csrf_token()}}"},function(res) {
+            $.post('/apply_order',{'cart_id':"{{$cart_id}}",'_token':"{{csrf_token()}}",'addr_id':addr_id},function(res) {
                 layer.closeAll('loading');
                 layer.msg(res.msg,{time:2000}, function () {
                     if (res.code == 0) {

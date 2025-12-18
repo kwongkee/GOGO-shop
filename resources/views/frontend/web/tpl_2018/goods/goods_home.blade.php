@@ -28,7 +28,8 @@
             width: 100%;
             overflow: hidden;
             position: relative;
-            margin-top:60px;
+            margin-top:90px;
+            margin-bottom:40px;
         }
         
         .news-header {
@@ -44,7 +45,7 @@
             line-height: 1.3;
         }
         
-        .goods_title{font-weight:800;color:#fff;font-size:24px;margin-top:24px !important;line-height:1.1;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-line-clamp: 2; -webkit-box-orient: vertical;}
+        .goods_title{font-weight:800;color:#fff;font-size:24px;margin-top:20px !important;line-height:1.1;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-line-clamp: 2; -webkit-box-orient: vertical;}
         .goods_desc{font-size:16px;color:#fff;margin-top:20px !important;line-height:28px;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-line-clamp: 2; -webkit-box-orient: vertical;}
         .goods_price{font-size:24px;color:#fff;font-weight:800;position: absolute;right: 20px;top: 94px;border-left: 1px solid #fff;padding-left: 10px;background: rgb({{$color->param1}},{{$color->param2}},{{$color->param3}});}
         
@@ -60,7 +61,7 @@
         }
         
         .news-content {
-            padding: 25px 30px;
+            padding: 20px 30px;
             font-size: 16px;
             color: #444;
         }
@@ -81,7 +82,7 @@
         }
         .news-image img{border-radius:10px;}
         
-        .news-footer {box-sizing:border-box;margin-bottom:25px;margin-top:20px;display: flex;justify-content: center;align-items: center;}
+        .news-footer {box-sizing:border-box;margin-bottom:20px;margin-top:20px;display: flex;justify-content: center;align-items: center;}
         
         .news-source {font-size: 14px;color: #888;position: absolute;left: 10px;bottom: 10px;border-radius: 15px;padding:2px 10px;}
         .news-source .shop_logo{width:20px;height:20px;border-radius:50%;margin-right:10px;border:1px solid #fff;}
@@ -207,6 +208,49 @@
             </div>
         </div>
         
+        <!--评论区域-->
+        <div class="comments-container" style="margin-top: 0px; padding: 0 50px;">
+            <!--<div class="comments-title" style="font-size: 18px; font-weight: 600; margin-bottom: 15px; color: #fff;">用户评论</div>-->
+            
+            <!--最新评论区域-->
+            <div id="latest-comment" style="background: rgb({{$color->param1}},{{$color->param2}},{{$color->param3}}); border-radius: 8px; padding: 5px 15px; margin-bottom: 15px; border:1px solid #fff;border-left: 4px solid #fff;">
+                @if(isset($latestComment) && $latestComment)
+                    <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div class="comment-user" style="font-weight: 600; color: #fff;">
+                            <i class="fas fa-user-circle" style="margin-right: 5px;"></i>
+                            {{ $latestComment->user_nick ?? '用户' }}
+                        </div>
+                        <div class="comment-time" style="font-size: 12px; color: #fff;">
+                            {{ date('Y-m-d H:i', $latestComment->created_at) }}
+                        </div>
+                    </div>
+                    <div class="comment-content" style="color: #fff; line-height: 1.5;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-line-clamp: 1;-webkit-box-orient: vertical;width: 100%;">
+                        {{ $latestComment->comment_desc }}
+                    </div>
+                @else
+                    <div style="text-align: center; color: #fff; padding: 10px 0;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-line-clamp: 1;-webkit-box-orient: vertical;width: 100%;">
+                        暂无评论
+                    </div>
+                @endif
+                
+                @if(isset($latestComment) && $latestComment)
+                    <!--加载更多按钮-->
+                    <div id="load-more-comments" style="text-align: center;border-top: 1px solid #fff;padding-top: 5px;margin-top: 5px;">
+                        <div id="load-more-btn" style="background: #fff; color: rgb({{$color->param1}},{{$color->param2}},{{$color->param3}}); border: none; padding: 5px 20px; border-radius: 15px; cursor: pointer; font-size: 15px;width:fit-content;margin:0 auto;">
+                            <i class="fas fa-comments" style="margin-right: 5px;"></i>
+                            查看更多评论
+                        </div>
+                        <div id="loading-more" style="display: none; color: #666;">
+                            <i class="fas fa-spinner fa-spin"></i> 加载中...
+                        </div>
+                    </div>
+                @endif
+            </div>
+            
+            <!--更多评论展示区域-->
+            <div id="more-comments" style="display: none;padding:10px;box-sizing:border-box;"></div>
+        </div>
+        
         <div class="news-footer">
             <div class="news-views disf">
                 <a href="/goodsdetail-{{$goods->goods_id}}.html?share_uid={{$share_uid}}&campaign_id={{$campaign_id}}" target="_blank">
@@ -214,11 +258,9 @@
                         <img src="/images/goods_miniprogram/detail.png">
                     </div>
                 </a>
-                <a href="/cart.html" target="_blank">
-                    <div class="action-btn cart" title="购物车">
-                        <img src="/images/goods_miniprogram/cart.png">
-                    </div>
-                </a>
+                <div class="action-btn cart" title="加购" onclick="_join_cart()">
+                    <img src="/images/goods_miniprogram/cart.png?v=12">
+                </div>
                 <div class="action-btn favorite" title="点赞" onclick="_collect()">
                     <img src="/images/goods_miniprogram/goods.png">
                 </div>
@@ -296,6 +338,84 @@
             });
         });
         
+        // 加载更多评论功能
+        $(document).ready(function() {
+            var page = 1;
+            var hasMore = true;
+            
+            $('#load-more-btn').click(function() {
+                if (!hasMore) return;
+                
+                $('#load-more-btn').hide();
+                $('#loading-more').show();
+                
+                $.ajax({
+                    url: '/goodscomment',
+                    type: 'POST',
+                    data: {
+                        goods_id: "{{$goods->goods_id}}",
+                        page: page,
+                        isloading: 1,
+                        _token: "{{csrf_token()}}"
+                    },
+                    success: function(response) {
+                        $('#loading-more').hide();
+                        $('#load-more-btn').show();
+                        
+                        if (response.code == 0 && response.data && response.data.length > 0) {
+                            var commentsHtml = '';
+                            
+                            $.each(response.data, function(index, comment) {
+                                commentsHtml += '<div class="comment-item" style="background: #f9f9f9; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 4px solid #6e8efb;">';
+                                commentsHtml += '    <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">';
+                                commentsHtml += '        <div class="comment-user" style="font-weight: 600; color: #333;">';
+                                commentsHtml += '            <i class="fas fa-user-circle" style="margin-right: 5px;"></i>';
+                                commentsHtml += '            ' + (comment.user_nick || '用户');
+                                commentsHtml += '        </div>';
+                                commentsHtml += '        <div class="comment-time" style="font-size: 12px; color: #666;">';
+                                commentsHtml += '            ' + comment.created_at;
+                                commentsHtml += '        </div>';
+                                commentsHtml += '    </div>';
+                                commentsHtml += '    <div class="comment-content" style="color: #444; line-height: 1.5;">';
+                                commentsHtml += '        ' + comment.comment_desc;
+                                commentsHtml += '    </div>';
+                                commentsHtml += '</div>';
+                            });
+                            
+                            $('#more-comments').append(commentsHtml);
+                            
+                            layer.open({
+                               type:1,
+                               title:'评论列表',
+                               area:['400px','300px'],
+                               content:$('#more-comments')
+                            });
+                            
+                            // page++;
+                            
+                            // 如果有更多数据，显示加载更多按钮
+                            // if (response.has_more) {
+                            //     $('#load-more-btn').hide();
+                            // } else {
+                            //     hasMore = false;
+                                // $('#load-more-comments').html('<div style="text-align: center; color: #999; padding: 10px 0;">没有更多评论了</div>');
+                            // }
+                        } else {
+                            if (page == 1) {
+                                // $('#more-comments').html('<div style="text-align: center; color: #999; padding: 20px 0;">暂无更多评论</div>').show();
+                            }
+                            hasMore = false;
+                        }
+                    },
+                    error: function() {
+                        $('#loading-more').hide();
+                        $('#load-more-btn').show();
+                        layer.msg('加载失败，请重试');
+                    }
+                });
+            });
+        });
+        
         layui.use(['layer','element','upload','form'],function() {
             var $ = layui.$
                 , layer = layui.layer
@@ -319,6 +439,25 @@
                 });
             });
         });
+        
+        //选择商品默认规格加入购物车
+        function _join_cart(){
+            var $ = layui.$
+                , form = layui.form
+                , layer = layui.layer;
+                
+            layer.load();
+            
+            $.post('/join_cart',{'goods_id':"{{$goods->goods_id}}",'sku_id':"{{$goods->sku_id}}",'is_default':1,'_token':"{{csrf_token()}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}"},function(res){
+                layer.closeAll('loading');
+                // res = JSON.parse(res);
+                layer.msg(res.msg,{time:2000}, function () {
+                    if (res.code == 0) {
+                        
+                    }
+                });
+            });
+        }
         
         function _collect(){
             var $ = layui.$

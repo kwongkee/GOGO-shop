@@ -2730,6 +2730,54 @@ class FuncController extends Frontend
             return Response()->json(['code'=>0,'msg'=>'删除成功']);
         }
     }
+    
+    #获取当前国地收货地址
+    public function get_address(Request $request){
+        $data = $request->except(['_token']);
+        $country_id = intval($data['country_id']);
+        $method = intval($data['method']);
+        
+        $list = [];
+        if($method==1){
+            #寄往中国
+            $list = Db::connection('shop_db')->table('centralize_user_address')->where(['country_id'=>$country_id])->get();
+            $list = objtoarr($list);
+            
+            foreach($list as $k=>$v){
+                $list[$k]['country_name'] = Db::connection();
+                #国地
+                $list[$k]['country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$v['country_id']])->select('param2')->first()->param2;
+        
+                if($v['have_postal_code']==2){
+                    $list[$k]['province_name'] = $list[$k]['city_name'] = $list[$k]['district_name'] = $list[$k]['town_name'] = $list[$k]['village_name'] = '';
+        
+                    if(!empty($v['province'])){
+                        $list[$k]['province_name'] = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['province']])->select('name')->first()->name;
+                    }
+        
+                    if(!empty($v['city'])){
+                        $list[$k]['city_name'] = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['city']])->select('name')->first()->name;
+                    }
+        
+                    if(!empty($v['area'])){
+                        $list[$k]['district_name'] = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['area']])->select('name')->first()->name;
+                    }
+        
+                    if(!empty($v['area2'])){
+                        $list[$k]['town_name'] = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['area2']])->select('name')->first()->name;
+                    }
+        
+                    if(!empty($v['area3'])){
+                        $list[$k]['village_name'] = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['area3']])->select('name')->first()->name;
+                    }
+                    
+                    $list[$k]['true_addr'] = $list[$k]['country_name'] .' '. $list[$k]['province_name'] .' '. $list[$k]['city_name'] .' '. $list[$k]['district_name'] .' '. $list[$k]['town_name'] .' '. $list[$k]['village_name'];
+                }
+            }
+        }
+        
+        return Response()->json(['code'=>0,'data'=>$list]);
+    }
     #地址END================================================
 
     #发送验证码

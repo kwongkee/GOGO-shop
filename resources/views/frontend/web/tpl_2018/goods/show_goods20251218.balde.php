@@ -565,248 +565,8 @@
                         <div class="purchase_process">
                             <dl class="goods-options-row goods-options-freight">
                                 <dd class="cn new-goods-options-content">
-                                    <div class="label label-one" style="justify-content: space-between;">
-                                        <div class="leftLabel">
-                                            <span class="label-title">收货方式</span>
-                                            <span class="font-icon arrow">&gt;</span>
-                                            <span class="label-title"></span>
-                                            <select id="selectDeliveryMethod" class="chosen-select delivery-selects">
-                                                <option value="">请选择</option>
-                                                <option value="1">中国收货</option>
-                                                <option value="2" @if($goods['service_type']==2) disabled @endif>海外收货</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="label label-two second_step" style="display:none;justify-content:space-between;">
-                                        <div class="delivery_method_1" style="display:none;">
-                                            <!--国内收货-->
-                                            
-                                            <!--地址选择样式-->
-                                            <style>
-                                                /* 地址选择样式 */
-                                                .country-select2{text-align:left;}
-                                                .address-select-container {position: relative;width: 100%;}
-                                                .address-select-trigger {display: flex;align-items: center;justify-content: space-between;padding: 12px 15px;border-radius: 4px;cursor: pointer;transition: border-color 0.3s;}
-                                                .address-select-trigger:hover {border-color: {{$website['color']}};}
-                                                .address-info {flex: 1;min-width: 0;}
-                                                .selected-address, .no-address-prompt {display: flex;flex-direction: column;}
-                                                .receiver-info {display: flex;align-items: center;margin-bottom: 5px;font-size: 14px;}
-                                                .receiver-name {font-weight: bold;color: #333;margin-right: 15px;}
-                                                .receiver-phone {color: #666;margin-right: 10px;}
-                                                .default-tag {padding: 2px 6px;background-color: {{$website['color']}};color: #000;border-radius: 2px;font-size: 12px;line-height: 1;}
-                                                .address-detail {color: #666;font-size: 13px;line-height: 1.4;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
-                                                .no-address-prompt span {color: #000;font-size: 15px;font-weight:600;}
-                                                .address-arrow {margin-left: 10px;color: #000;transition: transform 0.3s;}
-                                                
-                                                .address-arrow.up {
-                                                    transform: rotate(180deg);
-                                                }
-                                                
-                                                /* 地址下拉列表 */
-                                                .address-dropdown {
-                                                    position: absolute;
-                                                    top: 100%;
-                                                    left: 0;
-                                                    right: 0;
-                                                    margin-top: 5px;
-                                                    background-color: #fff;
-                                                    border: 1px solid #e0e0e0;
-                                                    border-radius: 4px;
-                                                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                                                    z-index: 1000;
-                                                    max-height: 300px;
-                                                    overflow-y: auto;
-                                                }
-                                                
-                                                .address-list {
-                                                    padding: 10px 0 !important;
-                                                }
-                                                
-                                                .address-item {
-                                                    display: flex;
-                                                    align-items: center;
-                                                    padding: 12px 15px;
-                                                    border-bottom: 1px solid #f5f5f5;
-                                                    cursor: pointer;
-                                                    transition: background-color 0.3s;
-                                                    padding:5px !important;
-                                                }
-                                                
-                                                .address-item:hover {
-                                                    background-color: #f9f9f9;
-                                                }
-                                                
-                                                .address-item.selected {
-                                                    background-color: #E3E6EB;
-                                                }
-                                                
-                                                .address-item-content {
-                                                    flex: 1;
-                                                    min-width: 0;
-                                                }
-                                                
-                                                .address-select-check {
-                                                    width: 20px;
-                                                    color: #000;
-                                                }
-                                                
-                                                .no-address-item {
-                                                    padding: 20px 15px;
-                                                    text-align: center;
-                                                    color: #000;
-                                                }
-                                                
-                                                .no-address-content {
-                                                    display: flex;
-                                                    flex-direction: column;
-                                                    align-items: center;
-                                                }
-                                                
-                                                .no-address-content .iconfont {
-                                                    font-size: 24px;
-                                                    margin-bottom: 10px;
-                                                    color: #000;
-                                                }
-                                                
-                                                .address-dropdown-footer {
-                                                    padding: 10px !important;
-                                                    border-top: 1px solid #f5f5f5;
-                                                    text-align: center;
-                                                }
-                                                
-                                                .add-address-btn {
-                                                    display: inline-flex;
-                                                    align-items: center;
-                                                    justify-content: center;
-                                                    padding: 8px 20px;
-                                                    background-color: {{$website['color']}};
-                                                    color: #000;
-                                                    border: none;
-                                                    border-radius: 4px;
-                                                    cursor: pointer;
-                                                    font-size: 14px;
-                                                    transition: background-color 0.3s;
-                                                }
-                                                
-                                                .add-address-btn:hover {
-                                                    background-color: {{$website['color']}};
-                                                    opacity: 0.9;
-                                                }
-                                                
-                                                .add-address-btn .iconfont {
-                                                    margin-right: 5px;
-                                                    font-size: 16px;
-                                                }
-                                                </style>
-                                            <!-- 选择收货地址 - 类似淘宝样式 -->
-                                            <div class="label label-three country-select2" style="display:none;">
-                                                <div class="address-select-container">
-                                                    <!-- 地址选择头部 -->
-                                                    <div class="address-select-header" onclick="toggleAddressList()">
-                                                        <div class="address-select-trigger">
-                                                            <div class="address-info">
-                                                                
-                                                                @if(1>2)
-                                                                    @if($defaultAddress)
-                                                                        <div class="selected-address">
-                                                                            <div class="receiver-info">
-                                                                                <span class="receiver-name">{{ $defaultAddress['user_name'] }}</span>
-                                                                                <span class="receiver-phone">{{ $defaultAddress['mobile'] }}</span>
-                                                                                @if($defaultAddress['is_default'] == 1)
-                                                                                    <span class="default-tag">默认</span>
-                                                                                @endif
-                                                                            </div>
-                                                                            <div class="address-detail">
-                                                                                {{ $defaultAddress['true_addr'] ?? '' }}
-                                                                            </div>
-                                                                        </div>
-                                                                    @else
-                                                                        <div class="no-address-prompt">
-                                                                            <span>请选择配送地址</span>
-                                                                        </div>
-                                                                    @endif
-                                                                
-                                                                    <div class="no-address-prompt">
-                                                                        <span>请添加收货地址</span>
-                                                                    </div>
-                                                                @endif
-                                                            </div>
-                                                            <div class="address-arrow">
-                                                                <i class="iconfont">&#xe6b9;</i>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <!-- 地址选择下拉列表 -->
-                                                    <div class="address-dropdown" id="addressDropdown" style="display: none;">
-                                                        <div class="address-list">
-                                                            @if(!empty($address) && count($address) > 0)
-                                                                @foreach($address as $k => $v)
-                                                                    <div class="address-item @if($v['is_default'] == 1) selected @endif" 
-                                                                         data-address-id="{{ $v['id'] }}"
-                                                                         onclick="selectAddress(this, {{ $v['id'] }})">
-                                                                        <div class="address-item-content">
-                                                                            <div class="receiver-info">
-                                                                                <span class="receiver-name">{{ $v['user_name'] }}</span>
-                                                                                <span class="receiver-phone">{{ $v['mobile'] }}</span>
-                                                                                @if($v['is_default'] == 1)
-                                                                                    <span class="default-tag">默认</span>
-                                                                                @endif
-                                                                            </div>
-                                                                            <div class="address-detail">
-                                                                                {{ $v['true_addr'] ?? '' }}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="address-select-check">
-                                                                            @if($v['is_default'] == 1)
-                                                                                <i class="iconfont">&#xe6b1;</i>
-                                                                            @endif
-                                                                        </div>
-                                                                    </div>
-                                                                @endforeach
-                                                            @else
-                                                                <div class="no-address-item">
-                                                                    <div class="no-address-content">
-                                                                        <i class="iconfont">&#xe6b3;</i>
-                                                                        <span>暂无收货地址，请先添加地址</span>
-                                                                    </div>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                        <div class="address-dropdown-footer">
-                                                            <div class="add-address-btn" onclick="add_addr()">
-                                                                <i class="iconfont">&#xe6b7;</i>
-                                                                添加新的收货地址
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <!-- 隐藏的select，用于表单提交 -->
-                                                    <select name="address_id" id="address_id" style="display: none;" lay-verify="required">
-                                                        <option value="">请选择</option>
-                                                        @if(!empty($address))
-                                                            @foreach($address as $k=>$v)
-                                                                <option value="{{$v['id']}}" @if($v['is_default']==1) selected @endif>
-                                                                    {{$v['user_name']}}，{{$v['mobile']}}
-                                                                </option>
-                                                            @endforeach
-                                                        @endif
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="delivery_method_2" style="display:none;">
-                                            <!--海外收货-->
-                                            <div class="leftLabel" style="display: flex;align-items: center;">
-                                            </div>
-                                            <div class="rightLabel"></div>
-                                        </div>
-                                    </div>
-                                    
-                                    
-                                    
-                                    @if(1>2)
-                                        <div class="label label-one" style="display:none;justify-content: space-between;">
+                                    @if($goods['service_type']==1 || $goods['gather_method']==1 || $goods['shop_id']==0)
+                                        <div class="label label-one" style="justify-content: space-between;">
                                             <div class="leftLabel">
                                                 <span class="label-title">中国卖家</span>
                                                 <span class="font-icon arrow">&gt;</span>
@@ -824,7 +584,7 @@
                                                 @endif
                                             </div>
                                         </div>
-                                        <div class="label label-two" style="display:none;justify-content: space-between;">
+                                        <div class="label label-two" style="justify-content: space-between;">
                                             <div class="leftLabel" style="display: flex;align-items: center;">
                                                 <span class="label-title">中国集货仓</span>
                                                 <span class="font-icon arrow">&gt;</span>
@@ -836,14 +596,23 @@
                                                     @endforeach
                                                 </select>
                                                 <div class="sel_postal" style="display: inline-block;margin-left:5px;">
-    
+
                                                 </div>
+                                                <!--<select id="select_addr" onchange="select_addrr(this)" style="min-width: 130px;width: 130px;color: #000;">-->
+                                                <!--    <option value="">——请选择操作——</option>-->
+                                                <!--    <option value="1" if(empty($address))-->
+                                                <!--    disabled="disabled"-->
+                                                <!--            else-->
+                                                <!--            selected-->
+                                                <!--            endif>选择地址</option>-->
+                                                <!--    <option value="2">新增地址</option>-->
+                                                <!--</select>-->
                                             </div>
                                             <div class="rightLabel">
                                                 <a href="javascript:freight_calc(this);" class="freight_estimate">国际运费估算 >></a>
                                             </div>
                                         </div>
-                                        
+                                    @elseif($goods['service_type']==2 || $goods['gather_method']==2 || $goods['support_export']==1)
                                         <!--支持跨境配送&自主集运-->
                                         <div class="label label-one" style="justify-content: space-between;">
                                             <div class="leftLabel">
@@ -886,27 +655,251 @@
                                                 <a href="javascript:freight_calc(this);" class="freight_estimate">国际运费估算 >></a>
                                             </div>
                                         </div>
-                                        
-                                        <div class="label label-three country-select2" style="display:none;">
-                                            <div class="country-select-search ant-select ant-select-enabled">
-                                                <div class="ant-select-selection ant-select-selection--single" tabindex="0">
-                                                    <div class="disf">
-                                                        <select name="address_id" id="address_id" style="border: 1px solid #000;padding: 0px 10px;width: 220px;color:#000;" lay-verify="required">
-                                                            <option value="">————请选择————</option>
-                                                            @if(!empty($address))
-                                                                @foreach($address as $k=>$v)
-                                                                    <option value="{{$v['id']}}" @if($v['is_default']==1)
-                                                                    selected
-                                                                            @endif>{{$v['user_name']}}，{{$v['mobile']}}</option>
-                                                                @endforeach
-                                                            @endif
-                                                        </select>
-                                                    </div>
+                                    @endif
+                                    <div class="label label-three country-select2" style="display:none;">
+                                        <div class="country-select-search ant-select ant-select-enabled">
+                                            <div class="ant-select-selection ant-select-selection--single" tabindex="0">
+                                                <div class="disf">
+                                                    <select name="address_id" id="address_id" style="border: 1px solid #000;padding: 0px 10px;width: 220px;color:#000;" lay-verify="required">
+                                                        <option value="">————请选择————</option>
+                                                        @if(!empty($address))
+                                                            @foreach($address as $k=>$v)
+                                                                <option value="{{$v['id']}}" @if($v['is_default']==1)
+                                                                selected
+                                                                        @endif>{{$v['user_name']}}，{{$v['mobile']}}</option>
+                                                            @endforeach
+                                                        @endif
+                                                    </select>
                                                 </div>
                                             </div>
                                         </div>
-                                    @endif
+                                    </div>
                                     
+                                    <!--地址选择样式-->
+                                    <style>
+                                        /* 地址选择样式 */
+                                        .country-select2{text-align:left;}
+                                        .address-select-container {position: relative;width: 100%;}
+                                        .address-select-trigger {display: flex;align-items: center;justify-content: space-between;padding: 12px 15px;border-radius: 4px;cursor: pointer;transition: border-color 0.3s;}
+                                        .address-select-trigger:hover {border-color: {{$website['color']}};}
+                                        .address-info {flex: 1;min-width: 0;}
+                                        .selected-address, .no-address-prompt {display: flex;flex-direction: column;}
+                                        .receiver-info {display: flex;align-items: center;margin-bottom: 5px;font-size: 14px;}
+                                        .receiver-name {font-weight: bold;color: #333;margin-right: 15px;}
+                                        .receiver-phone {color: #666;margin-right: 10px;}
+                                        .default-tag {padding: 2px 6px;background-color: {{$website['color']}};color: #000;border-radius: 2px;font-size: 12px;line-height: 1;}
+                                        .address-detail {color: #666;font-size: 13px;line-height: 1.4;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
+                                        .no-address-prompt span {color: #000;font-size: 15px;font-weight:600;}
+                                        .address-arrow {margin-left: 10px;color: #000;transition: transform 0.3s;}
+                                        
+                                        .address-arrow.up {
+                                            transform: rotate(180deg);
+                                        }
+                                        
+                                        /* 地址下拉列表 */
+                                        .address-dropdown {
+                                            position: absolute;
+                                            top: 100%;
+                                            left: 0;
+                                            right: 0;
+                                            margin-top: 5px;
+                                            background-color: #fff;
+                                            border: 1px solid #e0e0e0;
+                                            border-radius: 4px;
+                                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                                            z-index: 1000;
+                                            max-height: 300px;
+                                            overflow-y: auto;
+                                        }
+                                        
+                                        .address-list {
+                                            padding: 10px 0 !important;
+                                        }
+                                        
+                                        .address-item {
+                                            display: flex;
+                                            align-items: center;
+                                            padding: 12px 15px;
+                                            border-bottom: 1px solid #f5f5f5;
+                                            cursor: pointer;
+                                            transition: background-color 0.3s;
+                                            padding:5px !important;
+                                        }
+                                        
+                                        .address-item:hover {
+                                            background-color: #f9f9f9;
+                                        }
+                                        
+                                        .address-item.selected {
+                                            background-color: #E3E6EB;
+                                        }
+                                        
+                                        .address-item-content {
+                                            flex: 1;
+                                            min-width: 0;
+                                        }
+                                        
+                                        .address-select-check {
+                                            width: 20px;
+                                            color: #000;
+                                        }
+                                        
+                                        .no-address-item {
+                                            padding: 20px 15px;
+                                            text-align: center;
+                                            color: #000;
+                                        }
+                                        
+                                        .no-address-content {
+                                            display: flex;
+                                            flex-direction: column;
+                                            align-items: center;
+                                        }
+                                        
+                                        .no-address-content .iconfont {
+                                            font-size: 24px;
+                                            margin-bottom: 10px;
+                                            color: #000;
+                                        }
+                                        
+                                        .address-dropdown-footer {
+                                            padding: 10px !important;
+                                            border-top: 1px solid #f5f5f5;
+                                            text-align: center;
+                                        }
+                                        
+                                        .add-address-btn {
+                                            display: inline-flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            padding: 8px 20px;
+                                            background-color: {{$website['color']}};
+                                            color: #000;
+                                            border: none;
+                                            border-radius: 4px;
+                                            cursor: pointer;
+                                            font-size: 14px;
+                                            transition: background-color 0.3s;
+                                        }
+                                        
+                                        .add-address-btn:hover {
+                                            background-color: {{$website['color']}};
+                                            opacity: 0.9;
+                                        }
+                                        
+                                        .add-address-btn .iconfont {
+                                            margin-right: 5px;
+                                            font-size: 16px;
+                                        }
+                                        </style>
+                                    <!-- 选择收货地址 - 类似淘宝样式 -->
+                                    <div class="label label-three country-select2">
+                                        <div class="address-select-container">
+                                            <!-- 地址选择头部 -->
+                                            <div class="address-select-header" onclick="toggleAddressList()">
+                                                <div class="address-select-trigger">
+                                                    <div class="address-info">
+                                                        @if(!empty($address) && count($address) > 0)
+                                                            @php
+                                                                $defaultAddress = null;
+                                                                foreach($address as $addr) {
+                                                                    if($addr['is_default'] == 1) {
+                                                                        $defaultAddress = $addr;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                                if(!$defaultAddress && count($address) > 0) {
+                                                                    $defaultAddress = $address[0];
+                                                                }
+                                                            @endphp
+                                                            
+                                                            @if($defaultAddress)
+                                                                <div class="selected-address">
+                                                                    <div class="receiver-info">
+                                                                        <span class="receiver-name">{{ $defaultAddress['user_name'] }}</span>
+                                                                        <span class="receiver-phone">{{ $defaultAddress['mobile'] }}</span>
+                                                                        @if($defaultAddress['is_default'] == 1)
+                                                                            <span class="default-tag">默认</span>
+                                                                        @endif
+                                                                    </div>
+                                                                    <div class="address-detail">
+                                                                        {{ $defaultAddress['true_addr'] ?? '' }}
+                                                                    </div>
+                                                                </div>
+                                                            @else
+                                                                <div class="no-address-prompt">
+                                                                    <span>请选择配送地址</span>
+                                                                </div>
+                                                            @endif
+                                                        @else
+                                                            <div class="no-address-prompt">
+                                                                <span>请添加收货地址</span>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                    <div class="address-arrow">
+                                                        <i class="iconfont">&#xe6b9;</i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 地址选择下拉列表 -->
+                                            <div class="address-dropdown" id="addressDropdown" style="display: none;">
+                                                <div class="address-list">
+                                                    @if(!empty($address) && count($address) > 0)
+                                                        @foreach($address as $k => $v)
+                                                            <div class="address-item @if($v['is_default'] == 1) selected @endif" 
+                                                                 data-address-id="{{ $v['id'] }}"
+                                                                 onclick="selectAddress(this, {{ $v['id'] }})">
+                                                                <div class="address-item-content">
+                                                                    <div class="receiver-info">
+                                                                        <span class="receiver-name">{{ $v['user_name'] }}</span>
+                                                                        <span class="receiver-phone">{{ $v['mobile'] }}</span>
+                                                                        @if($v['is_default'] == 1)
+                                                                            <span class="default-tag">默认</span>
+                                                                        @endif
+                                                                    </div>
+                                                                    <div class="address-detail">
+                                                                        {{ $v['true_addr'] ?? '' }}
+                                                                    </div>
+                                                                </div>
+                                                                <div class="address-select-check">
+                                                                    @if($v['is_default'] == 1)
+                                                                        <i class="iconfont">&#xe6b1;</i>
+                                                                    @endif
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    @else
+                                                        <div class="no-address-item">
+                                                            <div class="no-address-content">
+                                                                <i class="iconfont">&#xe6b3;</i>
+                                                                <span>暂无收货地址，请先添加地址</span>
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                                <div class="address-dropdown-footer">
+                                                    <div class="add-address-btn" onclick="add_addr()">
+                                                        <i class="iconfont">&#xe6b7;</i>
+                                                        添加新的收货地址
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 隐藏的select，用于表单提交 -->
+                                            <select name="address_id" id="address_id" style="display: none;" lay-verify="required">
+                                                <option value="">请选择</option>
+                                                @if(!empty($address))
+                                                    @foreach($address as $k=>$v)
+                                                        <option value="{{$v['id']}}" @if($v['is_default']==1) selected @endif>
+                                                            {{$v['user_name']}}，{{$v['mobile']}}
+                                                        </option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+                                    </div>
                                 </dd>
                             </dl>
                         </div>
@@ -1568,56 +1561,6 @@
                         });
                     }
 
-                    //选择收货方式
-                    $('.delivery-selects').chosen();
-                    $('#selectDeliveryMethod').on('change', function() {
-                        if("{{session('user.user_id')}}" ==''){
-                            show_login();
-                            return false;
-                        }
-                        
-                        let val = $(this).val();
-                        if(val != ''){
-                            $('.second_step').hide();
-                        }else{
-                            $('.second_step').show();
-                        }
-                        
-                        if (val == '1') {
-                            // 国内收货，获取国内收货地址
-                            $.getJSON('/get_address',{'method':1,'country_id':162,'_token':"{{csrf_token()}}"},function(res){
-                                if(res.code==0){
-                                    let html = '';
-                                    if(res.data.length>0){
-                                        for(let i=0;i<res.data.length;i++){
-                                            if(res.data[i].is_default==1){
-                                                html += '<div class="selected-address">\n'+
-                                                        '   <div class="receiver-info">\n'+
-                                                        '       <span class="receiver-name">'+res.data[i].user_name+'</span>\n'+
-                                                        '       <span class="receiver-phone">'+res.data[i].area_mobile+' '+res.data[i].mobile+'</span>\n'+
-                                                        '       <span class="default-tag">默认</span>\n'+
-                                                        '   </div>\n'+
-                                                        '   <div class="address-detail">\n'+
-                                                                res.data[i].true_addr+
-                                                        '   </div>\n'+
-                                                        '</div>';
-                                            }
-                                        }
-                                    }else{
-                                        html += '<div class="no-address-prompt">\n'+
-                                                '   <span>请选择配送地址</span>\n'+
-                                                '</div>';
-                                    }
-                                }
-                                
-                                $('.delivery_method_1').show();
-                            });
-                            
-                        } else if (val == '2') {
-                            // 海外收货
-                        }
-                    });
-                    
                     //选择国家
                     $('.country-selects').chosen();
                     function selectCountrys(t){
@@ -1700,9 +1643,7 @@
                             },500);
                         });
                     }
-                    
-                    
-                    
+
                     //购物清单---start
                     //加入购物清单
                     function join_list(){
@@ -3641,15 +3582,29 @@
                                 <div class="tableWrapper--APDk75pt">
                                     <div class="infoItem--Z4hNxv8b">
                                         <div class="infoItemTitle--P41WPBIx">物流支撑</div>
-                                        <div class="infoItemContent--IJwpPvuk">支持（{{$goods['shipping_country_name']}}）国内配送； @if($goods['service_type']==2) 不 @endif 支持（{{$goods['shipping_country_name']}}）跨境配送
-                                        </div>
+                                        <div class="infoItemContent--IJwpPvuk">支持（{{$goods['shipping_country_name']}}）@if($goods['service_type']==1) 国内配送 @elseif($goods['service_type']==2) 跨境配送 @endif</div>
                                     </div>
-                                    @if(!empty($goods['domestic_logistics']) && $goods['domestic_logistics']!=null)
+                                    @if($goods['service_type']==1)
                                         @foreach($goods['domestic_logistics']['name'] as $k=>$v)
                                             <div class="infoItem--Z4hNxv8b">
                                                 <div class="infoItemTitle--P41WPBIx">{{$v}}</div>
                                                 <div class="infoItemContent--IJwpPvuk" title="{{$goods['domestic_logistics']['areas'][$k]['area1']}} {{$goods['domestic_logistics']['areas'][$k]['area2']}} {{$goods['domestic_logistics']['areas'][$k]['area3']}} {{$goods['domestic_logistics']['areas'][$k]['area4']}} {{$goods['domestic_logistics']['areas'][$k]['area5']}} {{$goods['domestic_logistics']['areas'][$k]['area6']}}">
                                                     {{$goods['domestic_logistics']['areas'][$k]['area1']}} {{$goods['domestic_logistics']['areas'][$k]['area2']}} {{$goods['domestic_logistics']['areas'][$k]['area3']}} {{$goods['domestic_logistics']['areas'][$k]['area4']}} {{$goods['domestic_logistics']['areas'][$k]['area5']}} {{$goods['domestic_logistics']['areas'][$k]['area6']}}
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @elseif($goods['service_type']==2)
+                                        <!--&& $goods['gather_method']==2 && $goods['support_export']==1-->
+                                        @if(strstr('2',$goods['gather_method']))
+                                        @foreach($goods['gather_countrys']['areas'] as $k=>$v)
+                                            <div class="infoItem--Z4hNxv8b">
+                                                <div class="infoItemTitle--P41WPBIx">{{$v['area1']['param1']}}-{{$v['area2']['param2']}}</div>
+                                                <?php $postal='';?>
+                                                @foreach($v['area3'] as $k2=>$v2)
+                                                    <?php $postal.=$v2['code_name'].'、';?>
+                                                @endforeach
+                                                <div class="infoItemContent--IJwpPvuk" title="<?php echo rtrim($postal, '、');?>">
+                                                    <?php echo rtrim($postal, '、');?>
                                                 </div>
                                             </div>
                                         @endforeach

@@ -207,7 +207,7 @@
         });
 
     });
-
+    
     //查看货到付款说明信息
     function view_instruction(t){
         var $ = layui.$
@@ -364,44 +364,6 @@
                                         },
                                         async createOrder() {
                                             try {
-                                                //https://shop.gogo198.cn/collect_website/public/?s=/api/paypal
-                                                //https://shop.gogo198.cn/collect_website/public/paypal.php
-                                                // return new Promise((resolve, reject) => {
-                                                //     $.ajax({
-                                                //         url: "https://shop.gogo198.cn/collect_website/public/?s=/api/paypal/index",
-                                                //         method: 'POST',
-                                                //         data: {
-                                                //             cart: [
-                                                //                 {
-                                                //                     id: "2",
-                                                //                     quantity: "2",
-                                                //                 },
-                                                //             ],
-                                                //             type: 'orders',
-                                                //         },
-                                                //         dataType: 'JSON',
-                                                //         async: false,
-                                                //         success: function (responseData) {
-                                                //             if (responseData.id) {
-                                                //                 // 这里需要根据你的上下文决定如何处理返回值
-                                                //                 console.log("Order ID:", responseData.id);
-                                                //                 return responseData.id; // 需要配合 Promise 使用才能正确返回
-                                                //             }
-                                                //
-                                                //             const errorDetail = responseData?.details?.[0];
-                                                //             const errorMessage = errorDetail
-                                                //                 ? `${errorDetail.issue} ${errorDetail.description} (${responseData.debug_id})`
-                                                //                 : JSON.stringify(responseData);
-                                                //
-                                                //             throw new Error(errorMessage);
-                                                //         },
-                                                //         error: function (data) {
-                                                //             layer.msg('系统错误', {time: 2000});
-                                                //         }
-                                                //     });
-                                                // });
-    
-    
                                                 //原生paypal请求
                                                 const response = await fetch("https://shop.gogo198.cn/collect_website/public/?s=/api/paypal/index", {
                                                     method: "POST",
@@ -577,6 +539,8 @@
             @if($cash_on_delivery['cash_on_delivery']==2)
                 cash_on_delivery = 2;
             @endif
+            
+            
             $.post("/cart/create_order", {'oid':"{{$order['id']}}",'typ':2,'pay_id':payMethod, '_token': "{{csrf_token()}}",'cash_on_delivery':cash_on_delivery}, function (res) {
                 layer.closeAll('loading');
                 // layer.msg(res.msg, {time: 2000}, function () {
@@ -596,12 +560,16 @@
                         }
                     });
 
-                    //待做查询结果刷新
-                    {{--setTimeout(function(){--}}
-                    {{--    $.post("/cart/create_order", {'oid':"{{$order['id']}}",'typ':2,'pay_id':payMethod, '_token': "{{csrf_token()}}",'cash_on_delivery':cash_on_delivery}, function (res) {--}}
-
-                    {{--    });--}}
-                    {{--},1500);--}}
+                    //查询结果刷新
+                    setInterval(function(){
+                        $.post("/cart/create_order", {'oid':"{{$order['id']}}",'typ':4,'pay_id':payMethod, '_token': "{{csrf_token()}}",'cash_on_delivery':cash_on_delivery}, function (res) {
+                            if(res.code==0){
+                                layer.msg(res.msg,{time:2000}, function () {
+                                    window.location.href="https://www.gogo198.cn/cart/cart_detail?id={{$order['id']}}";
+                                });
+                            }
+                        });
+                    },1500);
                 }
                 else if (res.code == -1){
                     //弹出公众号二维码框

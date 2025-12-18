@@ -1371,7 +1371,7 @@ class CartController extends Frontend
         $data = $request->except(['_token']);
         $order_id = intval($data['oid']);
         $type = intval($data['typ']);
-
+        
         if ($type==1) {
             #申请订购
             $sku_ids = explode(',', rtrim($data['sku_ids'], ','));#购买的商品规格信息
@@ -1404,7 +1404,8 @@ class CartController extends Frontend
             ]);
 
             return Response()->json(['code'=>0,'msg'=>'请求成功，请留意消息通知']);
-        } elseif ($type==2) {
+        }
+        elseif ($type==2) {
             #立即支付
 
             #用户身份认证
@@ -1765,7 +1766,7 @@ class CartController extends Frontend
 
                 sleep(1);
                 $res = Db::connection('shop_db')->table('website_order_list')->where(['id' => $order_id])->update([
-                    'pay_id' => $collect_id
+                    'pay_id' => $collect_id,
                 ]);
 
                 if ($res) {
@@ -1787,11 +1788,22 @@ class CartController extends Frontend
                 echo $e->getCode();
                 return response()->json(['code'=>-1,'msg'=>'系统错误，请联系管理员']);
             }
-        } elseif ($type==3) {
+        }
+        elseif ($type==3) {
             #查看支付二维码
             $order = Db::connection('shop_db')->table('website_order_list')->where(['id'=>$order_id])->first();
             $order = objtoarr($order);
             return response()->json(['code'=>0,'msg'=>'提交支付成功','data'=>['code_url'=>$order['code_url']]]);
+        }
+        elseif ($type==4) {
+            #查看是否已支付，则跳转
+            $order = Db::connection('shop_db')->table('website_order_list')->where(['id'=>$order_id])->first();
+            if($order->status==1){
+                #已付款待采购
+                return Response()->json(['code'=>0,'msg'=>'已支付，正在跳转订单详情页面']);
+            }else{
+                return Response()->json(['code'=>-1,'msg'=>'还没有支付，继续刷新']);
+            }
         }
     }
 
@@ -1801,7 +1813,7 @@ class CartController extends Frontend
         $data = $request->except(['_token']);
         $order_id = intval($data['oid']);
         $type = intval($data['typ']);
-
+        
         if ($type==1) {
             $sku_ids = explode(',', rtrim($data['sku_ids'], ','));
             $cart_ids = explode(',', rtrim($data['cart_ids'], ','));
