@@ -2101,227 +2101,113 @@ class FuncController extends Frontend
             if (!empty(session('user'))) {
 //                print_r($data);die;
                 $user = Db::connection('shop_db')->table('website_user')->where(['custom_id' => session('user')['gogo_id']])->first();
+                
+                #收货联系名称
                 $name = trim($data['user_name1']) . ' ' . trim($data['user_name2']) . ' ' . trim($data['user_name3']);
-
-                #详细地址（最多3个）
+    
+                //更多地址
                 $address2 = [];
-                if (isset($data['address2'])) {
-                    foreach ($data['address2'] as $k=>$v) {
+                if(isset($data['address2'])){
+                    foreach($data['address2'] as $k=>$v){
                         array_push($address2, $v);
                     }
                 }
-
-                #邮政编码（废弃）
-                $post = [];
-
-                #新的邮政编码
-                $postal = '0';
-                $province = '0';
-                $city = '0';
-                $area = '0';
-                $area2 = '0';
-                $area3 = '0';
-                $area4 = '0';
-                if ($data['postal'] != '自定义') {
-                    #有数据，获取id
-//                    $area_code = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id'=>$data['country'],'code_name'=>$data['postal']])->first();
-                    $postal = $data['postal'];
-
-
-                    if (isset($data['diycountry'][0])) {
-                        $area_code = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id'=>$data['country'],'code_name'=>$data['diycountry'][0]])->first();
-                        $province = $area_code->id;
-                    }
-                    if (isset($data['diycountry'][1])) {
-                        $area_code = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id'=>$data['country'],'code_name'=>$data['diycountry'][1]])->first();
-                        $city = $area_code->id;
-                    }
-                    if (isset($data['diycountry'][2])) {
-                        $area_code = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id'=>$data['country'],'code_name'=>$data['diycountry'][2]])->first();
-                        $area = $area_code->id;
-                    }
-                    if (isset($data['diycountry'][3])) {
-                        $area_code = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id'=>$data['country'],'code_name'=>$data['diycountry'][3]])->first();
-                        $area2 = $area_code->id;
-                    }
-                    if (isset($data['diycountry'][4])) {
-                        $area_code = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id'=>$data['country'],'code_name'=>$data['diycountry'][4]])->first();
-                        $area3 = $area_code->id;
-                    }
-                    if (isset($data['diycountry'][5])) {
-                        $area_code = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id'=>$data['country'],'code_name'=>$data['diycountry'][5]])->first();
-                        $area4 = $area_code->id;
-                    }
-                } else {
-                    #无数据。自行生成邮政编码，遵从表格格式，省->市->区->区2->区3->镇->邮编
-                    if (isset($data['diycountry'][1])) {
-                        #区域1
-                        if (empty($data['diycountry'][1])) {
-                            return Response()->json(['code'=>-1,'msg'=>'请输入行政区域']);
-                        }
-                        $ishave = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id'=>$data['country'],'code_name'=>$data['diycountry'][1]])->first();
-                        if (empty($ishave)) {
-                            $code_id = Db::connection('shop_db')->table('centralize_adminstrative_area')->insertGetId([
-                                'country_id'=>$data['country'],
-                                'pid'=>0,
-                                'code_name'=>$data['diycountry'][1]
-                            ]);
-                            $province = $code_id;
-                        } else {
-                            $province = $ishave->id;
-                        }
-                    } else {
-                        return Response()->json(['code'=>-1,'msg'=>'请输入至少一个行政区域']);
-                    }
-
-                    if (isset($data['diycountry'][2])) {
-                        #区域2
-                        $ishave = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id' => $data['country'], 'code_name' => $data['diycountry'][2]])->first();
-                        if (empty($ishave)) {
-                            $code_id = Db::connection('shop_db')->table('centralize_adminstrative_area')->insertGetId([
-                                'country_id' => $data['country'],
-                                'pid' => $province,
-                                'code_name' => $data['diycountry'][2]
-                            ]);
-                            $city = $code_id;
-                        } else {
-                            $city = $ishave->id;
-                        }
-                    }
-
-                    if (isset($data['diycountry'][3])) {
-                        #区域3
-                        $ishave = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id' => $data['country'], 'code_name' => $data['diycountry'][3]])->first();
-                        if (empty($ishave)) {
-                            $code_id = Db::connection('shop_db')->table('centralize_adminstrative_area')->insertGetId([
-                                'country_id' => $data['country'],
-                                'pid' => $city,
-                                'code_name' => $data['diycountry'][3]
-                            ]);
-                            $area = $code_id;
-                        } else {
-                            $area = $ishave->id;
-                        }
-                    }
-
-                    if (isset($data['diycountry'][4])) {
-                        #区域4
-                        $ishave = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id' => $data['country'], 'code_name' => $data['diycountry'][4]])->first();
-                        if (empty($ishave)) {
-                            $code_id = Db::connection('shop_db')->table('centralize_adminstrative_area')->insertGetId([
-                                'country_id' => $data['country'],
-                                'pid' => $area,
-                                'code_name' => $data['diycountry'][4]
-                            ]);
-                            $area2 = $code_id;
-                        } else {
-                            $area2 = $ishave->id;
-                        }
-                    }
-
-                    if (isset($data['diycountry'][5])) {
-                        #区域5
-                        $ishave = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id' => $data['country'], 'code_name' => $data['diycountry'][5]])->first();
-                        if (empty($ishave)) {
-                            $code_id = Db::connection('shop_db')->table('centralize_adminstrative_area')->insertGetId([
-                                'country_id' => $data['country'],
-                                'pid' => $area2,
-                                'code_name' => $data['diycountry'][5]
-                            ]);
-                            $area3 = $code_id;
-                        } else {
-                            $area3 = $ishave->id;
-                        }
-                    }
-
-                    if (isset($data['diycountry'][6])) {
-                        #区域6
-                        $ishave = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id' => $data['country'], 'code_name' => $data['diycountry'][6]])->first();
-                        if (empty($ishave)) {
-                            $code_id = Db::connection('shop_db')->table('centralize_adminstrative_area')->insertGetId([
-                                'country_id' => $data['country'],
-                                'pid' => $area3,
-                                'code_name' => $data['diycountry'][6]
-                            ]);
-                            $area4 = $code_id;
-                        } else {
-                            $area4 = $ishave->id;
-                        }
-                    }
-
-                    if (isset($data['diycountry'][0])) {
-                        #邮政编码
-                        if (empty($data['diycountry'][0])) {
-                            return Response()->json(['code'=>-1,'msg'=>'请输入邮政编码']);
-                        }
-                        $ishave = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['country_id'=>$data['country'],'code_name'=>$data['diycountry'][0]])->first();
-                        if (empty($ishave)) {
-                            $pid = 0;
-                            if (!empty($area4)) {
-                                $pid = $area4;
-                            } elseif (!empty($area3)) {
-                                $pid = $area3;
-                            } elseif (!empty($area2)) {
-                                $pid = $area2;
-                            } elseif (!empty($area)) {
-                                $pid = $area;
-                            } elseif (!empty($city)) {
-                                $pid = $city;
-                            } elseif (!empty($province)) {
-                                $pid = $province;
-                            }
-
-                            $code_id = Db::connection('shop_db')->table('centralize_adminstrative_area')->insertGetId([
-                                'country_id'=>$data['country'],
-                                'pid'=>$pid,
-                                'code_name'=>$data['diycountry'][0]
-                            ]);
-                            $postal = $code_id;
-                        } else {
-                            $postal = $ishave->id;
-                        }
-                    } else {
-                        return Response()->json(['code'=>-1,'msg'=>'请输入邮政编码']);
-                    }
-                }
-
-                if (isset($data['is_default'])) {
+    
+                //默认地址
+                $is_default = 0;
+                if(isset($data['is_default'])){
                     if ($data['is_default'] == 1) {
-                        Db::connection('shop_db')->table('centralize_user_address')->whereRaw('user_id=' . $user->id . ' and is_default=1')->update(['is_default' => 0]);
+                        Db::connection('shop_db')->table('centralize_user_address')->where(['user_id'=> $user->id,'is_default'=>1])->update(['is_default' => 0]);
+                        $is_default = 1;
                     }
                 }
-
-                if ($id>0) {
-                    $res = Db::connection('shop_db')->table('centralize_user_address')->where(['user_id'=>$user->id,'id'=>$id])->update([
+    
+                $have_postal_code = intval($data['have_postal_code']);
+                $postal_code = $pre_address = '';
+                $province_code = $city_code = $district_code = $town_code = $village_code = '';
+    
+                #其他国地
+                if($data['country_id']!=162){
+                    $postal_code = trim($data['postal']);
+                    if(empty($postal_code)){
+                        return Response()->json(['code'=>-1,'msg'=>'邮政编码不可为空']);
+                    }
+                    $pre_address = trim($dat['pre_address']);
+                }
+    
+                #中国行政区域
+                if($have_postal_code==1 && $data['country_id']==162){
+                    //有邮政编码
+                    $postal_code = trim($data['postal']);
+                    if(empty($postal_code)){
+                        return Response()->json(['code'=>-1,'msg'=>'邮政编码不可为空']);
+                    }
+                    $pre_address = trim($data['pre_address']);
+                }
+                elseif($have_postal_code==2 && $data['country_id']==162){
+                    //无邮政编码
+                    if(isset($data['province'])){
+                        $province_code = intval($data['province']);
+                    }else{
+                        return Response()->json(['code'=>-1,'msg'=>'请选择省份']);
+                    }
+                    if(isset($data['city'])) {
+                        $city_code = intval($data['city']);
+                    }else{
+                        return Response()->json(['code'=>-1,'msg'=>'请选择城市']);
+                    }
+                    if(isset($data['area'])) {
+                        $district_code = intval($data['area']);
+                    }
+                    if(isset($data['area2'])) {
+                        $town_code = intval($data['area2']);
+                    }
+                    if(isset($data['area3'])) {
+                        $village_code = intval($data['area3']);
+                    }
+                }
+    
+                if($id>0){
+                    $res = Db::connection('shop_db')->table('centralize_user_address')->where(['id'=>$id])->update([
+                        'country_id'=>intval($data['country_id']),
+                        'have_postal_code'=>intval($data['have_postal_code']),//有无邮政编码
+                        'province'=>$province_code,//省
+                        'city'=>$city_code,//市
+                        'area'=>$district_code,//区
+                        'area2'=>$town_code,//镇
+                        'area3'=>$village_code,//村
+                        'postal'=>$postal_code,
+                        'pre_address'=>$pre_address,
+                        'area_mobile'=>trim($data['area_mobile']),
                         'user_name' => $name,
                         'mobile' => trim($data['mobile']),
                         'mobile2' => trim($data['mobile2']),
-                        'email' => trim($data['email']),
-                        'address1' => trim($data['address1']),
+                        'email' => $data['email'],
+                        'address1' => $data['address1'],
                         'address2' => json_encode($address2, true),
-                        'is_default' => isset($data['is_default']) ? $data['is_default'] : 0,
+                        'is_default' => $is_default,
                     ]);
-                } else {
+                }else{
                     $res = Db::connection('shop_db')->table('centralize_user_address')->insert([
-                        'user_id' => $user->id,
-                        'country_id' => $data['country'],
-                        'postal'=>$postal,
-                        'province' => $province,
-                        'city' => $city,
-                        'area' => $area,
-                        'area2' => $area2,
-                        'area3' => $area3,
-                        'area4' => $area4,
+                        'user_id'=>$user->id,
+                        'country_id'=>intval($data['country_id']),
+                        'have_postal_code'=>intval($data['have_postal_code']),//有无邮政编码
+                        'province'=>$province_code,//省
+                        'city'=>$city_code,//市
+                        'area'=>$district_code,//区
+                        'area2'=>$town_code,//镇
+                        'area3'=>$village_code,//村
+                        'postal'=>$postal_code,
+                        'pre_address'=>$pre_address,
+                        'area_mobile'=>trim($data['area_mobile']),
                         'user_name' => $name,
-                        'area_mobile' => trim($data['area_mobile']),
                         'mobile' => trim($data['mobile']),
                         'mobile2' => trim($data['mobile2']),
-                        'email' => trim($data['email']),
-                        'postal_code' => json_encode($post, true),#废弃
-                        'address1' => trim($data['address1']),
+                        'email' => $data['email'],
+                        'address1' => $data['address1'],
                         'address2' => json_encode($address2, true),
-                        'createtime' => time(),
-                        'is_default' => isset($data['is_default']) ? $data['is_default'] : 0,
+                        'is_default' => $is_default,
+                        'createtime'=>time(),
                     ]);
                 }
 
@@ -2734,20 +2620,40 @@ class FuncController extends Frontend
     #获取当前国地收货地址
     public function get_address(Request $request){
         $data = $request->except(['_token']);
-        $country_id = intval($data['country_id']);
+        $country_id = isset($data['country_id'])?intval($data['country_id']):0;
         $method = intval($data['method']);
         
         $list = [];
         if($method==1){
-            #寄往中国
+            #中国收货，获取该商品配置的国内收货信息
+            
+            #获取商品信息
+            // $goods_id = intval($data['goods_id']);
+            // $goods = Db::table('goods')->where(['goods_id'=>$goods_id])->first();
+            // $area1 = $area2 = $area3 = '';
+            // $list = [];
+            // if($goods->domestic_logistics!='' && $goods->domestic_logistics!=null){
+            //     $goods->domestic_logistics = json_decode($goods->domestic_logistics,true);
+            //     if(isset($goods->domestic_logistics['area1'])){
+            //         $area1 = $goods->domestic_logistics['area1'];
+            //         foreach($goods->domestic_logistics['area1'] as $k=>$v){
+                        
+            //         }
+            //     }
+            //     if(isset($goods->domestic_logistics['area2'])){
+            //         $area2 = $goods->domestic_logistics['area2'];
+            //     }
+            // }
+            
             $list = Db::connection('shop_db')->table('centralize_user_address')->where(['country_id'=>$country_id])->get();
             $list = objtoarr($list);
             
+            
             foreach($list as $k=>$v){
-                $list[$k]['country_name'] = Db::connection();
+                $list[$k]['mobile_num'] = $v['area_mobile'] . $v['mobile'];
                 #国地
                 $list[$k]['country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$v['country_id']])->select('param2')->first()->param2;
-        
+                
                 if($v['have_postal_code']==2){
                     $list[$k]['province_name'] = $list[$k]['city_name'] = $list[$k]['district_name'] = $list[$k]['town_name'] = $list[$k]['village_name'] = '';
         
@@ -2771,12 +2677,284 @@ class FuncController extends Frontend
                         $list[$k]['village_name'] = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['area3']])->select('name')->first()->name;
                     }
                     
-                    $list[$k]['true_addr'] = $list[$k]['country_name'] .' '. $list[$k]['province_name'] .' '. $list[$k]['city_name'] .' '. $list[$k]['district_name'] .' '. $list[$k]['town_name'] .' '. $list[$k]['village_name'];
+                    $list[$k]['true_addr'] = $list[$k]['country_name'] .' '. $list[$k]['province_name'] .' '. $list[$k]['city_name'] .' '. $list[$k]['district_name'] .' '. $list[$k]['town_name'] .' '. $list[$k]['village_name'] . $v['address1'];
+                }
+                elseif($v['have_postal_code']==1){
+                    $list[$k]['true_addr'] = $v['pre_address'] . $v['address1'].'（'.$v['postal'].'）';
                 }
             }
         }
+        elseif($method==2){
+            #添加收货地址，根据当前用户选择的收货方式，显示可选国地
+            $type_id = intval($data['type_id']);
+            
+            if($type_id==1){
+                #中国收货，只显示中国国地，并显示中国行政区域
+                return Response()->json(['code'=>0]);
+            }
+            elseif($type_id==2){
+                #海外收货
+                $line_id = intval($data['line_id']);
+                $line_info = Db::connection('shop_db')->table('centralize_lines')->where(['id'=>$line_id])->first();
+                $country_info = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$line_info->end_country])->select(['id','param2','param8'])->first();
+                $country_info = objtoarr($country_info);
+                
+                return Response()->json(['code'=>0,'data'=>$country_info]);
+            }
+        }
+        elseif($method==3){
+            #海外收货，获取该商品配置的集运方式和平台集运信息
+            #获取商品信息
+            $goods_id = intval($data['goods_id']);
+            $goods = Db::table('goods')->where(['goods_id'=>$goods_id])->first();
+            if($goods->service_type==1){
+                #支持跨境配送
+                $gather_method = explode(',',$goods->gather_method);
+                $gatherMethod = [];
+                foreach($gather_method as $k=>$v){
+                    if($v==1){
+                        array_push($gatherMethod,['id'=>1,'name'=>'平台集运']);
+                    }
+                    elseif($v==2){
+                        array_push($gatherMethod,['id'=>2,'name'=>'自主集运']);
+                    }
+                }
+                
+                return Response()->json(['code'=>0,'data'=>$gatherMethod]);
+            }elseif($goods->service_type==2){
+                #不支持跨境配送
+                return Response()->json(['code'=>-1,'msg'=>'该商品不支持跨境配送']);
+            }else{
+                #接口商品
+                $gatherMethod = [['id'=>1,'name'=>'平台集运'],['id'=>2,'name'=>'自主集运']];
+                return Response()->json(['code'=>0,'data'=>$gatherMethod]);
+            }
+        }
+        elseif($method==4){
+            #平台集运，选择线路
+            #获取商品信息
+            $goods_id = intval($data['goods_id']);
+            $goods = Db::table('goods')->where(['goods_id'=>$goods_id])->first();
+            if($goods->shop_id==0){
+                #接口商品
+                $gather_lines = Db::connection('shop_db')->table('centralize_lines')->get();
+                $gather_lines = objtoarr($gather_lines);
+                $lines = [];
+                foreach($gather_lines as $k=>$v){
+                    $line_info = Db::connection('shop_db')->table('centralize_lines')->where(['id'=>$v['id']])->first();
+                    $line_info = objtoarr($line_info);
+                    $line_info['start_country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$line_info['start_country']])->select('param2')->first()->param2;
+                    $line_info['end_country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$line_info['end_country']])->select('param2')->first()->param2;
+                    
+                    array_push($lines,$line_info);
+                }
+                
+                return Response()->json(['code'=>0,'data'=>$lines]);
+            }else{
+                #商家商品
+                $gather_method = explode(',',$goods->gather_method);
+                $gather_lines = explode(',',$goods->gather_lines);
+                $lines = [];
+                foreach($gather_lines as $k=>$v){
+                    $line_info = Db::connection('shop_db')->table('centralize_lines')->where(['id'=>$v])->first();
+                    $line_info = objtoarr($line_info);
+                    $line_info['start_country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$line_info['start_country']])->select('param2')->first()->param2;
+                    $line_info['end_country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$line_info['end_country']])->select('param2')->first()->param2;
+                    
+                    array_push($lines,$line_info);
+                }
+                
+                return Response()->json(['code'=>0,'data'=>$lines]);
+            }
+        }
+        elseif($method==5){
+            #平台集运，选择线路后》获取收货地址
+            #获取线路信息
+            $line_id = intval($data['line_id']);
+            $line_info = Db::connection('shop_db')->table('centralize_lines')->where(['id'=>$line_id])->first();
+            $country_info = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$line_info->end_country])->select(['id','param2'])->first();
+            $country_info = objtoarr($country_info);
+            
+            return Response()->json(['code'=>0,'data'=>$country_info]);
+        }
         
         return Response()->json(['code'=>0,'data'=>$list]);
+    }
+    
+    #线路详情
+    public function line_info(Request $request){
+        $data = $request->except(['_token']);
+        
+        $id = isset($data['id'])?intval($data['id']):0;
+        
+        $line = Db::connection('shop_db')->table('centralize_lines')->where(['id'=>$id])->first();
+        $line = objtoarr($line);
+        $line['content'] = json_decode($line['content'],true);
+        
+        #1、线路信息
+        $line['start_country'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid'=>5,'id'=>$line['start_country']])->select('param2')->first()->param2;
+        $line['end_country'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid'=>5,'id'=>$line['end_country']])->select('param2')->first()->param2;
+        $line['channel_id'] = Db::connection('shop_db')->table('centralize_channel_list')->where(['id'=>$line['channel_id']])->select('name')->first()->name;
+       
+        $line['week'] = json_decode($line['week'],true);
+        if(!empty($line['transport_id'])){
+            $line['transport_id'] = Db::connection('shop_db')->table('centralize_lines_transport_method')->where(['id'=>$line['transport_id']])->select('name')->first()->name;
+        }
+        if(!empty($line['express_id'])){
+            $line['express_id'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid'=>6,'id'=>$line['express_id']])->select('param3')->first()->param3;
+        }
+        if(!empty($line['post_id'])){
+            $line['post_id'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid'=>10,'id'=>$line['post_id']])->select('param1')->first()->param1;
+        }
+        $line['delivery_info'] = '';
+        if(!empty($line['delivery_id'])){
+            $line['delivery_info'] = Db::connection('shop_db')->table('centralize_lines_delivery')->where(['id'=>$line['delivery_id']])->first();
+            $line['delivery_info'] = objtoarr($line['delivery_info']);
+        }
+        
+        // dd($line['content']['currency'][0][0]);
+        
+        #2、线路说明
+        foreach($line['content']['procategory'] as $k=>$v){
+            #2.1、货物类别
+            $procategory = Db::connection('shop_db')->table('centralize_gvalue_list')->where(['id'=>$v])->first();
+            $procategory = objtoarr($procategory);
+            $line['content']['procategory_name'][$k] = $procategory['name'];
+            $chicategory = Db::connection('shop_db')->table('centralize_gvalue_product')->whereRaw('id in ('.$procategory['ids'].')')->get();
+            $chicategory = objtoarr($chicategory);
+            $line['content']['chicategory_name'][$k] = '';
+            foreach($chicategory as $k2=>$v2){
+                $line['content']['chicategory_name'][$k] .= $v2['name'].'、';
+            }
+            
+            #2.2、计费标准
+            $line['content']['unit'][$k] = Db::connection('shop_db')->table('unit')->where(['code_value'=>$line['content']['unit'][$k][0]])->first()->code_name;
+            
+            foreach($line['content']['qj1'][$k] as $k2=>$v2){
+                foreach($line['content']['jf_method'][$k][$k2] as $k3=>$v3){
+                    $line['content']['currency_name'][$k][$k2][0] ='';$line['content']['currency_name'][$k][$k2][1] ='';$line['content']['currency_name'][$k][$k2][2] ='';
+                    
+                    if($v3==1){
+                        #首续
+                        if(isset($line['content']['currency'][$k][$k2][0])){
+                            $line['content']['currency_name'][$k][$k2][0] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$line['content']['currency'][$k][$k2][0]])->select('currency_symbol_origin')->first()->currency_symbol_origin;
+                        }
+                        
+                    }elseif($v3==2){
+                        #按量
+                        $line['content']['currency_name'][$k][$k2][1] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$line['content']['currency'][$k][$k2][1]])->select('currency_symbol_origin')->first()->currency_symbol_origin;
+                    }elseif($v3==3){
+                        #分段
+                        $line['content']['currency_name'][$k][$k2][2] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$line['content']['currency'][$k][$k2][2]])->select('currency_symbol_origin')->first()->currency_symbol_origin;
+                    }
+                }
+            }
+            
+            #2.3、体积算法
+            $line['content']['fenpao_name'][$k] = Db::connection('shop_db')->table('centralize_lines_strict')->where(['type'=>4,'id'=>$line['content']['fenpao'][$k]])->select('name')->first()->name;
+            #2.4、超限条款
+            $line['content']['overweight_name'][$k] = '';$line['content']['overlong_name'][$k] = '';$line['content']['overother_name'][$k] = '';
+            #2.4.1、超重
+            if(!empty($line['content']['overweight'][$k])){
+                $line['content']['overweight_name'][$k] = Db::connection('shop_db')->table('centralize_lines_strict')->where(['type'=>1,'id'=>$line['content']['overweight'][$k]])->select('name')->first()->name;
+            }
+            
+            #2.4.2、超长
+            if(!empty($line['content']['overlong'][$k])){
+                $line['content']['overlong_name'][$k] = Db::connection('shop_db')->table('centralize_lines_strict')->where(['type'=>2,'id'=>$line['content']['overlong'][$k]])->select('name')->first()->name;
+            }
+            
+            #2.4.2、其他
+            if(!empty($line['content']['overother'][$k])){
+                $line['content']['overother_name'][$k] = Db::connection('shop_db')->table('centralize_lines_strict')->where(['type'=>3,'id'=>$line['content']['overother'][$k]])->select('name')->first()->name;
+            }
+            
+            #2.5、清关说明
+            if(!empty($line['content']['clearance'][$k])){
+                $line['content']['clearance_name'][$k] = Db::connection('shop_db')->table('centralize_lines_clearance')->where(['id'=>$line['content']['clearance'][$k]])->select('name')->first()->name;
+            }
+            
+            #2.6、配送说明
+            #2.6.1、配送到门
+            #2.6.1.1、可送区域
+            
+            $line['content']['kesong_area1name'][$k] = '';$line['content']['kesong_area2name'][$k] = '';$line['content']['kesong_area3name'][$k] = '';
+            
+            if(isset($line['content']['kesong_area1'][$k]) && !empty($line['content']['kesong_area1'][$k])){
+                $line['content']['kesong_area1name'][$k] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$line['content']['kesong_area1'][$k]])->select('code_name')->first()->code_name;
+            }
+            if(isset($line['content']['kesong_area2'][$k]) && !empty($line['content']['kesong_area2'][$k])){
+                $line['content']['kesong_area2name'][$k] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$line['content']['kesong_area2'][$k]])->select('code_name')->first()->code_name;
+            }
+            if(isset($line['content']['kesong_area3'][$k]) && !empty($line['content']['kesong_area3'][$k])){
+                $line['content']['kesong_area3name'][$k] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$line['content']['kesong_area3'][$k]])->select('code_name')->first()->code_name;
+            }
+            
+            #2.6.1.2、不送区域
+            $line['content']['busong_area1name'][$k] = '';$line['content']['busong_area2name'][$k] = '';$line['content']['busong_area3name'][$k] = '';
+            if(isset($line['content']['busong_area1'][$k]) && !empty($line['content']['busong_area1'][$k])){
+                $line['content']['busong_area1name'][$k] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$line['content']['busong_area1'][$k]])->select('code_name')->first()->code_name;
+            }
+            if(isset($line['content']['busong_area2'][$k]) && !empty($line['content']['busong_area2'][$k])){
+                $line['content']['busong_area2name'][$k] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$line['content']['busong_area2'][$k]])->select('code_name')->first()->code_name;
+            }
+            if(isset($line['content']['busong_area3'][$k]) && !empty($line['content']['busong_area3'][$k])){
+                $line['content']['busong_area3name'][$k] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$line['content']['busong_area3'][$k]])->select('code_name')->first()->code_name;
+            }
+            
+            #2.6.2、定点自提
+            $line['content']['dingdian_area1name'][$k] = '';$line['content']['dingdian_area2name'][$k] = '';$line['content']['dingdian_area3name'][$k] = '';
+            if(isset($line['content']['dingdian_area1'][$k]) && !empty($line['content']['dingdian_area1'][$k])){
+                $line['content']['dingdian_area1name'][$k] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$line['content']['dingdian_area1'][$k]])->select('code_name')->first()->code_name;
+            }
+            if(isset($line['content']['dingdian_area2'][$k]) && !empty($line['content']['dingdian_area2'][$k])){
+                $line['content']['dingdian_area2name'][$k] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$line['content']['dingdian_area2'][$k]])->select('code_name')->first()->code_name;
+            }
+            if(isset($line['content']['dingdian_area3'][$k]) && !empty($line['content']['dingdian_area3'][$k])){
+                $line['content']['dingdian_area3name'][$k] = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$line['content']['dingdian_area3'][$k]])->select('code_name')->first()->code_name;
+            }
+            
+            #2.7、税费说明
+            #2.7.1、已含税费
+            foreach($line['content']['shuifei_unit'][$k] as $k2=>$v2){
+                if(!empty($line['content']['shuifei_unit'][$k][$k2])){
+                    $line['content']['shuifei_unitname'][$k][$k2] = Db::connection('shop_db')->table('unit')->where(['code_value'=>$line['content']['shuifei_unit'][$k][$k2]])->select('code_name')->first()->code_name;
+                }
+                
+                if(!empty($line['content']['shuifei_currency'][$k][$k2])){
+                    $line['content']['shuifei_currencyname'][$k][$k2] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$line['content']['shuifei_currency'][$k][$k2]])->select('currency_symbol_standard')->first()->currency_symbol_standard;
+                }
+            }
+            #2.7.2、未含税费
+            foreach($line['content']['noshuifei_unit'][$k] as $k2=>$v2){
+                if(!empty($line['content']['noshuifei_unit'][$k][$k2])){
+                    $line['content']['noshuifei_unitname'][$k][$k2] = Db::connection('shop_db')->table('unit')->where(['code_value'=>$line['content']['noshuifei_unit'][$k][$k2]])->select('code_name')->first()->code_name;
+                }
+                if(!empty($line['content']['noshuifei_currency'][$k][$k2])){
+                    $line['content']['noshuifei_currencyname'][$k][$k2] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$line['content']['noshuifei_currency'][$k][$k2]])->select('currency_symbol_standard')->first()->currency_symbol_standard;
+                }
+            }
+            #2.7.3、潜在税费
+            foreach($line['content']['maybeshuifei_unit'][$k] as $k2=>$v2){
+                if(!empty($line['content']['maybeshuifei_unitname'][$k][$k2])){
+                    $line['content']['maybeshuifei_unitname'][$k][$k2] = Db::connection('shop_db')->table('unit')->where(['code_value'=>$line['content']['maybeshuifei_unit'][$k][$k2]])->select('code_name')->first()->code_name;
+                }
+                if(!empty($line['content']['maybeshuifei_currency'][$k][$k2])){
+                    $line['content']['maybeshuifei_currencyname'][$k][$k2] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$line['content']['maybeshuifei_currency'][$k][$k2]])->select('currency_symbol_standard')->first()->currency_symbol_standard;
+                }
+            }
+            
+            #2.8、参考时效
+            $line['content']['shixiao_typename'][$k] = Db::connection('shop_db')->table('centralize_lines_referentime')->where(['id'=>$line['content']['shixiao_type'][$k]])->select('name')->first()->name;
+            $line['content']['shixiao_daytypename'][$k] = $line['content']['shixiao_daytype'][$k]==1?'工作天':'自然日';
+            #2.9、物流查询
+            $line['content']['logistics_name'][$k] = '';
+            if(!empty($line['content']['logistics'][$k])){
+                $line['content']['logistics_name'][$k] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid'=>6,'id'=>$line['content']['logistics'][$k]])->select('param3')->first()->param3;
+            }
+        }
+        
+        return view('func.line_info', compact('line', 'id'));
     }
     #地址END================================================
 

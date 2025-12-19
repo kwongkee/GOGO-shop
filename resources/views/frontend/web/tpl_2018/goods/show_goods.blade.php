@@ -176,6 +176,7 @@
         .purchase_process .new-goods-options-content>.label.label-one:before {background: {{$website['color']}};border-radius: 50%;bottom: 0;color: {{$website['color_word']}};content: "1";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$website['color']}};}
         .purchase_process .new-goods-options-content>.label.label-two:before {background: {{$website['color']}};border-radius: 50%;bottom: 0;color: {{$website['color_word']}};content: "2";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$website['color']}};}
         .purchase_process .new-goods-options-content>.label.label-three:before {background: {{$website['color']}};border-radius: 50%;bottom: 0;color: {{$website['color_word']}};content: "3";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$website['color']}};}
+        .purchase_process .new-goods-options-content>.label.label-forth:before {background: {{$website['color']}};border-radius: 50%;bottom: 0;color: {{$website['color_word']}};content: "4";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$website['color']}};}
         .purchase_process .goods-freight {border: 1px solid #eee;color: #999;height: 26px;line-height: 29px;text-indent: 40px;transition: all .3s linear;vertical-align: top;width: 80px;}
         .new-goods-options-content .label-title {color: {{$website['color_word']}};font-size: 15px;font-weight:600;}
         .new-goods-options-content>.label .arrow {color: {{$website['color_word']}};font-size: 18px;line-height: 18px;margin: 0px 5px;}
@@ -203,7 +204,7 @@
         .new-goods-options-content>.label .label-freight .label-icon {display: flex;}
         .purchase_process .goods-options-freight a {color: {{$website['color_word']}};}
         .new-goods-options-content>.label .label-freight .label-icon li span {color: #333;cursor: pointer;font-size: 20px;font-weight: 700;line-height: 24px;margin-left: 8px;transition: all .3s linear;user-select: none;}
-        .purchase_process .new-goods-options-content>.label-three{margin-bottom:0;}
+        .purchase_process .new-goods-options-content>.label-forth{margin-bottom:0;}
         /*商品规格*/
         .choose_buy{border:2px solid #ddd;border-radius:5px;padding:2px;box-sizing: border-box;}
         .choose{background:#E3E6EB;padding:0;border-radius: 5px;border: 2px solid #d9d9d9;box-sizing: border-box;width:100%;margin-bottom:10px;}
@@ -560,7 +561,125 @@
                                 @endforeach
                             </div>
                         </div>
-
+                        
+                        <!--地址选择样式-->
+                        <style>
+                            /* 地址选择样式 */
+                            .country-select2{text-align:left;}
+                            .address-select-container {position: relative;width: 100%;}
+                            .address-select-trigger {display: flex;align-items: center;justify-content: space-between;padding: 12px 15px;border-radius: 4px;cursor: pointer;transition: border-color 0.3s;}
+                            .address-select-trigger:hover {border-color: {{$website['color']}};}
+                            .address-info {flex: 1;min-width: 0;}
+                            .selected-address, .no-address-prompt {display: flex;flex-direction: column;}
+                            .receiver-info {display: flex;align-items: center;margin-bottom: 5px;font-size: 14px;}
+                            .receiver-name {font-weight: bold;color: #333;margin-right: 15px;}
+                            .receiver-phone {color: #666;margin-right: 10px;}
+                            .default-tag {padding: 2px 6px;background-color: {{$website['color']}};color: #000;border-radius: 2px;font-size: 12px;line-height: 1;}
+                            .address-detail {color: #666;font-size: 13px;line-height: 1.4;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
+                            .no-address-prompt span {color: #000;font-size: 15px;font-weight:600;}
+                            .address-arrow {margin-left: 10px;color: #000;transition: transform 0.3s;}
+                            
+                            .address-arrow.up {
+                                transform: rotate(180deg);
+                            }
+                            
+                            /* 地址下拉列表 */
+                            .address-dropdown {
+                                position: absolute;
+                                top: 100%;
+                                left: 0;
+                                right: 0;
+                                margin-top: 5px;
+                                background-color: #fff;
+                                border: 1px solid #e0e0e0;
+                                border-radius: 4px;
+                                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                                z-index: 1000;
+                                max-height: 300px;
+                                overflow-y: auto;
+                            }
+                            
+                            .address-list {
+                                padding: 10px 0 !important;
+                            }
+                            
+                            .address-item {
+                                display: flex;
+                                align-items: center;
+                                padding: 12px 15px;
+                                border-bottom: 1px solid #f5f5f5;
+                                cursor: pointer;
+                                transition: background-color 0.3s;
+                                padding:5px !important;
+                            }
+                            
+                            .address-item:hover {
+                                background-color: #f9f9f9;
+                            }
+                            
+                            .address-item.selected {
+                                background-color: #E3E6EB;
+                            }
+                            
+                            .address-item-content {
+                                flex: 1;
+                                min-width: 0;
+                            }
+                            
+                            .address-select-check {
+                                width: 20px;
+                                color: #000;
+                            }
+                            
+                            .no-address-item {
+                                padding: 20px 15px;
+                                text-align: center;
+                                color: #000;
+                            }
+                            
+                            .no-address-content {
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                            }
+                            
+                            .no-address-content .iconfont {
+                                font-size: 24px;
+                                margin-bottom: 10px;
+                                color: #000;
+                            }
+                            
+                            .address-dropdown-footer {
+                                padding: 10px !important;
+                                border-top: 1px solid #f5f5f5;
+                                text-align: center;
+                            }
+                            
+                            .add-address-btn {
+                                display: inline-flex;
+                                align-items: center;
+                                justify-content: center;
+                                padding: 8px 20px;
+                                background-color: {{$website['color']}};
+                                color: #000;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 14px;
+                                transition: background-color 0.3s;
+                            }
+                            
+                            .add-address-btn:hover {
+                                background-color: {{$website['color']}};
+                                opacity: 0.9;
+                            }
+                            
+                            .add-address-btn .iconfont {
+                                margin-right: 5px;
+                                font-size: 16px;
+                            }
+                        </style>
+                                            
                         <!--运费&收货地址-->
                         <div class="purchase_process">
                             <dl class="goods-options-row goods-options-freight">
@@ -578,231 +697,60 @@
                                         </div>
                                     </div>
                                     <div class="label label-two second_step" style="display:none;justify-content:space-between;">
-                                        <div class="delivery_method_1" style="display:none;">
+                                        <div class="delivery_method_1" style="display:none;width:100%;">
                                             <!--国内收货-->
                                             
-                                            <!--地址选择样式-->
-                                            <style>
-                                                /* 地址选择样式 */
-                                                .country-select2{text-align:left;}
-                                                .address-select-container {position: relative;width: 100%;}
-                                                .address-select-trigger {display: flex;align-items: center;justify-content: space-between;padding: 12px 15px;border-radius: 4px;cursor: pointer;transition: border-color 0.3s;}
-                                                .address-select-trigger:hover {border-color: {{$website['color']}};}
-                                                .address-info {flex: 1;min-width: 0;}
-                                                .selected-address, .no-address-prompt {display: flex;flex-direction: column;}
-                                                .receiver-info {display: flex;align-items: center;margin-bottom: 5px;font-size: 14px;}
-                                                .receiver-name {font-weight: bold;color: #333;margin-right: 15px;}
-                                                .receiver-phone {color: #666;margin-right: 10px;}
-                                                .default-tag {padding: 2px 6px;background-color: {{$website['color']}};color: #000;border-radius: 2px;font-size: 12px;line-height: 1;}
-                                                .address-detail {color: #666;font-size: 13px;line-height: 1.4;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
-                                                .no-address-prompt span {color: #000;font-size: 15px;font-weight:600;}
-                                                .address-arrow {margin-left: 10px;color: #000;transition: transform 0.3s;}
-                                                
-                                                .address-arrow.up {
-                                                    transform: rotate(180deg);
-                                                }
-                                                
-                                                /* 地址下拉列表 */
-                                                .address-dropdown {
-                                                    position: absolute;
-                                                    top: 100%;
-                                                    left: 0;
-                                                    right: 0;
-                                                    margin-top: 5px;
-                                                    background-color: #fff;
-                                                    border: 1px solid #e0e0e0;
-                                                    border-radius: 4px;
-                                                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                                                    z-index: 1000;
-                                                    max-height: 300px;
-                                                    overflow-y: auto;
-                                                }
-                                                
-                                                .address-list {
-                                                    padding: 10px 0 !important;
-                                                }
-                                                
-                                                .address-item {
-                                                    display: flex;
-                                                    align-items: center;
-                                                    padding: 12px 15px;
-                                                    border-bottom: 1px solid #f5f5f5;
-                                                    cursor: pointer;
-                                                    transition: background-color 0.3s;
-                                                    padding:5px !important;
-                                                }
-                                                
-                                                .address-item:hover {
-                                                    background-color: #f9f9f9;
-                                                }
-                                                
-                                                .address-item.selected {
-                                                    background-color: #E3E6EB;
-                                                }
-                                                
-                                                .address-item-content {
-                                                    flex: 1;
-                                                    min-width: 0;
-                                                }
-                                                
-                                                .address-select-check {
-                                                    width: 20px;
-                                                    color: #000;
-                                                }
-                                                
-                                                .no-address-item {
-                                                    padding: 20px 15px;
-                                                    text-align: center;
-                                                    color: #000;
-                                                }
-                                                
-                                                .no-address-content {
-                                                    display: flex;
-                                                    flex-direction: column;
-                                                    align-items: center;
-                                                }
-                                                
-                                                .no-address-content .iconfont {
-                                                    font-size: 24px;
-                                                    margin-bottom: 10px;
-                                                    color: #000;
-                                                }
-                                                
-                                                .address-dropdown-footer {
-                                                    padding: 10px !important;
-                                                    border-top: 1px solid #f5f5f5;
-                                                    text-align: center;
-                                                }
-                                                
-                                                .add-address-btn {
-                                                    display: inline-flex;
-                                                    align-items: center;
-                                                    justify-content: center;
-                                                    padding: 8px 20px;
-                                                    background-color: {{$website['color']}};
-                                                    color: #000;
-                                                    border: none;
-                                                    border-radius: 4px;
-                                                    cursor: pointer;
-                                                    font-size: 14px;
-                                                    transition: background-color 0.3s;
-                                                }
-                                                
-                                                .add-address-btn:hover {
-                                                    background-color: {{$website['color']}};
-                                                    opacity: 0.9;
-                                                }
-                                                
-                                                .add-address-btn .iconfont {
-                                                    margin-right: 5px;
-                                                    font-size: 16px;
-                                                }
-                                                </style>
                                             <!-- 选择收货地址 - 类似淘宝样式 -->
-                                            <div class="label label-three country-select2" style="display:none;">
-                                                <div class="address-select-container">
+                                            <!--<div class="label label-three country-select2">-->
+                                            <!--    <div class="address-select-container">-->
                                                     <!-- 地址选择头部 -->
-                                                    <div class="address-select-header" onclick="toggleAddressList()">
-                                                        <div class="address-select-trigger">
-                                                            <div class="address-info">
+                                            <!--        <div class="address-select-header" onclick="toggleAddressList()" style="padding:5px 0;">-->
+                                            <!--            <div class="address-select-trigger">-->
+                                            <!--                <div class="address-info">-->
                                                                 
-                                                                @if(1>2)
-                                                                    @if($defaultAddress)
-                                                                        <div class="selected-address">
-                                                                            <div class="receiver-info">
-                                                                                <span class="receiver-name">{{ $defaultAddress['user_name'] }}</span>
-                                                                                <span class="receiver-phone">{{ $defaultAddress['mobile'] }}</span>
-                                                                                @if($defaultAddress['is_default'] == 1)
-                                                                                    <span class="default-tag">默认</span>
-                                                                                @endif
-                                                                            </div>
-                                                                            <div class="address-detail">
-                                                                                {{ $defaultAddress['true_addr'] ?? '' }}
-                                                                            </div>
-                                                                        </div>
-                                                                    @else
-                                                                        <div class="no-address-prompt">
-                                                                            <span>请选择配送地址</span>
-                                                                        </div>
-                                                                    @endif
-                                                                
-                                                                    <div class="no-address-prompt">
-                                                                        <span>请添加收货地址</span>
-                                                                    </div>
-                                                                @endif
-                                                            </div>
-                                                            <div class="address-arrow">
-                                                                <i class="iconfont">&#xe6b9;</i>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                            <!--                </div>-->
+                                            <!--                <div class="address-arrow">-->
+                                            <!--                    <i class="iconfont">&#xe6b9;</i>-->
+                                            <!--                </div>-->
+                                            <!--            </div>-->
+                                            <!--        </div>-->
                                                     
                                                     <!-- 地址选择下拉列表 -->
-                                                    <div class="address-dropdown" id="addressDropdown" style="display: none;">
-                                                        <div class="address-list">
-                                                            @if(!empty($address) && count($address) > 0)
-                                                                @foreach($address as $k => $v)
-                                                                    <div class="address-item @if($v['is_default'] == 1) selected @endif" 
-                                                                         data-address-id="{{ $v['id'] }}"
-                                                                         onclick="selectAddress(this, {{ $v['id'] }})">
-                                                                        <div class="address-item-content">
-                                                                            <div class="receiver-info">
-                                                                                <span class="receiver-name">{{ $v['user_name'] }}</span>
-                                                                                <span class="receiver-phone">{{ $v['mobile'] }}</span>
-                                                                                @if($v['is_default'] == 1)
-                                                                                    <span class="default-tag">默认</span>
-                                                                                @endif
-                                                                            </div>
-                                                                            <div class="address-detail">
-                                                                                {{ $v['true_addr'] ?? '' }}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="address-select-check">
-                                                                            @if($v['is_default'] == 1)
-                                                                                <i class="iconfont">&#xe6b1;</i>
-                                                                            @endif
-                                                                        </div>
-                                                                    </div>
-                                                                @endforeach
-                                                            @else
-                                                                <div class="no-address-item">
-                                                                    <div class="no-address-content">
-                                                                        <i class="iconfont">&#xe6b3;</i>
-                                                                        <span>暂无收货地址，请先添加地址</span>
-                                                                    </div>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                        <div class="address-dropdown-footer">
-                                                            <div class="add-address-btn" onclick="add_addr()">
-                                                                <i class="iconfont">&#xe6b7;</i>
-                                                                添加新的收货地址
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                            <!--        <div class="address-dropdown" id="addressDropdown" style="display:none;">-->
+                                            <!--            <div class="address-list">-->
+                                                            
+                                            <!--            </div>-->
+                                            <!--            <div class="address-dropdown-footer">-->
+                                            <!--                <div class="add-address-btn" onclick="add_addr()">-->
+                                            <!--                    <i class="iconfont">+</i>-->
+                                            <!--                    添加新的收货地址-->
+                                            <!--                </div>-->
+                                            <!--            </div>-->
+                                            <!--        </div>-->
                                                     
                                                     <!-- 隐藏的select，用于表单提交 -->
-                                                    <select name="address_id" id="address_id" style="display: none;" lay-verify="required">
-                                                        <option value="">请选择</option>
-                                                        @if(!empty($address))
-                                                            @foreach($address as $k=>$v)
-                                                                <option value="{{$v['id']}}" @if($v['is_default']==1) selected @endif>
-                                                                    {{$v['user_name']}}，{{$v['mobile']}}
-                                                                </option>
-                                                            @endforeach
-                                                        @endif
-                                                    </select>
-                                                </div>
-                                            </div>
+                                            <!--        <select name="address_id" id="address_id" style="display: none;" lay-verify="required">-->
+                                            <!--            <option value="">请选择</option>-->
+                                                       
+                                            <!--        </select>-->
+                                            <!--    </div>-->
+                                            <!--</div>-->
                                         </div>
-                                        <div class="delivery_method_2" style="display:none;">
+                                        <div class="delivery_method_2" style="display:none;width:100%;">
                                             <!--海外收货-->
                                             <div class="leftLabel" style="display: flex;align-items: center;">
                                             </div>
                                             <div class="rightLabel"></div>
                                         </div>
                                     </div>
-                                    
+                                    <!--第三步选择线路-->
+                                    <div class="label label-three third_step" style="display:none;justify-content:space-between;">
+                                        
+                                    </div>
+                                    <!--第四步选择线路终止国地的收货国家地址-->
+                                    <div class="label label-forth forth_step" style="display:none;justify-content:space-between;">
+                                        
+                                    </div>
                                     
                                     
                                     @if(1>2)
@@ -1412,10 +1360,7 @@
                                                         <div class="layui-form-label">选择国家</div>
                                                         <div class="layui-input-block">
                                                             <select name="country_id" id="country_id" lay-filter="country_id" lay-search lay-verify="required">
-                                                                <option value="">请选择国家地区</option>
-                                                                @foreach($country as $k=>$vo)
-                                                                <option value="{{$vo['id']}}" data-pre_tel="{{$vo['param8']}}">{{$vo['param2']}}</option>
-                                                                @endforeach
+                                                                
                                                             </select>
                                                         </div>
                                                     </div>
@@ -1424,7 +1369,7 @@
                                                         <div class="layui-input-block postal_div disf">
                                                             <div class="select_box have_postal_code_div">
                                                                 <select name="have_postal_code" id="have_postal_code" lay-verify="required" lay-filter="have_postal_code">
-                                                                    <option value="1">有邮政编码</option>
+                                                                    <option value="1" selected>有邮政编码</option>
                                                                     <option value="2">无邮政编码</option>
                                                                 </select>
                                                             </div>
@@ -1432,7 +1377,7 @@
                                                             <input type="text" class="layui-input address_pcq pre_box" name="pre_address" style="margin-right:5px;" value="">
                                                         </div>
                                                     </div>
-                                                    <div class="layui-form-item select_pcd">
+                                                    <div class="layui-form-item select_pcd" style="display:none;">
                                                         <div class="layui-form-label">选择区域</div>
                                                         <div class="layui-input-block">
                                                             <div class="disf">
@@ -1475,7 +1420,7 @@
                                                             <td>
                                                                 <input type="text" class="layui-input" lay-verify="required" name="address1" value="" placeholder="详细地址">
                                                             </td>
-                                                            <td>
+                                                            <td class="disf" style="justify-content: center;">
                                                                 <div class="layui-btn layui-btn-success add" onclick="add_address()">+</div>
                                                             </td>
                                                         </tr>
@@ -1577,7 +1522,7 @@
                         }
                         
                         let val = $(this).val();
-                        if(val != ''){
+                        if(val == ''){
                             $('.second_step').hide();
                         }else{
                             $('.second_step').show();
@@ -1585,38 +1530,305 @@
                         
                         if (val == '1') {
                             // 国内收货，获取国内收货地址
-                            $.getJSON('/get_address',{'method':1,'country_id':162,'_token':"{{csrf_token()}}"},function(res){
-                                if(res.code==0){
-                                    let html = '';
-                                    if(res.data.length>0){
-                                        for(let i=0;i<res.data.length;i++){
-                                            if(res.data[i].is_default==1){
-                                                html += '<div class="selected-address">\n'+
-                                                        '   <div class="receiver-info">\n'+
-                                                        '       <span class="receiver-name">'+res.data[i].user_name+'</span>\n'+
-                                                        '       <span class="receiver-phone">'+res.data[i].area_mobile+' '+res.data[i].mobile+'</span>\n'+
-                                                        '       <span class="default-tag">默认</span>\n'+
-                                                        '   </div>\n'+
-                                                        '   <div class="address-detail">\n'+
-                                                                res.data[i].true_addr+
-                                                        '   </div>\n'+
-                                                        '</div>';
-                                            }
-                                        }
-                                    }else{
-                                        html += '<div class="no-address-prompt">\n'+
-                                                '   <span>请选择配送地址</span>\n'+
-                                                '</div>';
-                                    }
-                                }
-                                
-                                $('.delivery_method_1').show();
-                            });
-                            
+                            get_domestic_country(2);
+                            $('.second_step,.delivery_method_1').show();
+                            $('.delivery_method_2').hide();
+                            //清空集运方式的内容
+                            $('.delivery_method_2').find('.leftLabel').html('');
+                            //清空自主集运的内容
+                            $('.third_step').html('');
+                            $('.third_step').hide();
+                            //清空平台集运>选择线路>选择收货地址内容
+                            $('.forth_step').html('');
+                            $('.forth_step').hide();
                         } else if (val == '2') {
-                            // 海外收货
+                            // 海外收货，获取当前商品是否支持“平台集运/自主集运”
+                            $.getJSON('/get_address',{'method':3,'goods_id':"{{$goods['goods_id']}}",'_token':"{{csrf_token()}}"},function(res){
+                                if(res.code==0){
+                                    if(res.data.length>0){
+                                        let html = '<span class="label-title">集运方式</span>\n'+
+                                            '       <span class="font-icon arrow">&gt;</span>\n'+
+                                            '       <span class="label-title"></span>\n'+
+                                            '       <select id="selectGatherMethod" class="chosen-select gather-selects">\n'+
+                                            '           <option value="">请选择</option>\n';
+                                            for(let i=0;i<res.data.length;i++){
+                                                html += '<option value="'+res.data[i].id+'">'+res.data[i].name+'</option>\n';
+                                            }
+                                            '</select>';
+                                            
+                                        $('.delivery_method_2').find('.leftLabel').html(html);
+                                        $('.gather-selects').chosen();
+                                        $('.delivery_method_1').hide();
+                                        $('.second_step,.delivery_method_2').show();
+                                        //清空中国收货的内容
+                                        $('.second_step .delivery_method_1').html('');
+                                        //清空自主集运的内容
+                                        $('.third_step').html('');
+                                        $('.third_step').hide();
+                                        //清空平台集运>选择线路>选择收货地址内容
+                                        $('.forth_step').html('');
+                                        $('.forth_step').hide();
+                                        
+                                        //选择集运方式
+                                        $('#selectGatherMethod').on('change', function() {
+                                            if("{{session('user.user_id')}}" ==''){
+                                                show_login();
+                                                return false;
+                                            }
+                                            
+                                            let val = $(this).val();
+                                            if(val == '1'){
+                                                //平台集运，获取线路
+                                                $.getJSON('/get_address',{'method':4,'goods_id':"{{$goods['goods_id']}}",'_token':"{{csrf_token()}}"},function(res){
+                                                    if(res.code==0){
+                                                        //添加线路
+                                                        let html =  '    <div class="leftLabel" style="display: flex;align-items: center;">\n'+
+                                                                    '       <span class="label-title">选择线路</span>\n'+
+                                                                    '       <span class="font-icon arrow">&gt;</span>\n'+
+                                                                    '       <span class="label-title"></span>\n'+
+                                                                    '       <select id="selectLine" class="chosen-select line-selects" style="width:300px;">\n'+
+                                                                    '           <option value="">请选择</option>\n';
+                                                        for(let i=0;i<res.data.length;i++){
+                                                            html += '           <option value="'+res.data[i].id+'">'+res.data[i].name+'</option>\n';
+                                                        }
+                                                        html +=     '       </select>\n'+
+                                                                    '       <div class="view-line-btn operaBtn" onclick="viewLineDetail()" style="border: 2px solid #fff;border-radius: 8px;background: #ffffff;color: #000000;padding: 0px 10px;font-weight: 800;cursor: pointer;line-height:24px;margin-left:5px;">查看详情</div>\n' +
+                                                                    '     </div>\n';
+                                                        
+                                                        
+                                                        $('.delivery_method_1').hide();
+                                                        $('.second_step,.delivery_method_2').show();
+                                                        //清空中国收货的内容
+                                                        $('.second_step .delivery_method_1').html('');
+                                                        //清空自主集运的内容
+                                                        $('.third_step').html(html);
+                                                        $('.line-selects').chosen();
+                                                        $('.third_step').show();
+                                                        //清空平台集运>选择线路>选择收货地址内容
+                                                        $('.forth_step').html('');
+                                                        $('.forth_step').hide();
+                                                        
+                                                        $('#selectLine').on('change',function(){
+                                                            if("{{session('user.user_id')}}" ==''){
+                                                                show_login();
+                                                                return false;
+                                                            }
+                                                            
+                                                            let val = $(this).val();
+                                                            //获取线路终止国，作为用户收货地址国家
+                                                            $.getJSON('/get_address',{'method':5,'line_id':val,'goods_id':"{{$goods['goods_id']}}",'_token':"{{csrf_token()}}"},function(res){
+                                                                if(res.code==0){
+                                                                    get_domestic_country(4,res.data.id);
+                                                                    $('.forth_step').show();
+                                                                }
+                                                            });
+                                                        });
+                                                    }
+                                                });
+                                            }
+                                            else if(val == '2'){
+                                                //自主集运，获取中国国内地址
+                                                get_domestic_country(3);
+                                                $('.third_step').show();
+                                                //清空平台集运>选择线路>选择收货地址内容
+                                                $('.forth_step').html('');
+                                                $('.forth_step').hide();
+                                            }
+                                        });
+                                    }
+                                }else{
+                                    layer.msg(res.msg);
+                                }
+                            });
                         }
                     });
+                    
+                    // 新增函数：查看线路详情
+                    function viewLineDetail() {
+                        var $ = layui.$;
+                        var layer = layui.layer;
+                        
+                        var selectElement = document.getElementById('selectLine');
+                        var selectedOption = selectElement.options[selectElement.selectedIndex];
+                        
+                        if (!selectedOption.value) {
+                            layer.msg('请先选择一条线路');
+                            return;
+                        }
+                        
+                        let area = ['800px','500px'];
+                        if(IsPhone()){
+                            area = ['100%','100%'];
+                        }
+                        layer.open({
+                            type: 2,
+                            title: '线路详情',
+                            area: area,
+                            content: '/line_info?id='+selectedOption.value
+                        });
+                    }
+                    
+                    function get_domestic_country(step=2,other_country_id=0){
+                        var method = 1;
+                        var country_id = 162;
+                        if(step==4){
+                            country_id = other_country_id;
+                        }
+                        
+                        $.getJSON('/get_address',{'method':method,'country_id':country_id,'goods_id':"{{$goods['goods_id']}}",'_token':"{{csrf_token()}}"},function(res){
+                            if(res.code==0){
+                                let html = '';
+                                let html2 = '';
+                                let html3 = '';
+                               
+                                if(res.data.length>0){
+                                    var is_no_default_address = 0;
+                                    html += ' <div class="label label-three country-select2" style="width:100%;">\n'+
+                                            '   <div class="address-select-container">\n'+
+                                            '       <div class="address-select-header" onclick="toggleAddressList()" style="padding:5px 0;">\n'+
+                                            '           <div class="address-select-trigger">\n'+
+                                            '               <div class="address-info">\n';
+                                    
+                                    for(let i=0;i<res.data.length;i++){
+                                        //默认选中地址
+                                        if(res.data[i].is_default==1){
+                                            html += '                   <div class="selected-address">\n'+
+                                                    '                       <div class="receiver-info">\n'+
+                                                    '                           <span class="receiver-name">'+res.data[i].user_name+'</span>\n'+
+                                                    '                           <span class="receiver-phone">'+res.data[i].area_mobile+' '+res.data[i].mobile+'</span>\n'+
+                                                    '                           <span class="default-tag">默认</span>\n'+
+                                                    '                       </div>\n'+
+                                                    '                       <div class="address-detail">\n'+
+                                                    res.data[i].true_addr+
+                                                    '                       </div>\n'+
+                                                    '                   </div>\n';
+                                            is_no_default_address = 1;
+                                        }
+                                    }
+                                    
+                                    if(is_no_default_address == 0){
+                                        html +=  '                   <div class="no-address-prompt">\n'+
+                                                 '                       <span>请选择配送地址</span>\n'+
+                                                 '                   </div>\n'+
+                                                 '               </div>\n'+
+                                                 '               <div class="address-arrow">\n'+
+                                                 '                   <i class="iconfont">&#xe6b9;</i>\n'+
+                                                 '               </div>\n'+
+                                                 '           </div>\n'+
+                                                 '       </div>\n';
+                                    }else{
+                                        html += '               </div>\n'+
+                                                '               <div class="address-arrow">\n'+
+                                                '                   <i class="iconfont">&#xe6b9;</i>\n'+
+                                                '               </div>\n'+
+                                                '           </div>\n'+
+                                                '       </div>\n';
+                                    }
+                                    
+                                    //可选地址列表
+                                    html += '<div class="address-dropdown" id="addressDropdown" style="display:none;">\n'+
+                                            '   <div class="address-list">\n';
+                                    
+                                    for(let i=0;i<res.data.length;i++){
+                                        html += '       <div class="address-item ';
+                                        if(res.data[i].is_default==1){
+                                            html += 'selected';
+                                        }
+                                        html += '" data-address-id="'+res.data[i].id+'"'+
+                                                ' onclick="selectAddress(this,'+res.data[i].id+')">\n'+
+                                                '           <div class="address-item-content">\n'+
+                                                '               <div class="receiver-info">\n'+
+                                                '                   <span class="receiver-name">'+res.data[i].user_name+'</span>\n'+
+                                                '                   <span class="receiver-phone">'+res.data[i].mobile_num+'</span>\n';
+                                        if(res.data[i].is_default == 1){
+                                            html += '   <span class="default-tag">默认</span>\n';
+                                        }
+                                        html += '               </div>\n'+
+                                                '               <div class="address-detail">\n' + res.data[i].true_addr + '</div>\n'+
+                                                '           </div>\n'+
+                                                '           <div class="address-select-check">\n';
+                                        if(res.data[i].is_default == 1){
+                                            html += '<i class="iconfont">&#xe6b1;</i>\n';
+                                        }
+                                        html += '           </div>\n'+
+                                                '       </div>\n';
+                                    }
+                                    
+                                    // 添加地址按钮（放在循环外）
+                                    html += '           <div class="address-dropdown-footer">\n'+
+                                            '               <div class="add-address-btn" onclick="add_addr()">\n'+
+                                            '                   <i class="iconfont">+</i>\n添加新的收货地址'+
+                                            '               </div>\n'+
+                                            '           </div>\n'+
+                                            '       </div>\n'+
+                                            '   </div>\n';
+                                    
+                                    //隐藏选中地址
+                                    html += '<select name="address_id" id="address_id" style="display: none;" lay-verify="required">\n'+
+                                            '   <option value="">请选择</option>\n';
+                                    
+                                    for(let i=0;i<res.data.length;i++){
+                                        html += '<option value="'+res.data[i].id+'" ';
+                                        if(res.data[i].is_default==1){
+                                            html += 'selected';
+                                        }
+                                        html += '>'+ res.data[i].user_name+','+res.data[i].mobile+' </option>\n';
+                                    }
+                                    
+                                    html += '</select>\n'+
+                                            '</div>\n'+
+                                            '</div>';
+                                    
+                                }else{
+                                    // 没有地址的情况
+                                    html += '<div class="label label-three country-select2" style="width:100%;">\n'+
+                                            '   <div class="address-select-container">\n'+
+                                            '       <div class="address-select-header" onclick="toggleAddressList()" style="padding:5px 0;">\n'+
+                                            '           <div class="address-select-trigger">\n'+
+                                            '               <div class="address-info">\n'+
+                                            '                   <div class="no-address-prompt">\n'+
+                                            '                       <span>请选择配送地址</span>\n'+
+                                            '                   </div>\n'+
+                                            '               </div>\n'+
+                                            '               <div class="address-arrow">\n'+
+                                            '                   <i class="iconfont">&#xe6b9;</i>\n'+
+                                            '               </div>\n'+
+                                            '           </div>\n'+
+                                            '       </div>\n'+
+                                            '       <div class="address-dropdown" id="addressDropdown" style="display:none;">\n'+
+                                            '           <div class="address-list">\n'+
+                                            '               <div class="no-address-item">\n'+
+                                            '                   <div class="no-address-content">\n'+
+                                            '                       <i class="iconfont">&#xe6b3;</i>\n'+
+                                            '                       <span>暂无收货地址，请先添加地址</span>\n'+
+                                            '                   </div>\n'+
+                                            '               </div>\n'+
+                                            '           </div>\n'+
+                                            '           <div class="address-dropdown-footer">\n'+
+                                            '               <div class="add-address-btn" onclick="add_addr()">\n'+
+                                            '                   <i class="iconfont">+</i>\n添加新的收货地址'+
+                                            '               </div>\n'+
+                                            '           </div>\n'+
+                                            '       </div>\n'+
+                                            '       <select name="address_id" id="address_id" style="display: none;" lay-verify="required">\n'+
+                                            '           <option value="">请选择</option>\n'+
+                                            '       </select>\n'+
+                                            '   </div>\n'+
+                                            '</div>';
+                                }
+                                
+                                if(step==2){
+                                    $('.second_step .delivery_method_1').html(html);
+                                }
+                                else if(step==3){
+                                    $('.third_step').html(html);
+                                }
+                                else if(step==4){
+                                    $('.forth_step').html(html);
+                                }
+                            }
+                        });
+                    }
                     
                     //选择国家
                     $('.country-selects').chosen();
@@ -1700,8 +1912,6 @@
                             },500);
                         });
                     }
-                    
-                    
                     
                     //购物清单---start
                     //加入购物清单
@@ -3214,6 +3424,45 @@
                         $('.buy-goods-soon').click(function(){
                             if("{{session('user.user_id')}}" != ''){
                                 // var sku_id = getSkuId();
+                                //判断有无选择收货方式
+                                var selectDeliveryMethod = $('#selectDeliveryMethod').val();
+                                var address_id = selectGatherMethod = selectLine = '';
+                                if(selectDeliveryMethod=='' || selectDeliveryMethod==null || selectDeliveryMethod==undefined){
+                                    layer.msg('请选择收货方式');return false;
+                                }
+                                if(selectDeliveryMethod==1){
+                                    //中国收货
+                                    address_id = $('#address_id').val();
+                                    if(address_id=='' || address_id==null || address_id==undefined){
+                                        layer.msg('请选择收货地址');return false;
+                                    }
+                                }else if(selectDeliveryMethod==2){
+                                    //海外收货
+                                    selectGatherMethod = $('#selectGatherMethod').val();
+                                    if(selectGatherMethod=='' || selectGatherMethod==null || selectGatherMethod==undefined){
+                                        layer.msg('请选择集运方式');return false;
+                                    }
+                                    
+                                    if(selectGatherMethod==1){
+                                        //平台集运
+                                        selectLine = $('#selectLine').val();
+                                        if(selectLine=='' || selectLine==null || selectLine==undefined){
+                                            layer.msg('请选择线路');return false;
+                                        }
+                                        
+                                        address_id = $('#address_id').val();
+                                        if(address_id=='' || address_id==null || address_id==undefined){
+                                            layer.msg('请选择收货地址');return false;
+                                        }
+                                    }else if(selectGatherMethod==2){
+                                        //自主集运
+                                        address_id = $('#address_id').val();
+                                        if(address_id=='' || address_id==null || address_id==undefined){
+                                            layer.msg('请选择收货地址');return false;
+                                        }
+                                    }
+                                }
+                                
                                 let li_selected = $('.SZY-GOODS-SPEC-ITEMS').find('.selected');
                                 let spec_vids = '';
                                 for(let i=0;i<li_selected.length;i++){
@@ -3227,7 +3476,7 @@
                                 $.ajax({
                                     url: "/loglastbuy",
                                     method: 'post',
-                                    data: {'spec_vids':spec_vids,'number':number,'goods_id':"{{$goods['goods_id']}}",'type':1,'_token':"{{csrf_token()}}"},
+                                    data: {'spec_vids':spec_vids,'number':number,'goods_id':"{{$goods['goods_id']}}",'type':1,'selectDeliveryMethod':selectDeliveryMethod,'address_id':address_id,'selectGatherMethod':selectGatherMethod,'selectLine':selectLine,'_token':"{{csrf_token()}}"},
                                     dataType: 'JSON',
                                     success: function (res) {
                                         layer.closeAll('loading');
@@ -4125,7 +4374,8 @@
             form.render(null,'component-form-element');
             form.render(null,'component-form-element3');
             form.render(null,'glist-element');
-
+            form.render(null,'address-element');
+            
             //立即购买
             form.on('submit(glist-element2)', function(data){
                 layer.load();
@@ -4627,6 +4877,237 @@
                 layer.closeAll('loading');
             });
 
+            //选择国地
+            form.on('select(country_id)',function(data){
+                let val = data.value;
+                let pretel = $(data.elem).find('option:selected').data('pre_tel');
+    
+                $("#area_mobile").val(pretel+" ");
+                if(val!=162){
+                    //中国以外都是通过邮政编码获取行政区域
+                    $('.have_postal_code_div').hide();
+                    $('#postal_code').show();
+                    $('.address_pcq').show();
+                    $('.select_pcd').hide();
+                }else{
+                    //中国地址
+                    $('.have_postal_code_div').show();
+                }
+            });
+    
+            //选择“有”/“无”邮政编码
+            form.on('select(have_postal_code)',function(data){
+                let val = data.value;
+    
+                if(val==1){
+                    //有邮政编码
+                    $('#postal_code,.address_pcq').show();
+                    $('.select_pcd').hide();
+                }
+                else if(val==2){
+                    //无邮政编码
+                    $('#postal_code,.address_pcq').hide();
+                    $('.select_pcd').show();
+    
+                    layer.load();
+                    //获取省
+                    let country_id = $('#country_id').val();
+                    $.ajax({
+                        url: "https://shop.gogo198.cn/collect_website/public/?s=api/func/get_province",
+                        method: 'post',
+                        data: {'pid': 0, 'country_id': country_id},
+                        dataType: 'JSON',
+                        timeout: 10000,
+                        success: function (res) {
+                            layer.closeAll('loading');
+                            if(res.code==0){
+                                $('.select_pcd .disf').html("");
+                                let html = '<div class="select_box province_box">\n'+
+                                    '<select name="province" lay-search lay-filter="province_select">\n'+
+                                    '    <option value="">请选择省份</option>\n';
+                                for(let i=0;i<res.data.length;i++){
+                                    html += '<option value="'+res.data[i].id+'">'+res.data[i].name+'</option>\n';
+                                }
+                                html += '</select>\n'+
+                                    '</div>';
+                                $('.select_pcd .disf').append(html);
+                                form.render(null,'address-element');
+                            }
+                        }
+                    });
+                }
+            });
+    
+            //选择省
+            form.on('select(province_select)',function(data){
+                let val = data.value;
+    
+                layer.load();
+                //获取城市
+                let country_id = $('#country_id').val();
+                $.ajax({
+                    url: "https://shop.gogo198.cn/collect_website/public/?s=api/func/get_province",
+                    method: 'post',
+                    data: {'pid': val, 'country_id': country_id},
+                    dataType: 'JSON',
+                    timeout: 10000,
+                    success: function (res) {
+                        layer.closeAll('loading');
+                        if(res.code==0){
+                            $('.select_pcd .disf').find('.city_box,.district_box,.town_box,.village_box').html("");
+                            let html = '<div class="select_box city_box">\n'+
+                                '<select name="city" lay-search lay-filter="city_select">\n'+
+                                '    <option value="">请选择城市</option>\n';
+                            for(let i=0;i<res.data.length;i++){
+                                html += '<option value="'+res.data[i].id+'">'+res.data[i].name+'</option>\n';
+                            }
+                            html += '</select>\n'+
+                                '</div>';
+                            $('.select_pcd .disf').append(html);
+                            form.render(null,'address-element');
+                        }
+                    }
+                });
+            });
+    
+            //选择城市
+            form.on('select(city_select)',function(data){
+                let val = data.value;
+    
+                layer.load();
+                //获取区县
+                let country_id = $('#country_id').val();
+                $.ajax({
+                    url: "https://shop.gogo198.cn/collect_website/public/?s=api/func/get_province",
+                    method: 'post',
+                    data: {'pid': val, 'country_id': country_id},
+                    dataType: 'JSON',
+                    timeout: 10000,
+                    success: function (res) {
+                        layer.closeAll('loading');
+                        if(res.code==0){
+                            $('.select_pcd .disf').find('.district_box,.town_box,.village_box').html("");
+                            let html = '<div class="select_box district_box">\n'+
+                                '<select name="area" lay-search lay-filter="district_select">\n'+
+                                '    <option value="">请选择区县</option>\n';
+                            for(let i=0;i<res.data.length;i++){
+                                html += '<option value="'+res.data[i].id+'">'+res.data[i].name+'</option>\n';
+                            }
+                            html += '</select>\n'+
+                                '</div>';
+                            $('.select_pcd .disf').append(html);
+                            form.render(null,'address-element');
+                        }
+                    }
+                });
+            });
+    
+            //选择区县
+            form.on('select(district_select)',function(data){
+                let val = data.value;
+    
+                layer.load();
+                //获取乡镇
+                let country_id = $('#country_id').val();
+                $.ajax({
+                    url: "https://shop.gogo198.cn/collect_website/public/?s=api/func/get_province",
+                    method: 'post',
+                    data: {'pid': val, 'country_id': country_id},
+                    dataType: 'JSON',
+                    timeout: 10000,
+                    success: function (res) {
+                        layer.closeAll('loading');
+                        if(res.code==0){
+                            $('.select_pcd .disf').find('.town_box,.village_box').html("");
+                            let html = '<div class="select_box town_box">\n'+
+                                '<select name="area2" lay-search lay-filter="town_select">\n'+
+                                '    <option value="">请选择乡镇</option>\n';
+                            for(let i=0;i<res.data.length;i++){
+                                html += '<option value="'+res.data[i].id+'">'+res.data[i].name+'</option>\n';
+                            }
+                            html += '</select>\n'+
+                                '</div>';
+                            $('.select_pcd .disf').append(html);
+                            form.render(null,'address-element');
+                        }
+                    }
+                });
+            });
+    
+            //选择乡镇
+            form.on('select(town_select)',function(data){
+                let val = data.value;
+    
+                layer.load();
+                //获取居委
+                let country_id = $('#country_id').val();
+                $.ajax({
+                    url: "https://shop.gogo198.cn/collect_website/public/?s=api/func/get_province",
+                    method: 'post',
+                    data: {'pid': val, 'country_id': country_id},
+                    dataType: 'JSON',
+                    timeout: 10000,
+                    success: function (res) {
+                        layer.closeAll('loading');
+                        if(res.code==0){
+                            $('.select_pcd .disf').find('.village_box').html("");
+                            let html = '<div class="select_box village_box">\n'+
+                                '<select name="area3" lay-search lay-filter="village_select">\n'+
+                                '    <option value="">请选择居委</option>\n';
+                            for(let i=0;i<res.data.length;i++){
+                                html += '<option value="'+res.data[i].id+'">'+res.data[i].name+'</option>\n';
+                            }
+                            html += '</select>\n'+
+                                '</div>';
+                            $('.select_pcd .disf').append(html);
+                            form.render(null,'address-element');
+                        }
+                    }
+                });
+            });
+    
+            //监听邮政编码输入+防抖事件
+            let requestSeq = 0;
+            let timer = null;
+            $('#postal_code').on('input', function(){
+                clearTimeout(timer);
+    
+                let val = $(this).val();
+                let country_id = $('#country_id').val();
+                if(country_id=='' || country_id==0){
+                    layer.msg('请先选择国地');
+                    return false;
+                }
+    
+                // 显示加载状态
+                $('.address_pcq').val('查询中...').addClass('loading2');
+    
+                // 300ms防抖 + 500ms超时提醒
+                timer = setTimeout(() => {
+                    const currentSeq = ++requestSeq;
+                    $.ajax({
+                        url: "https://shop.gogo198.cn/collect_website/public/?s=api/func/get_area",
+                        method: 'post',
+                        data: {'val': val, 'country_id': country_id},
+                        dataType: 'JSON',
+                        timeout: 10000,
+                        success: function (res) {
+                            // 只处理最新请求
+                            if(currentSeq !== requestSeq) return;
+    
+                            if (res.code == 0) {
+                                $('.address_pcq').val(res.msg);
+                            } else {
+                                $('.address_pcq').val('');
+                            }
+                        },
+                        error: function (data) {
+                            layer.msg('系统错误', {time: 2000});
+                        }
+                    });
+                },300);
+            });
+
             //地址提交
             form.on('submit(address-element2)',function(data){
                 layer.load();
@@ -4687,6 +5168,56 @@
             @endif
             //商品信息滚动-end
         });
+        
+        //收货地址信息======================================start
+        function add_address(){
+            var $ = layui.$
+                , layer = layui.layer
+                , form = layui.form;
+            let address_num = $('#address_num').val();
+            address_num = parseInt(address_num) + 1;
+            $('#address_num').val(address_num);
+    
+            let html = '<tr>\n' +
+                '            <td>\n' +
+                '                 <input type="text" class="layui-input" lay-verify="required" name="address2[]" value="" placeholder="请输入地址">\n' +
+                '            </td>\n' +
+                '            <td class="disf" style="justify-content: center;">\n' +
+                '                 <div class="layui-btn layui-btn-danger del" onclick="del_address(this)">-</div>\n' +
+                '                 <div class="layui-btn layui-btn-success add" onclick="add_address()">+</div>\n' +
+                '            </td>\n' +
+                '       </tr>';
+            $('.addr_table').find('tbody').append(html);
+            form.render(null, 'address-element');
+        }
+    
+        function del_address(t){
+            var $ = layui.$
+                , layer = layui.layer
+                , form = layui.form;
+            let adr_idx = layer.confirm('确认要删除该地址吗？',function(index){
+                let address_num = $('#address_num').val();
+                address_num = parseInt(address_num) - 1;
+                $('#address_num').val(address_num);
+                $(t).parents(":eq(1)").remove();
+                form.render(null, 'address-element');
+                layer.close(adr_idx);
+            });
+        }
+    
+        function is_defaults(t){
+            var $ = layui.$
+                , layer = layui.layer
+                , form = layui.form;
+    
+            if($(t).val()==1){
+                $(t).val("0");
+            }else{
+                $(t).val("1");
+            }
+            form.render(null, 'address-element');
+        }
+        //收货地址信息======================================end
 
         //规格切换
         function selAttr(attr_id,t){
@@ -4790,74 +5321,48 @@
 
         function add_addr(){
             var $ = layui.$
-                , layer = layui.layer;
+                , layer = layui.layer
+                , form = layui.form;
            
             if("{{session('user.user_id')}}" != ''){
                 let area = ['800px','500px'];
                 if(IsPhone()){
                     area = ['100%','100%'];
                 }
-
-                layer.open({
-                    type: 1,
-                    title:'添加地址',
-                    area: area,
-                    content: $('.address_div')
+                let delivery_method = $('#selectDeliveryMethod').val();
+                let line_id = $('#selectLine').val();
+                //获取当前商品的配置信息
+                $.getJSON('/get_address',{'method':2,'type_id':delivery_method,'line_id':line_id,'_token':"{{csrf_token()}}"},function(res){
+                    if(res.code==0){
+                        if(delivery_method==1){
+                            //中国收货
+                            let html = '<option value="">请选择国家地区</option>\n'+
+                            '   <option value="162" data-pre_tel="+86">中国</option>\n';
+                            $('.address_div').find('#country_id').html(html);
+                            
+                            form.render(null,'address-element');
+                        }
+                        else if(delivery_method==2){
+                            //海外收货
+                            let html = '<option value="">请选择国家地区</option>\n'+
+                            '   <option value="'+res.data.id+'" data-pre_tel="'+res.data.param8+'">'+res.data.param2+'</option>\n';
+                            $('.address_div').find('#country_id').html(html);
+                            
+                            form.render(null,'address-element');
+                        }
+                        
+                    }
+                    layer.open({
+                        type: 1,
+                        title:'添加地址',
+                        area: area,
+                        content: $('.address_div')
+                    });
                 });
+                
+                
             }else{
                 show_login();
-            }
-        }
-
-        function add_address(){
-            var $ = layui.$
-                , layer = layui.layer
-                , form = layui.form;
-            let address_num = $('#address_num').val();
-            address_num = parseInt(address_num) + 1;
-            var html = '<div class="layui-form-item">\n' +
-            '                    <div class="layui-form-label">详细地址'+address_num+'</div>\n' +
-            '                    <div class="layui-input-block disf">\n' +
-            '                        <input type="text" class="layui-input" lay-verify="required" name="address2[]" value="" placeholder="请输入地址">\n' +
-            '                        <div class="layui-btn layui-btn-success add" onclick="add_address()">+</div>\n';
-            if(address_num<=3){
-                html += '             <div class="layui-btn layui-btn-danger del" onclick="del_address(this)">-</div>\n';
-            }
-            else if(address_num>3){
-                layer.msg('只能添加3个地址');
-                return false;
-            }
-            html += '            </div>\n' +
-                '          </div>';
-            $('#address_num').val(address_num);
-
-            $('.addr').append(html);
-            form.render(null, 'component-form-group');
-        }
-
-        function del_address(t){
-            var $ = layui.$
-                , layer = layui.layer
-                , form = layui.form;
-            let adr_idx = layer.confirm('确认要删除该地址吗？',function(index){
-                let address_num = $('#address_num').val();
-                address_num = parseInt(address_num) - 1;
-                $('#address_num').val(address_num);
-                $(t).parent().parent().remove();
-                form.render(null, 'component-form-group');
-                layer.close(adr_idx);
-            });
-        }
-
-        function is_default(t){
-            var $ = layui.$
-                , layer = layui.layer
-                , form = layui.form;
-
-            if($(t).val()==1){
-                $(t).val("0");
-            }else{
-                $(t).val("1");
             }
         }
 
@@ -4982,9 +5487,11 @@
             var dropdown = document.getElementById('addressDropdown');
             var arrow = document.querySelector('.address-arrow');
             
-            if (!addressContainer.contains(event.target) && dropdown.style.display === 'block') {
-                dropdown.style.display = 'none';
-                arrow.classList.remove('up');
+            if(addressContainer!='' && addressContainer!=null && addressContainer!='undefined'){
+                if (!addressContainer.contains(event.target) && dropdown.style.display === 'block') {
+                    dropdown.style.display = 'none';
+                    arrow.classList.remove('up');
+                }
             }
         });
         

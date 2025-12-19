@@ -334,6 +334,7 @@ Route::group(['domain' => env('FRONTEND_DOMAIN')], function ($router) {
         Route::any('/gettableinfo', 'FuncController@gettableinfo'); // 获取信息
         Route::any('/getphonenum', 'FuncController@getphonenum'); // 获取当前国地信息+邮政编码
         Route::any('/get_address', 'FuncController@get_address'); // 获取当前国家收货地址
+        Route::any('/line_info', 'FuncController@line_info'); // 获取线路详情
         Route::any('/get_history_price', 'FuncController@get_history_price'); // 获取当前商品历史价格
         Route::any('/getpostal', 'FuncController@getpostal'); // 获取模糊搜索的邮政编码
         Route::any('/address_list', 'FuncController@address_list'); // 地址列表
