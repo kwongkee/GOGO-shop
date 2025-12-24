@@ -353,7 +353,7 @@
 
                                                                 <label class="next-checkbox-wrapper item-group--checkbox--nJ766h2">
                                                             <span class="next-checkbox">
-                                                                <input type="checkbox" name="goods_id[]" data-id="{{$v['goods_id']}}" class="next-checkbox-input all_select goods_id" value="" onclick="box_select(this,2)" lay-ignore>
+                                                                <input type="checkbox" name="goods_id[]" data-id="{{$v['goods_id']}}" data-cart_id="{{$v['cart_id']}}" class="next-checkbox-input all_select goods_id" value="" onclick="box_select(this,2)" lay-ignore>
                                                             </span>
                                                                 </label>
                                                                 <a class="item-group--imageWrapper--gzJGxq1" href="/goods-{{$v['goods_id']}}.html" target="_blank">

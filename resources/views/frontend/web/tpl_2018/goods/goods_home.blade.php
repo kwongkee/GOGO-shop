@@ -445,18 +445,18 @@
             var $ = layui.$
                 , form = layui.form
                 , layer = layui.layer;
-                
-            layer.load();
+            window.location.href="/goodsdetail-{{$goods->goods_id}}.html?share_uid={{$share_uid}}&campaign_id={{$campaign_id}}";
+            // layer.load();
             
-            $.post('/join_cart',{'goods_id':"{{$goods->goods_id}}",'sku_id':"{{$goods->sku_id}}",'is_default':1,'_token':"{{csrf_token()}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}"},function(res){
-                layer.closeAll('loading');
-                // res = JSON.parse(res);
-                layer.msg(res.msg,{time:2000}, function () {
-                    if (res.code == 0) {
+            // $.post('/join_cart',{'goods_id':"{{$goods->goods_id}}",'sku_id':"{{$goods->sku_id}}",'is_default':1,'_token':"{{csrf_token()}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}"},function(res){
+            //     layer.closeAll('loading');
+            //     // res = JSON.parse(res);
+            //     layer.msg(res.msg,{time:2000}, function () {
+            //         if (res.code == 0) {
                         
-                    }
-                });
-            });
+            //         }
+            //     });
+            // });
         }
         
         function _collect(){

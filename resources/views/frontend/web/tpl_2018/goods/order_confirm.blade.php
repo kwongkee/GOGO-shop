@@ -106,13 +106,14 @@
         .confirm-order .total-price a {float: right;}
         .confirm-order .total-price a .i-cn, .goods_list .total-price a .i-en {color: #000;display: inline-block;line-height: 20px;}
         .confirm-order .children {display: flex;margin-left: auto;overflow: hidden;width: 100%}
-        .confirm-order .agree-pro {color: #333;display: flex;font-size: 12px;margin: 10px 20px 10px auto;}
+        .confirm-order .agree-pro {color: #333;display: flex;font-size: 12px;margin: 10px 20px 0px auto;}
+        .confirm-order .agree-pro .layui-form-label{padding:0px 15px;}
         .confirm-order .agree-pro label{margin-bottom:0;}
         .confirm-order .agree-pro label>span {padding-right: 0;font-size: 15px;font-weight: 800;}
         .confirm-order .agree-pro a {color: #1268bb}
         .confirm-order .agree-pro i {color: #333}
         .confirm-order .agree-pro .ant-checkbox-inner {height: 14px;width: 14px}
-        .confirm-order .submit-button {display: flex;margin-bottom: 10px}
+        .confirm-order .submit-button {display: flex;margin: 10px 0;}
         .confirm-order .submit-button button {background-color: {{$website['color']}};box-sizing: border-box;font-size: 16px;height: 40px;margin-left: auto;margin-right: 20px;width: 180px;border:1px solid {{$website['color_word']}};color:{{$website['color_word']}};font-weight: 800;}
         .confirm-order .submit-button button:hover {opacity: .9}
         .confirm-order .submit-button button[disabled] {background-color: #f5f5f5}
@@ -180,6 +181,7 @@
             <div class="sure_detail_title">
                 <span style="font-size:22px;margin-right:5px;">③</span><span>结算中心&nbsp;&gt;&nbsp;订单确认</span>
                 
+                @if(1>2)
                 <div class="addr_div default_div" style="font-size: 15px;text-align: right;">
                     收货地址：
                     <select id="selectAddr" onchange="selectAddr(this)" class="chosen-select addr-select" style="max-width:150px;">
@@ -189,6 +191,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
             </div>
             <div class="content">
                 <div class="goods_list">
@@ -529,6 +532,7 @@
                         </div>
                     </div>
                     <div class="rightBox">
+                        @if($is_daifa==2)
                         <div class="children">
                             <div class="agree-pro">
                                 <label class="ant-checkbox-wrapper ant-checkbox-wrapper-checked">
@@ -544,9 +548,10 @@
                                 </label>
                             </div>
                         </div>
+                        @endif
                         <div class="children submit-button">
                             <button type="button" class="ant-btn ant-btn-primary" onclick="buy_goods()">
-                                <span>帮我订购</span>
+                                <span>@if($is_daifa==2) 帮我订购 @elseif($is_daifa==1) 立即支付 @endif</span>
                             </button>
                         </div>
                         <div class="children">
@@ -902,38 +907,49 @@
             var $ = layui.$
                 , layer = layui.layer;
 
-            //判断有无点击确认协议
-            @if(!empty($check_content))
-                @if(!empty($check_content['confirm']['title'][0]))
-                    if($('input[name="confirm"]:checked').length==0){
-                        layer.msg('请同意确认协议');return false;
-                    }
-                @endif
-
-                @if(!empty($check_content['sure']['title'][0]))
-                    if($('input[name="sure"]:checked').length==0){
-                        layer.msg('请同意确认协议');return false;
-                    }
-                @endif
-
-                @if(!empty($check_content['knows']['title'][0]))
-                    if($('input[name="knows"]:checked').length==0){
-                        layer.msg('请同意确认协议');return false;
-                    }
+            @if($is_daifa==2)
+                //代发需要勾选协议
+                //判断有无点击确认协议
+                @if(!empty($check_content))
+                    @if(!empty($check_content['confirm']['title'][0]))
+                        if($('input[name="confirm"]:checked').length==0){
+                            layer.msg('请同意确认协议');return false;
+                        }
+                    @endif
+    
+                    @if(!empty($check_content['sure']['title'][0]))
+                        if($('input[name="sure"]:checked').length==0){
+                            layer.msg('请同意确认协议');return false;
+                        }
+                    @endif
+    
+                    @if(!empty($check_content['knows']['title'][0]))
+                        if($('input[name="knows"]:checked').length==0){
+                            layer.msg('请同意确认协议');return false;
+                        }
+                    @endif
                 @endif
             @endif
 
-            var addr_id = $('#selectAddr').val();
-            if(addr_id=='-1' || addr_id==''){
-                layer.msg('请选择收货地址');return false;
-            }
+            // var addr_id = $('#selectAddr').val();
+            // if(addr_id=='-1' || addr_id==''){
+            //     layer.msg('请选择收货地址');return false;
+            // }
 
             layer.load();
-            $.post('/apply_order',{'cart_id':"{{$cart_id}}",'_token':"{{csrf_token()}}",'addr_id':addr_id},function(res) {
+            $.post('/apply_order',{'cart_id':"{{$cart_id}}",'_token':"{{csrf_token()}}",'is_daifa':"{{$is_daifa}}"},function(res) {
                 layer.closeAll('loading');
                 layer.msg(res.msg,{time:2000}, function () {
                     if (res.code == 0) {
-                        window.location.replace("/cart.html?selected=1");
+                        if("{{$is_daifa}}"==2){
+                            //代发
+                            window.location.replace("/cart.html?selected=1");
+                        }
+                        else if("{{$is_daifa}}"==1){
+                            //不是代发
+                            window.location.replace("/cashier?orderid="+res.data.orderid);
+                        }
+                        
                     }
                 });
             },'json');

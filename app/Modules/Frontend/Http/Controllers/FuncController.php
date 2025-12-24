@@ -2099,7 +2099,7 @@ class FuncController extends Frontend
         }
         if ($request->isMethod('post')) {
             if (!empty(session('user'))) {
-//                print_r($data);die;
+                // print_r($data);die;
                 $user = Db::connection('shop_db')->table('website_user')->where(['custom_id' => session('user')['gogo_id']])->first();
                 
                 #收货联系名称
@@ -2132,7 +2132,7 @@ class FuncController extends Frontend
                     if(empty($postal_code)){
                         return Response()->json(['code'=>-1,'msg'=>'邮政编码不可为空']);
                     }
-                    $pre_address = trim($dat['pre_address']);
+                    $pre_address = trim($data['pre_address']);
                 }
     
                 #中国行政区域
@@ -2644,8 +2644,8 @@ class FuncController extends Frontend
             //         $area2 = $goods->domestic_logistics['area2'];
             //     }
             // }
-            
-            $list = Db::connection('shop_db')->table('centralize_user_address')->where(['country_id'=>$country_id])->get();
+            $user2 = Db::connection('shop_db')->table('website_user')->where(['custom_id' => $request->session()->get('user')['gogo_id']])->first();
+            $list = Db::connection('shop_db')->table('centralize_user_address')->where(['country_id'=>$country_id,'user_id'=>$user2->id])->get();
             $list = objtoarr($list);
             
             
@@ -2694,10 +2694,17 @@ class FuncController extends Frontend
             }
             elseif($type_id==2){
                 #海外收货
-                $line_id = intval($data['line_id']);
-                $line_info = Db::connection('shop_db')->table('centralize_lines')->where(['id'=>$line_id])->first();
-                $country_info = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$line_info->end_country])->select(['id','param2','param8'])->first();
-                $country_info = objtoarr($country_info);
+                $gather_method = intval($data['gather_method']);
+                if($gather_method==1){
+                    $line_id = intval($data['line_id']);
+                    $line_info = Db::connection('shop_db')->table('centralize_lines')->where(['id'=>$line_id])->first();
+                    $country_info = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$line_info->end_country])->select(['id','param2','param8'])->first();
+                    $country_info = objtoarr($country_info);    
+                }elseif($gather_method==2){
+                    $country_info = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>162])->select(['id','param2','param8'])->first();
+                    $country_info = objtoarr($country_info);  
+                }
+                
                 
                 return Response()->json(['code'=>0,'data'=>$country_info]);
             }
@@ -2754,6 +2761,7 @@ class FuncController extends Frontend
                 #商家商品
                 $gather_method = explode(',',$goods->gather_method);
                 $gather_lines = explode(',',$goods->gather_lines);
+                
                 $lines = [];
                 foreach($gather_lines as $k=>$v){
                     $line_info = Db::connection('shop_db')->table('centralize_lines')->where(['id'=>$v])->first();

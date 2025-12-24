@@ -92,7 +92,7 @@
         .postal_code{margin-right:2px;}
         .addr{width:100%;}
         .hide2{display: none;}
-        .address_div .layui-form-label{width:100px;}
+        .address_div .layui-form-label{width:100px;font-weight:600;}
 
         .goods-info,.fl,.goodsDetail{background:{{$website['content']}};}
         .clearfix .fl{display: none;}
@@ -632,7 +632,7 @@
                             }
                             
                             .no-address-item {
-                                padding: 20px 15px;
+                                padding-bottom: 10px !important;
                                 text-align: center;
                                 color: #000;
                             }
@@ -650,7 +650,7 @@
                             }
                             
                             .address-dropdown-footer {
-                                padding: 10px !important;
+                                padding: 10px 10px 0 10px !important;
                                 border-top: 1px solid #f5f5f5;
                                 text-align: center;
                             }
@@ -691,7 +691,9 @@
                                             <span class="label-title"></span>
                                             <select id="selectDeliveryMethod" class="chosen-select delivery-selects">
                                                 <option value="">请选择</option>
+                                                @if($goods['shop_id']>0)
                                                 <option value="1">中国收货</option>
+                                                @endif
                                                 <option value="2" @if($goods['service_type']==2) disabled @endif>海外收货</option>
                                             </select>
                                         </div>
@@ -1603,6 +1605,7 @@
                                                         //清空自主集运的内容
                                                         $('.third_step').html(html);
                                                         $('.line-selects').chosen();
+                                                        $('#selectLine_chosen').css('width','300px');
                                                         $('.third_step').show();
                                                         //清空平台集运>选择线路>选择收货地址内容
                                                         $('.forth_step').html('');
@@ -1803,10 +1806,10 @@
                                             '                       <span>暂无收货地址，请先添加地址</span>\n'+
                                             '                   </div>\n'+
                                             '               </div>\n'+
-                                            '           </div>\n'+
-                                            '           <div class="address-dropdown-footer">\n'+
-                                            '               <div class="add-address-btn" onclick="add_addr()">\n'+
-                                            '                   <i class="iconfont">+</i>\n添加新的收货地址'+
+                                            '               <div class="address-dropdown-footer">\n'+
+                                            '                   <div class="add-address-btn" onclick="add_addr()">\n'+
+                                            '                       <i class="iconfont">+</i>\n添加新的收货地址'+
+                                            '                   </div>\n'+
                                             '               </div>\n'+
                                             '           </div>\n'+
                                             '       </div>\n'+
@@ -1919,14 +1922,13 @@
                         var $ = layui.$
                             , form = layui.form
                             , layer = layui.layer;
-                        layer.load();
+                        
                         if("{{session('user.user_id')}}" ==''){
-                            // $.loading.start();
-                            // return false;
-                            // $.login.show();
                             show_login();
                             return false;
                         }
+                        
+                        layer.load();
                         if("{{$goods['have_specs']}}"==1){
                             //有规格
                             let attr = $('.SZY-GOODS-SPEC-ITEMS').find('.attr');
@@ -3374,52 +3376,6 @@
                             return false;
                         });
 
-                        // 立即购买（废弃）
-                        $(".buy-goods").click(function() {
-                            var act_type = "11";
-                            var purchase = "15";
-                            var pre_sale = "2";
-                            var virtual = "0";
-                            var is_lib_goods = "";
-                            if (is_lib_goods == true) {
-                                return;
-                            }
-
-                            if ($(this).hasClass("disabled")) {
-                                return;
-                            }
-                            var sku_id = getSkuId();
-                            var number = $(".amount-input").val();
-                            var data = {};
-                            if (act_type == purchase || act_type == pre_sale) {
-                                data.act_type = act_type;
-                            }
-                            if (virtual > 0) {
-                                data.virtual = virtual;
-                            }
-                            $.cart.quickBuy(sku_id, number, data);
-
-                        });
-
-                        // 立即兑换
-                        $(".exchange-goods").click(function() {
-
-                            if ($(this).hasClass("disabled")) {
-                                var goods_number = "";
-                                if (goods_number == 0) {
-                                    $.msg('库存不足');
-                                } else {
-                                    $.msg('积分不足');
-                                }
-                                return;
-                            }
-                            var sku_id = getSkuId();
-                            var number = $(".amount-input").val();
-                            var data = {};
-                            data.exchange = true;
-                            $.cart.quickBuy(sku_id, number, data);
-                        });
-
                         //立即购买
                         $('.buy-goods-soon').click(function(){
                             if("{{session('user.user_id')}}" != ''){
@@ -4512,7 +4468,48 @@
 
             //立即加购
             form.on('submit(glist-element3)',function(data){
-                // layer.load();
+                layer.closeAll('loading');
+                
+                //判断有无选择收货方式
+                var selectDeliveryMethod = $('#selectDeliveryMethod').val();
+                var address_id = selectGatherMethod = selectLine = '';
+                if(selectDeliveryMethod=='' || selectDeliveryMethod==null || selectDeliveryMethod==undefined){
+                    layer.msg('请选择收货方式');return false;
+                }
+                if(selectDeliveryMethod==1){
+                    //中国收货
+                    address_id = $('#address_id').val();
+                    if(address_id=='' || address_id==null || address_id==undefined){
+                        layer.msg('请选择收货地址');return false;
+                    }
+                }else if(selectDeliveryMethod==2){
+                    //海外收货
+                    selectGatherMethod = $('#selectGatherMethod').val();
+                    if(selectGatherMethod=='' || selectGatherMethod==null || selectGatherMethod==undefined){
+                        layer.msg('请选择集运方式');return false;
+                    }
+                    
+                    if(selectGatherMethod==1){
+                        //平台集运
+                        selectLine = $('#selectLine').val();
+                        if(selectLine=='' || selectLine==null || selectLine==undefined){
+                            layer.msg('请选择线路');return false;
+                        }
+                        
+                        address_id = $('#address_id').val();
+                        if(address_id=='' || address_id==null || address_id==undefined){
+                            layer.msg('请选择收货地址');return false;
+                        }
+                    }else if(selectGatherMethod==2){
+                        //自主集运
+                        address_id = $('#address_id').val();
+                        if(address_id=='' || address_id==null || address_id==undefined){
+                            layer.msg('请选择收货地址');return false;
+                        }
+                    }
+                }
+                
+                layer.load();
                 //整理数组
                 var buy_attr = []; // 存放结果的数组
                 //服务数组
@@ -4560,7 +4557,7 @@
                 $.ajax({
                     url: "/join_cart",
                     method: 'post',
-                    data: {'data':data,'_token':"{{csrf_token()}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}"},
+                    data: {'data':data,'_token':"{{csrf_token()}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}",'selectDeliveryMethod':selectDeliveryMethod,'address_id':address_id,'selectGatherMethod':selectGatherMethod,'selectLine':selectLine},
                     dataType: 'JSON',
                     success: function (res) {
                         layer.closeAll('loading');
@@ -5331,8 +5328,9 @@
                 }
                 let delivery_method = $('#selectDeliveryMethod').val();
                 let line_id = $('#selectLine').val();
+                let gather_method = $('#selectGatherMethod').val();
                 //获取当前商品的配置信息
-                $.getJSON('/get_address',{'method':2,'type_id':delivery_method,'line_id':line_id,'_token':"{{csrf_token()}}"},function(res){
+                $.getJSON('/get_address',{'method':2,'type_id':delivery_method,'gather_method':gather_method,'line_id':line_id,'_token':"{{csrf_token()}}"},function(res){
                     if(res.code==0){
                         if(delivery_method==1){
                             //中国收货

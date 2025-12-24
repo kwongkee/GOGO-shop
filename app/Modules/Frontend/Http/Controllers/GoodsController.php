@@ -2204,6 +2204,35 @@ class GoodsController extends Frontend
     {
         $data = $request->except(['_token']);
         
+        #判断收货方式内容====start
+        if(!isset($data['selectDeliveryMethod'])){
+            return Response()->json(['code'=>-1,'msg'=>'请选择收货方式']);
+        }
+        $delivery_method = intval($data['selectDeliveryMethod']);
+        
+        $gather_method = $line_id = 0;
+        if($delivery_method==2){
+            #海外收货
+            if(!isset($data['selectGatherMethod'])){
+                return Response()->json(['code'=>-1,'msg'=>'请选择集运方式']);
+            }
+            $gather_method = intval($data['selectGatherMethod']);
+            
+            if($gather_method==1){
+                #平台集运
+                if(!isset($data['selectLine'])){
+                    return Response()->json(['code'=>-1,'msg'=>'请选择线路']);
+                }
+                $line_id = intval($data['selectLine']);
+            }
+        }
+        
+        if(!isset($data['address_id'])){
+            return Response()->json(['code'=>-1,'msg'=>'请选择收货地址']);
+        }
+        $address_id = intval($data['address_id']);
+        #判断收货方式内容====end
+        
         //{
         // 	"data[buy_attr][0][attr_id]": "58_983564",
         // 	"data[buy_attr][0][spec_id]": "19_21",
@@ -2359,7 +2388,7 @@ class GoodsController extends Frontend
         $ordersn = get_ordersn(1);
 
         #9、判断当前“已选购，未订购”的购物车有无此商品
-        $ishave = Db::table('cart')->where(['user_id'=>$user->id,'goods_id'=>$goods['goods_id'],'is_show'=>0,'is_buy'=>0])->first();
+        $ishave = Db::table('cart')->where(['user_id'=>$user->id,'goods_id'=>$goods['goods_id'],'is_show'=>0,'is_buy'=>0,'delivery_method'=>$delivery_method,'gather_method'=>$gather_method,'line_id'=>$line_id,'address_id'=>$address_id])->first();
         $ishave = objtoarr($ishave);
 
         if (empty($ishave)) {
@@ -2370,6 +2399,10 @@ class GoodsController extends Frontend
                 'ordersn'=>$ordersn,
                 'shop_id'=>$shop_id,
                 'selected'=>1,
+                'delivery_method'=>$delivery_method,
+                'gather_method'=>$gather_method,
+                'line_id'=>$line_id,
+                'address_id'=>$address_id,
 //                #减免优惠
 //                'reduction_money'=>$content['reduction_money'],
 //                'prefe_reduction'=>json_encode($content['prefe_reduction'],true),
@@ -2559,6 +2592,36 @@ class GoodsController extends Frontend
     public function loglastbuy(Request $request)
     {
         $data = $request->except(['_token']);
+        
+        #判断收货方式内容====start
+        if(!isset($data['selectDeliveryMethod'])){
+            return Response()->json(['code'=>-1,'msg'=>'请选择收货方式']);
+        }
+        $delivery_method = intval($data['selectDeliveryMethod']);
+        
+        $gather_method = $line_id = 0;
+        if($delivery_method==2){
+            #海外收货
+            if(!isset($data['selectGatherMethod'])){
+                return Response()->json(['code'=>-1,'msg'=>'请选择集运方式']);
+            }
+            $gather_method = intval($data['selectGatherMethod']);
+            
+            if($gather_method==1){
+                #平台集运
+                if(!isset($data['selectLine'])){
+                    return Response()->json(['code'=>-1,'msg'=>'请选择线路']);
+                }
+                $line_id = intval($data['selectLine']);
+            }
+        }
+        
+        if(!isset($data['address_id'])){
+            return Response()->json(['code'=>-1,'msg'=>'请选择收货地址']);
+        }
+        $address_id = intval($data['address_id']);
+        #判断收货方式内容====end
+        
         $spec_vids = rtrim($data['spec_vids'], '|');
         $ordersn = get_ordersn(1);
 
@@ -2598,6 +2661,10 @@ class GoodsController extends Frontend
             'shop_id'=>$shop_id,
             'selected'=>1,
             'is_show'=>1,
+            'delivery_method'=>$delivery_method,
+            'gather_method'=>$gather_method,
+            'line_id'=>$line_id,
+            'address_id'=>$address_id,
             'created_at'=>time()
         ]);
 
@@ -2710,7 +2777,7 @@ class GoodsController extends Frontend
 //        $data = Db::table('last_sure_buy')->where(['user_id'=>$website_user->id])->first();
 //        $data = objtoarr($data);
 //        $data['content'] = json_decode($data['content'],true);
-
+        $is_daifa = 2;#1不是代发，2是代发
         $data = Db::table('cart')->whereRaw('cart_id in ('.$cart_id.') and user_id='.$website_user->id)->get();
         $data = objtoarr($data);
 
@@ -2770,6 +2837,14 @@ class GoodsController extends Frontend
                 $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
                 $goods = Db::table('goods')->where(['goods_id'=>$goods_sku['goods_id']])->first();
                 $goods = objtoarr($goods);
+                
+                #判断该商品是否代发
+                if (!empty($goods['shop_id'])) {
+                    $goods_merchant = Db::table('goods_merchant')->where(['shelf_id'=>$goods['goods_id']])->select('wid')->first();
+                    $warehouse_merchant = Db::connection('shop_db')->table('centralize_warehouse_merchant')->where(['id'=>$goods_merchant->wid])->select('warehouse_id')->first();
+                    $is_daifa = Db::connection('shop_db')->table('centralize_warehouse_list')->where(['id'=>$warehouse_merchant->warehouse_id])->select('warehouse_form')->first()->warehouse_form;
+                }
+                
                 if (!empty($goods['shop_id'])) {
                     #店铺名称
                     $data[$k]['shop_name'] = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods['shop_id']])->first()->company;
@@ -3258,63 +3333,69 @@ class GoodsController extends Frontend
         $website['fontcolor'] = $page_info['content']['fontcolor'];
         $website['agentLink'] = $page_info['content']['agent_link'];
 
-        #买家地址
-        $addr = Db::connection('shop_db')->table('centralize_user_address')->where(['user_id'=>$website_user->id])->get();
-        $addr = objtoarr($addr);
-        foreach($addr as $k=>$v){
-            #国家名称
-            
-            $addr[$k]['country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$v['country_id']])->select('param2')->first()->param2;
-            
-            if($v['country_id']==162){
-                #中国行政区域
-                if($v['have_postal_code']==1){
-                    #有邮政编码
+        if(1>2){
+            #买家地址
+            $addr = Db::connection('shop_db')->table('centralize_user_address')->where(['user_id'=>$website_user->id])->get();
+            $addr = objtoarr($addr);
+            foreach($addr as $k=>$v){
+                #国家名称
+                
+                $addr[$k]['country_name'] = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$v['country_id']])->select('param2')->first()->param2;
+                
+                if($v['country_id']==162){
+                    #中国行政区域
+                    if($v['have_postal_code']==1){
+                        #有邮政编码
+                        $addr[$k]['detail_addr'] = $v['pre_address'].$v['address1'].'('.$v['postal'].')';
+                    }
+                    elseif($v['have_postal_code']==2){
+                        #无邮政编码
+                        $province_name = $city_name = $district_name = $town_name = $village_name = '';
+                        
+                        if(!empty($v['province'])){
+                            #省份
+                            $province_name = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['province']])->select('name')->first()->name;    
+                        }
+                        
+                        if(!empty($v['city'])){
+                            #城市
+                            $city_name = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['city']])->select('name')->first()->name;
+                        }
+                        
+                        if(!empty($v['area'])){
+                            #区域
+                            $district_name = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['area']])->select('name')->first()->name;
+                        }
+                        
+                        if(!empty($v['area2'])){
+                            #镇街
+                            $town_name = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['area2']])->select('name')->first()->name;
+                        }
+                        
+                        if(!empty($v['area3'])){
+                            #居委
+                            $village_name = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['area3']])->select('name')->first()->name;
+                        }
+                        
+                        $addr[$k]['detail_addr'] = $province_name . $city_name . $district_name . $town_name . $village_name . $v['address1'];
+                    }
+                }
+                else{
+                    #海外行政区域
                     $addr[$k]['detail_addr'] = $v['pre_address'].$v['address1'].'('.$v['postal'].')';
                 }
-                elseif($v['have_postal_code']==2){
-                    #无邮政编码
-                    $province_name = $city_name = $district_name = $town_name = $village_name = '';
-                    
-                    if(!empty($v['province'])){
-                        #省份
-                        $province_name = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['province']])->select('name')->first()->name;    
-                    }
-                    
-                    if(!empty($v['city'])){
-                        #城市
-                        $city_name = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['city']])->select('name')->first()->name;
-                    }
-                    
-                    if(!empty($v['area'])){
-                        #区域
-                        $district_name = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['area']])->select('name')->first()->name;
-                    }
-                    
-                    if(!empty($v['area2'])){
-                        #镇街
-                        $town_name = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['area2']])->select('name')->first()->name;
-                    }
-                    
-                    if(!empty($v['area3'])){
-                        #居委
-                        $village_name = Db::connection('shop_db')->table('centralize_country_areas')->where(['id'=>$v['area3']])->select('name')->first()->name;
-                    }
-                    
-                    $addr[$k]['detail_addr'] = $province_name . $city_name . $district_name . $town_name . $village_name . $v['address1'];
-                }
-            }
-            else{
-                #海外行政区域
-                $addr[$k]['detail_addr'] = $v['pre_address'].$v['address1'].'('.$v['postal'].')';
             }
         }
 
         $is_inner=1;#内页打开首页头部，不显示消息轮播框
-
-        #协议确认与知悉、了解
-        $check_content = $this->get_rule(['function_id'=>48]);
-        return view('goods.order_confirm', compact('data', 'origin_page', 'website', 'final', 'cart_id', 'is_inner', 'check_content','addr','website_user'));
+        $check_content = [];
+        if($is_daifa==2){
+            #代发需要勾选协议
+            #协议确认与知悉、了解
+            $check_content = $this->get_rule(['function_id'=>48]);
+        }
+        
+        return view('goods.order_confirm', compact('data', 'origin_page', 'website', 'final', 'cart_id', 'is_inner', 'check_content','website_user','is_daifa'));
     }
 
     #集运系统各功能确认同意内容列表
@@ -4242,12 +4323,14 @@ class GoodsController extends Frontend
         $data = $request->except(['_token']);
         $cart_id = explode(',', rtrim($data['cart_id'], ','));
         $addr_id = isset($data['addr_id'])?intval($data['addr_id']):0;
+        $is_daifa = isset($data['is_daifa'])?intval($data['is_daifa']):2;#1正常仓库发货，2代发
+        $company_id = 0;#订单归属商户id
         
         $website_user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user')['gogo_id']])->first();
 
         #正式修改购物清单里含商户商品的已判断符合条件的费用信息
         $shop_goods_money = $this->update_cart_fees_info(['cart_id'=>rtrim($data['cart_id'], ','),'user_id'=>$website_user->id]);
-
+        
         DB::beginTransaction();
         try {
             $user = get_userid();#官网用户id
@@ -4257,18 +4340,29 @@ class GoodsController extends Frontend
             $true_price = $shop_goods_money;
 
             #订购单信息
-            $content = ['goods_info' => [], 'warehouse_id' => 16];
+            $content = ['goods_info' => [], 'warehouse_id' => 16,'delivery_method'=>0,'gather_method'=>0,'line_id'=>0,'address_id'=>0];
             $cart_info = [];
             foreach ($cart_id as $k => $v) {
                 $cart_sku = Db::table('cart_sku')->where(['cart_id' => $v,'selected'=>1])->get();
                 $cart_sku = objtoarr($cart_sku);
-
+                
+                $cart = Db::table('cart')->where(['cart_id' => $v])->first();
+                #收货方式
+                $content['delivery_method'] = $cart->delivery_method;
+                $content['gather_method'] = $cart->gather_method;
+                $content['line_id'] = $cart->line_id;
+                $addr_id = $content['address_id'] = $cart->address_id;
+                
                 foreach ($cart_sku as $k2=>$v2) {
                     $true_price = $true_price + $v2['price'];
 
                     #组装订购清单商品数据
                     $cart = Db::table('cart')->where(['cart_id' => $v])->first();
-
+                    
+                    #商品归属商户id
+                    $ginfo = Db::table('goods')->where(['goods_id'=>$cart->goods_id])->select('shop_id')->first();
+                    $company_id = $ginfo->shop_id;
+                    
                     if (empty($content['goods_info'])) {
                         $content['goods_info'] = array_merge($content['goods_info'], [[
                             'good_id' => $cart->goods_id,
@@ -4392,29 +4486,42 @@ class GoodsController extends Frontend
                 $true_price = $true_price + $services_money;
             }
 
+            $status = -2;#代发：待确认有无货
+            if($is_daifa==1){
+                #不是代发，系统直接发货
+                $status = 0;
+            }
             $orderid = Db::connection('shop_db')->table('website_order_list')->insertGetId([
                 'user_id' => $user->id,
                 'ordersn' => $ordersn,
+                'company_id' => $company_id,#订单归属商户（商品由谁创建）
                 'order_type' => 1,
                 'pay_method' => 1,
                 'true_money' => $true_price,
                 'content' => json_encode($content, true),
+                'is_daifa' => $is_daifa,
                 'address_id' => $addr_id,
-                'status' => -2,#待确认有无货
+                'status' => $status,#待确认有无货
                 'createtime' => time(),
             ]);
 
-            if ($orderid > 0) {
-                shuntWechat([
-                    'first' => '订购清单[' . $ordersn . ']',
-                    'keyword1' => '订购清单[' . $ordersn . ']',
-                    'keyword2' => '申请订购',
-                    'remark' => '查看详情',
-                    'url' => 'https://www.gogo198.net/?s=shop/audit',
-                    'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
-                ]);
-                DB::commit();
-                return Response()->json(['code'=>0,'msg'=>'申请订购成功，请等待消息','data'=>['ordersn'=>$ordersn]]);
+            if($is_daifa==1){
+                #不是代发
+                return Response()->json(['code'=>0,'msg'=>'正在跳转收银台，请稍等...','data'=>['orderid'=>$orderid]]);
+            }elseif($is_daifa==2){
+                #是代发
+                if ($orderid > 0) {
+                    shuntWechat([
+                        'first' => '订购清单[' . $ordersn . ']',
+                        'keyword1' => '订购清单[' . $ordersn . ']',
+                        'keyword2' => '申请订购',
+                        'remark' => '查看详情',
+                        'url' => 'https://www.gogo198.net/?s=shop/audit',
+                        'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
+                    ]);
+                    DB::commit();
+                    return Response()->json(['code'=>0,'msg'=>'申请订购成功，请等待消息','data'=>['ordersn'=>$ordersn]]);
+                }
             }
         } catch (\Exception $e) {
             DB::rollBack();
@@ -4683,7 +4790,7 @@ class GoodsController extends Frontend
         $order = Db::connection('shop_db')->table('website_order_list')->where(['id'=>$orderid])->first();
         $order = objtoarr($order);
         $order['content'] = json_decode($order['content'], true);
-//        dd($order['content']);
+        // dd($order['content']);
         #订单币种
         $order['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$order['currency']])->first()->currency_symbol_standard;
 
@@ -4701,9 +4808,20 @@ class GoodsController extends Frontend
             }
         }
 
-        #国家
-        $country = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid'=>5])->get();
-        $country = objtoarr($country);
+        if($order['content']['delivery_method']==1 || $order['content']['gather_method']==2){
+            #中国收货&海外收货-自主集运，只能中国支付
+            
+            #国家
+            $country = Db::connection('shop_db')->table('centralize_diycountry_content')->whereRaw('pid=5 and id=162')->get();
+            $country = objtoarr($country);
+        }
+        elseif($order['content']['delivery_method']==2 && $order['content']['gather_method']==1){
+            #海外收货-平台集运，只能海外支付
+            
+            #国家
+            $country = Db::connection('shop_db')->table('centralize_diycountry_content')->whereRaw('pid=5 and id<>162')->get();
+            $country = objtoarr($country);
+        }
         
         $is_inner=1;#内页打开首页头部，不显示消息轮播框
 

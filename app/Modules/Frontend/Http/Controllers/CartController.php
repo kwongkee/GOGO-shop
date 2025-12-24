@@ -65,7 +65,7 @@ class CartController extends Frontend
         }
 
         $user = session('user');
-
+        
         $cart_num = 0;#已选购数量
         $cart_delnum = 0;#购物车删除数量
         $cart_buynum = 0;#已订购数量
@@ -78,49 +78,51 @@ class CartController extends Frontend
         if (!empty($user)) {
             $user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>$user['gogo_id']])->first();
             #选购清单=================================================
-            #收货地址--start
-            $address = Db::connection('shop_db')->table('centralize_user_address')->where(['user_id'=>$user->id,'is_default'=>1])->first();
-            $address = objtoarr($address);
-            $address_id = $address['id'];
-            if (!empty($address)) {
-                $default_address = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$address['country_id']])->first()->param2;
-
-                if (!empty($address['province'])) {
-                    $province = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$address['province']])->first()->code_name;
-                    $default_address .= ' '.$province;
-
-                    if (!empty($address['city'])) {
-                        $city = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$address['city']])->first()->code_name;
-                        $default_address .= ' '.$city;
+            if(1>2){
+                #收货地址--start
+                $address = Db::connection('shop_db')->table('centralize_user_address')->where(['user_id'=>$user->id,'is_default'=>1])->first();
+                $address = objtoarr($address);
+                $address_id = $address['id'];
+                if (!empty($address)) {
+                    $default_address = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['id'=>$address['country_id']])->first()->param2;
+    
+                    if (!empty($address['province'])) {
+                        $province = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$address['province']])->first()->code_name;
+                        $default_address .= ' '.$province;
+    
+                        if (!empty($address['city'])) {
+                            $city = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$address['city']])->first()->code_name;
+                            $default_address .= ' '.$city;
+                        }
+    
+                        if (!empty($address['area'])) {
+                            $area = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$address['area']])->first()->code_name;
+                            $default_address .= ' '.$area;
+                        }
+    
+                        if (!empty($address['area2'])) {
+                            $area2 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id' => $address['area2']])->first()->code_name;
+                            $default_address .= ' ' . $area2;
+                        }
+    
+    
+                        if (!empty($address['area3'])) {
+                            $area3 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id' => $address['area3']])->first()->code_name;
+                            $default_address .= ' ' . $area3;
+                        }
+    
+    
+                        if (!empty($address['area4'])) {
+                            $area4 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id' => $address['area4']])->first()->code_name;
+                            $default_address .= ' ' . $area4;
+                        }
                     }
-
-                    if (!empty($address['area'])) {
-                        $area = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id'=>$address['area']])->first()->code_name;
-                        $default_address .= ' '.$area;
-                    }
-
-                    if (!empty($address['area2'])) {
-                        $area2 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id' => $address['area2']])->first()->code_name;
-                        $default_address .= ' ' . $area2;
-                    }
-
-
-                    if (!empty($address['area3'])) {
-                        $area3 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id' => $address['area3']])->first()->code_name;
-                        $default_address .= ' ' . $area3;
-                    }
-
-
-                    if (!empty($address['area4'])) {
-                        $area4 = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['id' => $address['area4']])->first()->code_name;
-                        $default_address .= ' ' . $area4;
-                    }
+    
+                    $default_address .= $address['address1'];
                 }
-
-                $default_address .= $address['address1'];
+                #收货地址--end
             }
-            #收货地址--end
-
+            
             //获取选购清单数据
             $shop_cart_list = Db::table('cart')->where(['user_id'=>$user->id,'is_buy'=>0,'is_show'=>0])->orderBy('cart_id', 'desc')->get();
             $shop_cart_list = objtoarr($shop_cart_list);
@@ -638,13 +640,30 @@ class CartController extends Frontend
         #查询是否有商家店铺
         #1、商家店铺只能单独下单；
         #2、爬虫商品可以一齐下单，但不能与商家店铺下单；
+        #3、要判断“收货方式”、“集运方式”、“线路id”、“收货地址id”是否相同，才可以一起下单
         $can_buy = 0;#第一个购物车决定后面的类型：0不能购买，1淘中国商品，2淘中国商家商品
         $shop_id = 0;#购买的商铺id
+        
+        $delivery_method = 0;#收货方式，1中国收货，2海外收货
+        $gather_method = 0;#集运方式，1平台集运，2自主集运
+        $line_id = 0;#平台集运的线路ID
+        $address_id = 0;#中国收货和自主集运的国内收货地址信息
+        
         foreach ($buy_skuid as $k=>$v) {
             #购物车sku信息
             $cart_sku = Db::table('cart_sku')->where(['id'=>$v])->first();
             #购物车信息
             $cart = Db::table('cart')->where(['cart_id'=>$cart_sku->cart_id])->first();
+            if($k==0){
+                $delivery_method = $cart->delivery_method;
+                $gather_method = $cart->gather_method;
+                $line_id = $cart->line_id;
+                $address_id = $cart->address_id;
+            }else{
+                if($delivery_method!=$cart->delivery_method || $gather_method!=$cart->gather_method || $line_id!=$cart->line_id || $address_id!=$cart->address_id){
+                    return Response()->json(['code'=>-1,'msg'=>'请选择相同的“收货方式&集货方式&相同线路&相同收货地址”的购物车进行勾选下单']);
+                }
+            }
             #购物车店铺信息
             $shop = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$cart->shop_id])->first();
             $shop = objtoarr($shop);
