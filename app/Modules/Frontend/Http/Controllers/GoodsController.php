@@ -676,7 +676,7 @@ class GoodsController extends Frontend
             }
     
             $shopId = $goods_info->shop_id;
-    
+            
             // 店铺信息
             $shop_info = [];
             if ($shopId > 0) {
@@ -800,8 +800,9 @@ class GoodsController extends Frontend
                 'start_price'    => '',
             ];
             $current_shop = $shop_info['shop'] ?? $default_shop;
-    
+            
             $sku = $this->goodsSku->getGoodsSkuInfo($sku_id, $goods_info, $current_shop);
+            
             $sku['start_num'] = $sku['sku_prices']['start_num'][0];
             
             $goods['other_shop'] = json_decode($goods['other_shop'], true) ?: [];
@@ -813,9 +814,17 @@ class GoodsController extends Frontend
     
             $sku['sku_images'] = [];
             foreach ($sku_images as $path) {
-                $sku['sku_images'][] = [$path, $path, $path]; // 原逻辑 3 个相同
+                $imgLink = '';
+                // if($shopId>0){
+                //     $imgLink = 'https://dtc.gogo198.net';
+                // }
+                $sku['sku_images'][] = [$imgLink.$path, $imgLink.$path, $imgLink.$path]; // 原逻辑 3 个相同
             }
-    
+            
+            // if($shopId>0){
+            //     $goods['goods_image'] = 'https://dtc.gogo198.net'.$goods['goods_image'];
+            // }
+            
             $is_weixin = is_weixin();
             
             $shop_goods_count = $this->shop->getShopGoodsCount($shopId);
@@ -903,7 +912,7 @@ class GoodsController extends Frontend
                 ->whereIn('code_value', array_unique($unit_codes))
                 ->pluck('code_name', 'code_value')
                 ->toArray();
-    
+            
             $currency_map = DB::connection('shop_db')->table('centralize_currency')
                 ->whereIn('id', array_unique($currency_ids))
                 ->pluck('currency_symbol_standard', 'id')
@@ -922,6 +931,9 @@ class GoodsController extends Frontend
                 $sku_info[] = (array)$s;
             }
             
+            #商品单位
+            $goods['unit_name'] = $sku_info[0]['sku_prices']['unit'][0];
+            #商品币种
             $goods['currency'] = $currency_map[$sku['sku_prices']['currency'][0] ?? 5] ?? 'CNY';
     
             if ($shopId == 0) {
@@ -1344,6 +1356,25 @@ class GoodsController extends Frontend
             $this->goodsHistory->addHistoryLog(is_login(), $cached['app_prefix_data']['goods']);
         }
         Goods::where('goods_id', $goods_id)->increment('click_count', 1);
+        
+        #商品库存获取表=2026-01-13
+        // dd($cached);
+        if($cached['compact_data']['goods']['shop_id']>0){
+            $post = [
+                'goods_id' => $cached['compact_data']['goods']['goods_id'],
+                'sku_id'   => $cached['compact_data']['sku']['sku_id'],
+                'shop_id'  => $cached['compact_data']['goods']['shop_id'],
+                'wid'      => $cached['compact_data']['goods']['wid'],
+                'goods_type'=>$cached['compact_data']['goods']['goods_type']
+            ];
+            // dd($post);
+            $skunum = httpRequest('https://shop.gogo198.cn/collect_website/public/?s=api/func/get_goods_num', $post);
+            
+            #商品&规格可售库存
+            $cached['compact_data']['sku']['goods_number'] = $skunum;
+            $cached['compact_data']['sku']['sku_prices']['goods_number'] = $skunum;
+        }
+        // dd($cached['compact_data']['sku']);
         
         #收货地址-----START
         $address = [];
@@ -2780,7 +2811,7 @@ class GoodsController extends Frontend
         $is_daifa = 2;#1不是代发，2是代发
         $data = Db::table('cart')->whereRaw('cart_id in ('.$cart_id.') and user_id='.$website_user->id)->get();
         $data = objtoarr($data);
-
+        
         $final['final_price'] = 0;
         $final['final_currency']='';
 
@@ -2822,7 +2853,7 @@ class GoodsController extends Frontend
             #这层相当于在店铺
             $data[$k]['sku_info'] = Db::table('cart_sku')->where(['cart_id'=>$v['cart_id'],'selected'=>1,'is_buy'=>0])->get();
             $data[$k]['sku_info'] = objtoarr($data[$k]['sku_info']);
-
+            
             #当前购物车的商品价格
             $goods_price = 0;
             #附加费用
@@ -2841,8 +2872,8 @@ class GoodsController extends Frontend
                 #判断该商品是否代发
                 if (!empty($goods['shop_id'])) {
                     $goods_merchant = Db::table('goods_merchant')->where(['shelf_id'=>$goods['goods_id']])->select('wid')->first();
-                    $warehouse_merchant = Db::connection('shop_db')->table('centralize_warehouse_merchant')->where(['id'=>$goods_merchant->wid])->select('warehouse_id')->first();
-                    $is_daifa = Db::connection('shop_db')->table('centralize_warehouse_list')->where(['id'=>$warehouse_merchant->warehouse_id])->select('warehouse_form')->first()->warehouse_form;
+                    // $warehouse_merchant = Db::connection('shop_db')->table('centralize_warehouse_merchant')->where(['id'=>$goods_merchant->wid])->select('warehouse_id')->first();
+                    $is_daifa = Db::connection('shop_db')->table('centralize_warehouse_list')->where(['id'=>$goods_merchant->wid])->select('warehouse_form')->first()->warehouse_form;
                 }
                 
                 if (!empty($goods['shop_id'])) {
@@ -2860,6 +2891,7 @@ class GoodsController extends Frontend
                 } else {
                     $data[$k]['sku_info'][$k2]['goods_image'] = $goods['goods_image'];
                 }
+                
                 #商品名称
                 $data[$k]['goods_name'] = $goods['goods_name'];
                 #商品id
@@ -2883,6 +2915,7 @@ class GoodsController extends Frontend
                     #有规格商品
                     $data[$k]['sku_info'][$k2]['soption_name'] = $goods_sku['spec_names'];
                 }
+                
                 #商品（规格）币种&数量&价格（不用重复计算价格了，已经计算了）
                 $data[$k]['sku_info'][$k2]['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$v2['currency']])->first()->currency_symbol_standard;
                 $data[$k]['sku_info'][$k2]['price'] = $v2['price'];
@@ -3321,8 +3354,23 @@ class GoodsController extends Frontend
             $final['final_price'] += $goods_price+$data[$k]['services']['additional_money']+$data[$k]['services']['increment_money']+$data[$k]['services']['potential_money'];
             $data[$k]['services']['additional_money'] = number_format($data[$k]['services']['additional_money'], 2);
             $data[$k]['services']['potential_money'] = number_format($data[$k]['services']['potential_money'], 2);
+            
+            #获取当前商品所在的仓库下的终端下的可选快递企业和可选的快递产品（然后计算产品体积与重量收取的运费）
+            $g = Db::table('goods')->where(['goods_id'=>$v['goods_id']])->select(['express_info','wid'])->first();
+            $g->express_info = json_decode($g->express_info,true);
+            $express_list = [];
+            foreach($g->express_info['express_info'] as $k2=>$v2){
+                $express_info = Db::connection('shop_db')->table('centralize_warehouse_express')->where(['id'=>$v2['express_id']])->first();
+                $express_name = Db::connection('shop_db')->table('centralize_express_product')->where(['id'=>$express_info->express_id])->select('name')->first()->name;
+                
+                #快递产品运费
+                $freight_id = Db::connection('shop_db')->table('centralize_freight_config')->where(['warehouse_id'=>$g->wid,'printer_id'=>$g->express_info['printer_id'],'express_id'=>$express_info->id,'express_type'=>$express_info->express_type])->select('id')->first()->id;
+                array_push($express_list,['id'=>$express_info->id,'express_name'=>$express_name,'express_typename'=>$express_info->express_type,'warehouse_id'=>$g->wid,'terminal_id'=>$g->express_info['printer_id'],'freight_id'=>$freight_id]);
+            }
+            // dd($express_list);
+            $data[$k]['express_list'] = $express_list;
         }
-
+        
         #所有购物清单的最终价格
         $final['final_price'] = number_format($final['final_price'], 2);
 
@@ -7128,6 +7176,7 @@ class GoodsController extends Frontend
         $goods_id = $this->goods->getGoodsId($sku_id);
         $goods_info = $this->goods->getById($goods_id)->toArray();
         $shop_info = [];
+        
         if ($goods_info['shop_id']>0) {
             // 店铺信息
 //            $shop_info = Shop::where('shop_id',$goods_info['shop_id'])->first()->toArray();
@@ -7267,7 +7316,23 @@ class GoodsController extends Frontend
             'user_discount' => "0",
             'low_price' => $low_price
         ];
-//        dd($data,$sku_id);
+        
+        //获取商品可售库存
+        if($data['shop_id']>0){
+            $post = [
+                'goods_id' => $data['goods_id'],
+                'sku_id'   => $data['sku_id'],
+                'shop_id'  => $data['shop_id'],
+                'wid'      => $goods_info['wid'],
+                'goods_type'=>$goods_info['goods_type']
+            ];
+            
+            $skunum = httpRequest('https://shop.gogo198.cn/collect_website/public/?s=api/func/get_goods_num', $post);
+            
+            #商品&规格可售库存
+            $data['sku_prices']['goods_number'] = $skunum;
+            $data['goods_number'] = $skunum;
+        }
 
         return result(0, $data);
     }

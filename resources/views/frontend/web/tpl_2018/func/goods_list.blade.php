@@ -528,7 +528,11 @@
                                 @foreach($list as $k=>$v)
                                 <div class="goods_box" onclick="view_detail({{$v['goods_id']}})" title="{{$v['goods_name']}}">
                                     <div class="goods_image">
-                                        <img src="{{$v['goods_image']}}" class="img">
+                                        @if($v['shop_id']>0)
+                                            <img src="https://dtc.gogo198.net{{$v['goods_image']}}" class="img">
+                                        @else
+                                            <img src="{{$v['goods_image']}}" class="img">
+                                        @endif
                                     </div>
                                     <div class="goods_info">
                                         <div class="gcon">
@@ -609,9 +613,14 @@
                                     let html = '';
                                     for(let i=0;i<res.data.length;i++){
                                         html += '<div class="goods_box" onclick="view_detail('+res.data[i].goods_id+')" title="'+res.data[i].goods_name+'">\n' +
-                                            '                                <div class="goods_image">\n' +
-                                            '                                    <img src="'+res.data[i].goods_image+'" class="img">\n' +
-                                            '                                </div>\n' +
+                                            '                                <div class="goods_image">\n';
+                                            if(res.data[i].shop_id>0){
+                                                html += '                                    <img src="https://dtc.gogo198.net'+res.data[i].goods_image+'" class="img">\n';
+                                            }
+                                            else{
+                                                html += '                                    <img src="'+res.data[i].goods_image+'" class="img">\n';
+                                            }
+                                            html += '                                </div>\n' +
                                             '                                <div class="goods_info">\n' +
                                             '                                    <div class="gcon">\n' +
                                             '                                        <div class="goods_name">'+res.data[i].goods_name+'</div>\n' +

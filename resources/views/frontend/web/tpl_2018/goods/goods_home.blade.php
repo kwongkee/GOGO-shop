@@ -47,7 +47,7 @@
         
         .goods_title{font-weight:800;color:#fff;font-size:24px;margin-top:20px !important;line-height:1.1;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-line-clamp: 2; -webkit-box-orient: vertical;}
         .goods_desc{font-size:16px;color:#fff;margin-top:20px !important;line-height:28px;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-line-clamp: 2; -webkit-box-orient: vertical;}
-        .goods_price{font-size:24px;color:#fff;font-weight:800;position: absolute;right: 20px;top: 94px;border-left: 1px solid #fff;padding-left: 10px;background: rgb({{$color->param1}},{{$color->param2}},{{$color->param3}});}
+        .goods_price{font-size:24px;color:#fff;font-weight:800;position: absolute;right: 20px;top: 67%;border-left: 1px solid #fff;padding-left: 10px;background: rgb({{$color->param1}},{{$color->param2}},{{$color->param3}});}
         
         .news-meta {
             display: flex;
@@ -162,7 +162,7 @@
             }
             .goods_title{font-size:22px;}
             .goods_desc{font-size:16px;line-height:27px;}
-            .goods_price{font-size:22px;position: absolute;right: 20px;top: 92px;border-left: 1px solid #fff;padding-left: 10px;}
+            .goods_price{font-size:22px;position: absolute;right: 20px;top: 75%;border-left: 1px solid #fff;padding-left: 10px;}
             
             .news-content {
                 padding: 20px;
@@ -187,7 +187,11 @@
     <div class="news-card">
         <div class="news-content">
             <div class="news-image">
-                <img src="{{$goods->goods_image}}" style="width:100%;height:100%;"/>
+                @if($goods->shop_id>0)
+                    <img src="https://dtc.gogo198.net{{$goods->goods_image}}" style="width:100%;height:100%;"/>
+                @else
+                    <img src="{{$goods->goods_image}}" style="width:100%;height:100%;"/>
+                @endif
                 <div class="news-source disf">
                     <img src="{{$shop_logo}}" class="shop_logo">
                     <div class="shop_name">{{$shop_name}}</div>

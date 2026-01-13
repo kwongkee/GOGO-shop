@@ -1010,6 +1010,7 @@
                                         <div class="btn_buy buy-goods-soon">立即购买</div>
                                         @endif
                                     </div>
+                                    <div class="sales_num" style="text-align: center;padding-right: 0px;font-size: 15px;font-weight: 600;color: #000;">可售库存：<span class="sales_num_span">{{$sku['goods_number']}}</span>&nbsp;{{$goods['unit_name']}}</div>
                                     <div class="select_buy_btmBox disf">
                                         <div class="priceDiv">
                                             @if($goods['shop_id']==0)
@@ -3057,6 +3058,9 @@
                                 // });
                                 // return;
                             }
+                            
+                            //动态修改规格库存
+                            $('.sales_num').find('.sales_num_span').text(goods_number);
                         }
 
                         @if($goods['have_specs']==1)

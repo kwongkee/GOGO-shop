@@ -400,7 +400,7 @@ class FuncController extends Frontend
             #二级字段
             $two_fields = Db::table('search_column_two')->get();
             $two_fields = objtoarr($two_fields);
-
+            
             return view('func.goods_list', compact('condition', 'list', 'website', 'origin_field_condition', 'field_condition', 'origin_condition', 'g_condition', 'catename', 'id', 'g_o', 'sort_info', 'sort', 'hotsearchId', 'goods_count', 'limit', 'currency', 'currency_sel', 'minprice', 'maxprice', 'result', 'searchTitle', 'origin_page', 'two_fields', 'condition_arr2'));
         }
     }
@@ -2965,6 +2965,41 @@ class FuncController extends Frontend
         return view('func.line_info', compact('line', 'id'));
     }
     #地址END================================================
+
+    #快递产品详情
+    public function freight_info(Request $request){
+        $data = $request->except(['_token']);
+        
+        $id = isset($data['id'])?intval($data['id']):0;
+        $freight = Db::connection('shop_db')->table('centralize_freight_config')->where(['id'=>$id])->first();
+        $freight_detail = json_decode($freight->config_data,true);
+        
+        
+        #计费单位
+        $freight_detail['unit'][0] = Db::connection('shop_db')->table('unit')->where(['code_value'=>$freight_detail['unit'][0][0]])->first()->code_name;
+        
+        foreach($freight_detail['qj1'][0] as $k2=>$v2){
+            print_r($freight_detail);die;
+            foreach($freight_detail['jf_method'][$k][$k2] as $k3=>$v3){
+                $freight_detail['currency_name'][$k][$k2][0] ='';$freight_detail['currency_name'][$k][$k2][1] ='';$freight_detail['currency_name'][$k][$k2][2] ='';
+                
+                if($v3==1){
+                    #首续
+                    if(isset($freight_detail['currency'][$k][$k2][0])){
+                        $freight_detail['currency_name'][$k][$k2][0] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$freight_detail['currency'][$k][$k2][0]])->select('currency_symbol_origin')->first()->currency_symbol_origin;
+                    }
+                    
+                }elseif($v3==2){
+                    #按量
+                    $freight_detail['currency_name'][$k][$k2][1] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$freight_detail['currency'][$k][$k2][1]])->select('currency_symbol_origin')->first()->currency_symbol_origin;
+                }elseif($v3==3){
+                    #分段
+                    $freight_detail['currency_name'][$k][$k2][2] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$freight_detail['currency'][$k][$k2][2]])->select('currency_symbol_origin')->first()->currency_symbol_origin;
+                }
+            }
+        }
+        
+    }
 
     #发送验证码
     public function sendcode(Request $request)

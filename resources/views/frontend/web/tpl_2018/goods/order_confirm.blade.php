@@ -195,10 +195,6 @@
             </div>
             <div class="content">
                 <div class="goods_list">
-{{--                    <div class="goods_list_title_cn">--}}
-{{--                        <div class="sure_goods_title">确认商品信息</div>--}}
-{{--                        <em></em>--}}
-{{--                    </div>--}}
                     <div class="list-th list-th-cn">
                         <span>商品名称</span>
                         <div class="right-th">
@@ -222,7 +218,11 @@
                                             <a target="_blank" href="/goods-{{$v['goods_id']}}.html" aria-label="goodsLink" rel="noreferrer">
                                                 <div class="img-box">
                                                     <div class="common-img-wrap">
-                                                        <img src="{{$v2['goods_image']}}" referrerpolicy="no-referrer" alt="common-img" draggable="false" class="common-img" style="opacity: 1;">
+                                                        @if($v['shop_id']>0)
+                                                            <img src="{{$v2['goods_image']}}" referrerpolicy="no-referrer" alt="common-img" draggable="false" class="common-img" style="opacity: 1;">
+                                                        @else
+                                                            <img src="{{$v2['goods_image']}}" referrerpolicy="no-referrer" alt="common-img" draggable="false" class="common-img" style="opacity: 1;">
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </a>
@@ -505,15 +505,40 @@
                             </div>
                         </div>
                     @endforeach
-
-                    <!--当前所有购物清单的总价-->
-{{--                    <div class="total-price">--}}
-{{--                        <b><span class="final_currency">{{$final['final_currency']}}</span> <span class="final_price">{{$final['final_price']}}</span></b>--}}
-{{--                        待支付总价--}}
-{{--                        <a href="#">--}}
-{{--                            <i class="i-cn">（国际运费需另计）</i>--}}
-{{--                        </a>--}}
-{{--                    </div>--}}
+                    
+                    <!--国内收货，选择快递企业&快递产品（海外收货不需要选国内快递）-->
+                    @if($data[0]['delivery_method']==1)
+                        <style>
+                            .select_freight{justify-content: center;}
+                            .select_freight .select_freight_table thead tr{background:#E3E6EB;}
+                            .select_freight .select_freight_table .select_freight{background:#fff;color:#000;border:1px solid #000;}
+                            .select_freight .select_freight_table .select_freight.active{background:#009688;color:#fff;border-color:#009688;}
+                            .select_freight .select_freight_table .view_detail{background:#fff;color:#000;border:1px solid #000;}
+                        </style>
+                        <div class="select_freight disf">
+                            <table class="layui-table select_freight_table" style="max-width:450px;">
+                                <thead>
+                                    <th>快递企业</th>
+                                    <th>快递产品</th>
+                                    <th>操作</th>
+                                </thead>
+                                <tbody>
+                                    @if(!empty($data[0]['express_list']))
+                                        @foreach($data[0]['express_list'] as $k=>$v)
+                                            <tr>
+                                                <td>{{$v['express_name']}}</td>
+                                                <td>{{$v['express_typename']}}</td>
+                                                <td>
+                                                    <div class="btn btn-sm select_freight" onclick="select_freight(this,{{$v['freight_id']}})">选择快递</div>
+                                                    <div class="btn btn-sm view_detail" onclick="view_detail(this,'{{$v['express_name']}}','{{$v['express_typename']}}',{{$v['freight_id']}})">查看详细</div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @endif
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
                 </div>
             </div>
             <!--显示服务协议弹框-->
@@ -564,6 +589,7 @@
     </div>
 
     <script>
+        var select_freight_id = 0;
         layui.use(['layer','element','upload','form'],function() {
             var $ = layui.$
                 , layer = layui.layer
@@ -572,7 +598,26 @@
                 , upload = layui.upload;
             form.render(null,'glist-element');
         });
-
+        
+        //自动计算（国内）快递费用
+        function select_freight(t,freight_id){
+            
+        }
+        
+        //查看详细
+        function view_detail(t,ename,etypename,freight_id){
+            let area = ['800px','500px'];
+            if(IsPhone()){
+                area = ['100%','100%'];
+            }
+            layer.open({
+                type: 2,
+                title: ename+'-'+etypename+'',
+                area: area,
+                content: '/freight_info?id='+freight_id
+            });
+        }
+        
         //--新增地址--
         function selectAddr(t){
             var $ = layui.$
