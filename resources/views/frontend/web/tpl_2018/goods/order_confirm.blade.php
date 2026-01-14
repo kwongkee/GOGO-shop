@@ -270,17 +270,17 @@
                                                                     <div class="count-cn" style="padding:0;margin:0 auto;">
                                                                         <span class="amount-widget">
                                                                             <input type="text" class="amount-input" name="buy_num[]" value="{{$v2['num']}}"
-                                                                                   data-goods_id="{{ $v['goods_id'] }}"
+                                                                                   data-goods_id="{{$v['goods_id']}}"
                                                                                    data-cart_id="{{$v['cart_id']}}"
-                                                                                   data-sku_id="{{ $v2['sku_id'] }}"
-                                                                                   data-amount-min="1"
-                                                                                   data-amount-max="1000"
-                                                                                   maxlength="8" title="请输入购买量"  onchange="buynum(this)">
+                                                                                   data-sku_id="{{$v2['sku_id']}}"
+                                                                                   data-amount-min="{{$v2['start_num']}}"
+                                                                                   data-amount-max="{{$v2['goods_number']}}"
+                                                                                   maxlength="8" title="请输入购买量" onchange="buynum(this)">
                                                                             <span class="amount-btn">
-                                                                                <span class="amount-plus" data-goods_id="{{$v['goods_id']}}" data-cart_id="{{$v['cart_id']}}" data-sku_id="{{$v2['sku_id']}}" data-amount-max="1000" onclick="add_num(this,1000)">
+                                                                                <span class="amount-plus" data-goods_id="{{$v['goods_id']}}" data-cart_id="{{$v['cart_id']}}" data-sku_id="{{$v2['sku_id']}}" data-amount-min="{{$v2['start_num']}}" data-amount-max="{{$v2['goods_number']}}" onclick="add_num(this)">
                                                                                     <i>+</i>
                                                                                 </span>
-                                                                                <span class="amount-minus" data-goods_id="{{$v['goods_id']}}" data-cart_id="{{$v['cart_id']}}" data-sku_id="{{$v2['sku_id']}}" data-amount-max="1000" onclick="reduction_num(this)">
+                                                                                <span class="amount-minus" data-goods_id="{{$v['goods_id']}}" data-cart_id="{{$v['cart_id']}}" data-sku_id="{{$v2['sku_id']}}" data-amount-min="{{$v2['start_num']}}" data-amount-max="{{$v2['goods_number']}}" onclick="reduction_num(this)">
                                                                                     <i>-</i>
                                                                                 </span>
                                                                             </span>
@@ -506,14 +506,16 @@
                         </div>
                     @endforeach
                     
-                    <!--国内收货，选择快递企业&快递产品（海外收货不需要选国内快递）-->
-                    @if($data[0]['delivery_method']==1)
+                    <!--国内收货&自主集运和不包邮，需选择快递企业&快递产品（海外收货不需要选国内快递）-->
+                    @if(($data[0]['delivery_method']==1 || $data[0]['gather_method']==2) && $data[0]['is_baoyou']==3)
                         <style>
                             .select_freight{justify-content: center;}
                             .select_freight .select_freight_table thead tr{background:#E3E6EB;}
-                            .select_freight .select_freight_table .select_freight{background:#fff;color:#000;border:1px solid #000;}
+                            .select_freight .select_freight_table .select_freight{background:#fff;color:#000;border:1px solid #000;font-weight:800;}
                             .select_freight .select_freight_table .select_freight.active{background:#009688;color:#fff;border-color:#009688;}
-                            .select_freight .select_freight_table .view_detail{background:#fff;color:#000;border:1px solid #000;}
+                            .select_freight .select_freight_table .view_detail{background:#fff;color:#000;border:1px solid #000;font-weight:800;}
+                            .freight_selected{position:relative;border-color:#db1d18 !important;color:#db1d18 !important;}
+                            .freight_selected:before{content:"√";color:#db1d18;}
                         </style>
                         <div class="select_freight disf">
                             <table class="layui-table select_freight_table" style="max-width:450px;">
@@ -529,7 +531,7 @@
                                                 <td>{{$v['express_name']}}</td>
                                                 <td>{{$v['express_typename']}}</td>
                                                 <td>
-                                                    <div class="btn btn-sm select_freight" onclick="select_freight(this,{{$v['freight_id']}})">选择快递</div>
+                                                    <div class="btn btn-sm select_freight @if($v['freight_id']==$data[0]['freight_id']) freight_selected @endif" onclick="select_freight(this,{{$v['freight_id']}})">选择快递</div>
                                                     <div class="btn btn-sm view_detail" onclick="view_detail(this,'{{$v['express_name']}}','{{$v['express_typename']}}',{{$v['freight_id']}})">查看详细</div>
                                                 </td>
                                             </tr>
@@ -551,9 +553,17 @@
                         <div class="total-price">
                             <b><span class="final_currency">{{$final['final_currency']}}</span> <span class="final_price">{{$final['final_price']}}</span></b>
                             待支付总价
-                            <a href="#">
-                                <i class="i-cn">（国际运费需另计）</i>
-                            </a>
+                            @if(($data[0]['delivery_method']==1 || $data[0]['gather_method']==2) && $data[0]['is_baoyou']==3)
+                                <!--国内收货&自主集运和不包邮-->
+                                <a href="#">
+                                    <span>（需付运费：<span class="freight_currency">CNY</span>&nbsp;<span class="freight_price">@if($data[0]['freight_id'] > 0) {{$final['freight_price']}} @else 0.00 @endif</span>）</span>
+                                </a>
+                            @elseif($data[0]['is_baoyou']==1 || $data[0]['is_baoyou']==2)
+                                <a href="#">（包邮）</a>
+                            @elseif($data[0]['delivery_method']==2 && $data[0]['gather_method']==1)
+                                <!--海外收货&平台集运-->
+                                <a href="#"><i class="i-cn">（国际运费需另计）</i></a>
+                            @endif
                         </div>
                     </div>
                     <div class="rightBox">
@@ -601,7 +611,25 @@
         
         //自动计算（国内）快递费用
         function select_freight(t,freight_id){
-            
+            var $ = layui.$
+                , layer = layui.layer;
+                
+            $.post("/calc_freight",{'cart_ids':"{{$cart_id}}",'freight_id':freight_id,'_token':"{{csrf_token()}}"},function(res){
+                if (res.code == 0) {
+                    $('.freight_price').text(res.price);
+                    
+                    $('.select_freight').removeClass('freight_selected');
+                    $(t).addClass('freight_selected');
+                    
+                    window.location.reload();
+                }else{
+                    layer.msg(res.msg);
+                    setTimeout(function(){
+                        window.location.reload();
+                    },3000);
+                }
+                layer.closeAll('loading');
+            },'json');
         }
         
         //查看详细
@@ -681,16 +709,21 @@
         }
 
         //添加数量
-        function add_num(t,max_num){
+        function add_num(t){
             var $ = layui.$
                 , form = layui.form
                 , layer = layui.layer;
             layer.load();
-
+            
+            let amount_max = $(t).attr('data-amount-max');
+            let amount_min = $(t).attr('data-amount-min');
+            
             let val = $(t).parents(':eq(2)').find('.amount-input').val();
             val = parseInt(val)+1;
-            if(val<=parseInt(max_num)){
+            if(val<=parseInt(amount_max)){
                 $(t).parents(':eq(2)').find('.amount-input').val(val);
+            }else{
+                $(t).parents(':eq(2)').find('.amount-input').val(amount_max);
             }
 
             setTimeout(function(){
@@ -704,10 +737,17 @@
                 , form = layui.form
                 , layer = layui.layer;
             layer.load();
+            
+            let amount_max = $(t).attr('data-amount-max');
+            let amount_min = $(t).attr('data-amount-min');
+            
             let val = $(t).parents(':eq(2)').find('.amount-input').val();
             val = parseInt(val)-1;
             if(val>0){
                 $(t).parents(':eq(2)').find('.amount-input').val(val);
+            }
+            if(val<amount_min){
+                $(t).parents(':eq(2)').find('.amount-input').val(amount_min);
             }
 
             setTimeout(function(){
@@ -721,6 +761,18 @@
                 , form = layui.form
                 , layer = layui.layer;
             layer.load();
+            
+            let amount_max = $(t).attr('data-amount-max');
+            let amount_min = $(t).attr('data-amount-min');
+            
+            let val = $(t).val();
+            
+            if(val>amount_max){
+                $(t).val(amount_max);
+            }
+            if(val<amount_min){
+                $(t).val(amount_min);
+            }
 
             setTimeout(function(){
                 calc_fee(1,t,'input');
@@ -980,10 +1032,18 @@
             // if(addr_id=='-1' || addr_id==''){
             //     layer.msg('请选择收货地址');return false;
             // }
+            
+            //判断此商品是否“不包邮”和属于“自主集运/国内收货”
+            @if(($data[0]['delivery_method']==1 || $data[0]['gather_method']==2) && $data[0]['is_baoyou']==3)
+                @if(empty($data[0]['freight_id']))
+                    layer.msg('请选择快递企业及快递产品');return false;
+                @endif
+            @endif
 
             layer.load();
             $.post('/apply_order',{'cart_id':"{{$cart_id}}",'_token':"{{csrf_token()}}",'is_daifa':"{{$is_daifa}}"},function(res) {
                 layer.closeAll('loading');
+                
                 layer.msg(res.msg,{time:2000}, function () {
                     if (res.code == 0) {
                         if("{{$is_daifa}}"==2){

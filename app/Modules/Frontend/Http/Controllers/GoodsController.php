@@ -2814,7 +2814,8 @@ class GoodsController extends Frontend
         
         $final['final_price'] = 0;
         $final['final_currency']='';
-
+        $final['freight_price'] = $this->calc_freight($data,$data[0]['freight_id']);#计算运费
+        
         foreach ($data as $k=>$v) {
             if (empty($v['services'])) {
                 $data[$k]['services_old']=[];
@@ -2861,13 +2862,38 @@ class GoodsController extends Frontend
             $goods_freight_fee=0;
             $data[$k]['services']['additional_money'] = 0;#附加费用
             $data[$k]['services']['potential_money'] = 0;#潜在费用
+            
+            $goods = Db::table('goods')->where(['goods_id'=>$data[$k]['goods_id']])->first();
+            $goods = objtoarr($goods);
+            
+            #商品是否包邮
+            $data[$k]['is_baoyou'] = $goods['is_baoyou'];
+            
             foreach ($data[$k]['sku_info'] as $k2=>$v2) {
                 #这层相当于是该店铺下的各规格商品
                 $goods_sku = Db::table('goods_sku')->where(['sku_id'=>$v2['sku_id']])->first();
                 $goods_sku = objtoarr($goods_sku);
                 $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
-                $goods = Db::table('goods')->where(['goods_id'=>$goods_sku['goods_id']])->first();
-                $goods = objtoarr($goods);
+                
+                //获取商品可售库存
+                if($goods['shop_id']>0){
+                    
+                    $post = [
+                        'goods_id' => $data[$k]['goods_id'],
+                        'sku_id'   => $data[$k]['sku_info'][$k2]['sku_id'],
+                        'shop_id'  => $data[$k]['shop_id'],
+                        'wid'      => $goods['wid'],
+                        'goods_type'=>$goods['goods_type']
+                    ];
+                    
+                    $skunum = httpRequest('https://shop.gogo198.cn/collect_website/public/?s=api/func/get_goods_num', $post);
+                    
+                    #商品&规格可售库存
+                    $goods_sku['sku_prices']['goods_number'] = $skunum;
+                }
+                
+                $data[$k]['sku_info'][$k2]['start_num'] = $goods_sku['sku_prices']['start_num'][0];
+                $data[$k]['sku_info'][$k2]['goods_number'] = $goods_sku['sku_prices']['goods_number'];
                 
                 #判断该商品是否代发
                 if (!empty($goods['shop_id'])) {
@@ -3372,8 +3398,8 @@ class GoodsController extends Frontend
         }
         
         #所有购物清单的最终价格
-        $final['final_price'] = number_format($final['final_price'], 2);
-
+        $final['final_price'] = number_format($final['final_price'] + $final['freight_price'], 2);
+        
         $website = get_website();
         $page_info = get_pageinfo('/goods');
         $website['background'] = $page_info['content']['background'];
@@ -3444,6 +3470,146 @@ class GoodsController extends Frontend
         }
         
         return view('goods.order_confirm', compact('data', 'origin_page', 'website', 'final', 'cart_id', 'is_inner', 'check_content','website_user','is_daifa'));
+    }
+    
+    public function calc_freight($data,$freight_id){
+        #总运费
+        $freight_price = 0;
+        
+        if($freight_id>0){
+            #线路费用
+            $freight_info = Db::connection('shop_db')->table('centralize_freight_config')->where(['id'=>$freight_id])->first();
+            $freight_info = objtoarr($freight_info);
+            $freight_info['config_data'] = json_decode($freight_info['config_data'],true);
+            // print_r($freight_info['config_data']);die;
+            foreach ($data as $k=>$v) {
+                $data[$k]['sku_info'] = Db::table('cart_sku')->where(['cart_id'=>$v['cart_id'],'selected'=>1,'is_buy'=>0])->get();
+                $data[$k]['sku_info'] = objtoarr($data[$k]['sku_info']);
+                
+                $goods = Db::table('goods')->where(['goods_id'=>$data[$k]['goods_id']])->first();
+                $goods = objtoarr($goods);
+                
+                foreach ($data[$k]['sku_info'] as $k2=>$v2) {
+                    #这层相当于是该店铺下的各规格商品
+                    $goods_sku = Db::table('goods_sku')->where(['sku_id'=>$v2['sku_id']])->first();
+                    $goods_sku = objtoarr($goods_sku);
+                    $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
+                    
+                    #规格体积（cm）
+                    $goods_sku['volume'] = explode('*',$goods_sku['volume']);
+                    $long = $goods_sku['volume'][0];
+                    $width = $goods_sku['volume'][1];
+                    $height = $goods_sku['volume'][2];
+                    
+                    $vw = 0;
+                    #计算体积重（需算上所购规格数量）CM
+                    if(!empty($long) && !empty($width) && !empty($height)){
+                        $vw = number_format((($long * $width * $height) * $v2['goods_num']) / $freight_info['config_data']['rate'][0], 2, '.', '');
+                    }
+                    
+                    $true_weight = 0;
+                    $goods_weight = $goods_sku['weight'] * $v2['goods_num'];
+                    #体积重 > OR < 商品重量（需算上所购规格数量），取最大值
+                    if($vw >= $goods_weight){
+                        $true_weight = &$vw;
+                    }else{
+                        $true_weight = &$goods_weight;
+                    }
+                    // print_r($freight_info['config_data']);die;
+                    #计算重量费用
+                    foreach($freight_info['config_data']['jf_method'][0] as $k=>$v){
+                        foreach($v as $k2=>$v2){
+                            #1、根据计费方式进行计费
+                            #2、将计费重按照进阶重的格式变为可计算数值（目前只有这三种格式：100，100.5，100.1）
+                            $true_weight2 = explode('.',$true_weight);
+                            if(count($true_weight2)>1){
+                                $true_weight = $true_weight2[0];
+                                $true_weight2 = floatval('0.'.$true_weight2[1]);
+                                if($true_weight2>0){
+                                    if($true_weight2<$freight_info['config_data']['jinjie'][0][$k]){
+                                        $true_weight2=$freight_info['config_data']['jinjie'][0][$k];
+                                    }
+                                }
+                                $true_weight = floatval($true_weight) + floatval($true_weight2);
+                            }
+                            
+                            #3、判断重量在哪个计费区间
+                            if($freight_info['config_data']['qj2_method'][0][$k]==1){
+                                #数值
+                                if($true_weight>=$freight_info['config_data']['qj1'][0][$k] && $true_weight<=$freight_info['config_data']['qj2'][0][$k]){
+                                    #7、开始计算费用
+                                    if($v2==1){
+                                        #7、首续重计费，计法：(100-1首重)/1续重*15续重额+30首重额
+                                        $price = (($true_weight - $freight_info['config_data']['shouzhong'][0][$k][$k2]) / $freight_info['config_data']['xuzhong'][0][$k][$k2]) * $freight_info['config_data']['xuzhong_money'][0][$k][$k2] + $freight_info['config_data']['shouzhong_money'][0][$k][$k2];
+                                        $freight_price += $price;
+                                    }elseif($v2==2){
+                                        #7、计量计费，计法：(100/1千克)*34元
+                                        $price = ($true_weight / $freight_info['config_data']['anliang'][0][$k][$k2]) * $freight_info['config_data']['anliang_money'][0][$k][$k2];
+                                        $freight_price += $price;
+                                    }elseif($v2==3){
+                                        #7、分段计费
+                                        foreach($freight_info['config_data']['fenduan_num1'][0][$k][$k2] as $k4=>$v4){
+                                            if($freight_info['config_data']['fenduan_method'][0][$k][$k2][$k4]){
+                                                #数值
+                                                if($true_weight>=$v4 && $true_weight<=$freight_info['config_data']['fenduan_num2'][0][$k][$k2]){
+                                                    #8、重量在该区间的分段计费下，计法：（100/1进阶）*16
+                                                    $price = ($true_weight / $freight_info['config_data']['jinjie'][0][$k]) * $freight_info['config_data']['fenduan_money'][0][$k][$k2][$k4];
+                                                    $freight_price += $price;
+                                                }
+                                            }else{
+                                                #以上
+                                                if($true_weight>=$v4 && $true_weight<=$freight_info['config_data']['qj2'][0][$k]){
+                                                    #8、重量在该区间的分段计费下，计法：（100/1进阶）*16
+                                                    $price = ($true_weight / $freight_info['config_data']['jinjie'][0][$k]) * $freight_info['config_data']['fenduan_money'][0][$k][$k2][$k4];
+                                                    $freight_price += $price;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            elseif($freight_info['config_data']['qj2_method'][0][$k]==2){
+                                #以上
+                                if($true_weight>=$freight_info['config_data']['qj1'][0][$k]){
+                                    #7、开始计算费用
+                                    if($v2==1){
+                                        #7、首续重计费，计法：(100-1首重)/1续重*15续重额+30首重额
+                                        $price = (($true_weight - $freight_info['config_data']['shouzhong'][0][$k][$k2]) / $freight_info['config_data']['xuzhong'][0][$k][$k2]) * $freight_info['config_data']['xuzhong_money'][0][$k][$k2] + $freight_info['config_data']['shouzhong_money'][0][$k][$k2];
+                                        $freight_price += $price;
+                                    }elseif($v2==2){
+                                        #7、计量计费，计法：(100/1千克)*34元
+                                        $price = ($true_weight / $freight_info['config_data']['anliang'][0][$k][$k2]) * $freight_info['config_data']['anliang_money'][0][$k][$k2];
+                                        $freight_price += $price;
+                                    }elseif($v2==3){
+                                        #7、分段计费
+                                        foreach($freight_info['config_data']['fenduan_num1'][0][$k][$k2] as $k4=>$v4){
+                                            if($freight_info['config_data']['fenduan_method'][0][$k][$k2][$k4]){
+                                                #数值
+                                                if($true_weight>=$v4 && $true_weight<=$freight_info['config_data']['fenduan_num2'][0][$k][$k2]){
+                                                    #8、重量在该区间的分段计费下，计法：（100/1进阶）*16
+                                                    $price = ($true_weight / $freight_info['config_data']['jinjie'][0][$k]) * $freight_info['config_data']['fenduan_money'][0][$k][$k2][$k4];
+                                                    $freight_price += $price;
+                                                }
+                                            }else{
+                                                #以上
+                                                if($true_weight>=$v4 && $true_weight<=$freight_info['config_data']['qj2'][0][$k]){
+                                                    #8、重量在该区间的分段计费下，计法：（100/1进阶）*16
+                                                    $price = ($true_weight / $freight_info['config_data']['jinjie'][0][$k]) * $freight_info['config_data']['fenduan_money'][0][$k][$k2][$k4];
+                                                    $freight_price += $price;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            $freight_price = number_format($freight_price,2,'.','');
+        }
+        
+        return $freight_price;
     }
 
     #集运系统各功能确认同意内容列表
@@ -4369,6 +4535,7 @@ class GoodsController extends Frontend
     public function apply_order(Request $request)
     {
         $data = $request->except(['_token']);
+        
         $cart_id = explode(',', rtrim($data['cart_id'], ','));
         $addr_id = isset($data['addr_id'])?intval($data['addr_id']):0;
         $is_daifa = isset($data['is_daifa'])?intval($data['is_daifa']):2;#1正常仓库发货，2代发
@@ -4386,10 +4553,16 @@ class GoodsController extends Frontend
 
             #订购单总价格
             $true_price = $shop_goods_money;
-
+            
             #订购单信息
             $content = ['goods_info' => [], 'warehouse_id' => 16,'delivery_method'=>0,'gather_method'=>0,'line_id'=>0,'address_id'=>0];
             $cart_info = [];
+            
+            #不包邮的运费
+            $carts = Db::table('cart')->whereRaw('cart_id in ('.rtrim($data['cart_id'], ',').') and user_id='.$website_user->id)->get();
+            $carts = objtoarr($carts);
+            $freight_money = $this->calc_freight($carts,$carts[0]['freight_id']);#计算运费
+            
             foreach ($cart_id as $k => $v) {
                 $cart_sku = Db::table('cart_sku')->where(['cart_id' => $v,'selected'=>1])->get();
                 $cart_sku = objtoarr($cart_sku);
@@ -4545,7 +4718,8 @@ class GoodsController extends Frontend
                 'company_id' => $company_id,#订单归属商户（商品由谁创建）
                 'order_type' => 1,
                 'pay_method' => 1,
-                'true_money' => $true_price,
+                'freight_money' => $freight_money,
+                'true_money' => $true_price + $freight_money,
                 'content' => json_encode($content, true),
                 'is_daifa' => $is_daifa,
                 'address_id' => $addr_id,
@@ -6535,6 +6709,8 @@ class GoodsController extends Frontend
 
         $final['final_price'] = 0;
         $final['final_currency']='';#此订单（包含已选购物清单）最终价格
+        $final['freight_price'] = $this->calc_freight($data,$data[0]['freight_id']);#计算运费
+        
         $goods_sumprice = 0;
         $services_sumprice = 0;
         $services_price = 0;
@@ -7052,7 +7228,7 @@ class GoodsController extends Frontend
         }
 
         #所有购物清单的最终价格
-        $final['final_price'] = number_format($final['final_price'], 2);
+        $final['final_price'] = number_format($final['final_price'] + $final['freight_price'], 2);
         return Response()->json(['code'=>0,'data'=>['final'=>$final,'goods_sumprice'=>$goods_sumprice,'services_sumprice'=>$services_sumprice,'services_price'=>number_format($services_price, 2)]]);
     }
     public function calc_services2(Request $request)
