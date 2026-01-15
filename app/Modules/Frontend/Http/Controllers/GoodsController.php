@@ -4718,6 +4718,7 @@ class GoodsController extends Frontend
                 'company_id' => $company_id,#订单归属商户（商品由谁创建）
                 'order_type' => 1,
                 'pay_method' => 1,
+                'freight_id' => $carts[0]['freight_id'],#不包邮的商品才有数据
                 'freight_money' => $freight_money,
                 'true_money' => $true_price + $freight_money,
                 'content' => json_encode($content, true),

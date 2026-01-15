@@ -1749,45 +1749,52 @@ class CartController extends Frontend
                     ]);
                 }
 
-                #2、创建国内结算二维码
-                $time = time();
-                $ordersn = 'GP' . date('YmdH', $time) . str_pad(
-                    mt_rand(1, 999999),
-                    6,
-                    '0',
-                    STR_PAD_LEFT
-                ) . substr(microtime(), 2, 6);
-                $collect_id = Db::connection('shop_db')->table('customs_collection')->insertGetId([
-                    'uniacid' => 3,
-                    'openid' => $user->openid,
-                    'send_openid' => $system['account'],#到时候换老板的微信
-                    'ordersn' => $ordersn,
-                    'trade_price' => $pay_money,
-                    'trade_type' => 3,
-                    'service_info' => json_encode(['订单支付,编号：' . $new_ordersn . ',' . $pay_money], true),
-                    'order_type' => 1,
-                    'good_id' => '',
-                    'payer_name' => !empty($user->realname) ? $user->realname : $user->nickname,
-                    'payer_tel' => !empty($user->phone) ? $user->phone : '',
-                    'pay_term' => 0,
-                    'pay_fee' => 0,
-                    'overdue' => '',
-                    'overdue_money' => 0,
-                    'total_money' => $pay_money,
-                    'trans_form' => 1,
-                    'status' => 0,
-                    'basic' => 2,
-                    'pay_type'=>$settlement['pay_id'],#支付方式
-                    'createtime' => $time,
-                    'orderno' => $new_ordersn,
-                    'orderurl' => 'https://www.gogo198.cn/cart/cart_detail?id=' . $order_id
-                ]);
-
-                sleep(1);
-                $res = Db::connection('shop_db')->table('website_order_list')->where(['id' => $order_id])->update([
-                    'pay_id' => $collect_id,
-                ]);
-
+                $collect_id = 0;
+                $res = 0;
+                if(empty($order['pay_id'])){
+                    #2、创建国内结算二维码
+                    $time = time();
+                    $ordersn = 'GP' . date('YmdH', $time) . str_pad(
+                        mt_rand(1, 999999),
+                        6,
+                        '0',
+                        STR_PAD_LEFT
+                    ) . substr(microtime(), 2, 6);
+                    $collect_id = Db::connection('shop_db')->table('customs_collection')->insertGetId([
+                        'uniacid' => 3,
+                        'openid' => $user->openid,
+                        'send_openid' => $system['account'],#到时候换老板的微信
+                        'ordersn' => $ordersn,
+                        'trade_price' => $pay_money,
+                        'trade_type' => 3,
+                        'service_info' => json_encode(['订单支付,编号：' . $new_ordersn . ',' . $pay_money], true),
+                        'order_type' => 1,
+                        'good_id' => '',
+                        'payer_name' => !empty($user->realname) ? $user->realname : $user->nickname,
+                        'payer_tel' => !empty($user->phone) ? $user->phone : '',
+                        'pay_term' => 0,
+                        'pay_fee' => 0,
+                        'overdue' => '',
+                        'overdue_money' => 0,
+                        'total_money' => $pay_money,
+                        'trans_form' => 1,
+                        'status' => 0,
+                        'basic' => 2,
+                        'pay_type'=>$settlement['pay_id'],#支付方式
+                        'createtime' => $time,
+                        'orderno' => $new_ordersn,
+                        'orderurl' => 'https://www.gogo198.cn/cart/cart_detail?id=' . $order_id
+                    ]);
+                    sleep(1);
+                    $res = Db::connection('shop_db')->table('website_order_list')->where(['id' => $order_id])->update([
+                        'pay_id' => $collect_id,
+                    ]);
+                }
+                else{
+                    $collect_id = $order['pay_id'];
+                    $res = 1;
+                }
+                
                 if ($res) {
                     $code_url = $this->create_code(1, $collect_id, $order_id);
 
