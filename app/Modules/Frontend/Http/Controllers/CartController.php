@@ -618,12 +618,14 @@ class CartController extends Frontend
                             }
                             $already_buy_goods = array_merge($already_buy_goods, [$v['good_id']]);
                         }
+                        #商品价格 - 减免金额 - 随赠金额 + 其他费用金额 + 服务费用金额 + 价格未含 + 潜在收费 + 订单运费
                         $total_money += sprintf('%.2f', $v2['price'] - $reduction_money - $gift_money + $otherfee_total + $services_money + $noinclude_money + $potential_money);
                     }
                 }
             }
         }
-        return response()->json(['code'=>0,'price'=>number_format($total_money, 2)]);
+        
+        return response()->json(['code'=>0,'price'=>number_format($total_money + $order['freight_money'], 2)]);
     }
 
     #选购清单记录所选商品
@@ -1074,13 +1076,18 @@ class CartController extends Frontend
             #收货地址END===========================
         }
 
+        $order_type = 2;//订单商品的仓库属于“2=代发”还是“1=直发”
+        if(!empty($cart_buylist['is_daifa'])){
+            $order_type = $cart_buylist['is_daifa'];
+        }
+        
         #供应商START===========================
         $shoper = [];
         foreach ($cart_buylist['content']['goods_info'] as $k => $v) {
             $goods = Db::table('goods')->where(['goods_id' => $v['good_id']])->first();
             $goods = objtoarr($goods);
             $goods_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$goods['goods_currency']])->first()->currency_symbol_standard;
-
+            
             if (!empty($goods['shop_id'])) {
 //                $merchant = Db::table('shop')->where(['shop_id' => $goods['shop_id']])->first();
                 $merchant = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods['shop_id']])->first();
@@ -1379,7 +1386,7 @@ class CartController extends Frontend
 
         $is_inner=1;#内页打开首页头部，不显示消息轮播框
 
-        $compact = compact('website', 'isframe', 'cart_buylist', 'shoper', 'origin_page', 'is_inner');
+        $compact = compact('website', 'isframe', 'cart_buylist', 'shoper', 'origin_page', 'is_inner','order_type');
 //        dd($shoper,$cart_buylist['content']['goods_info']);
         return view('cart.cart_detail', $compact);
     }

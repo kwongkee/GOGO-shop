@@ -188,7 +188,7 @@
         <div class="news-content">
             <div class="news-image">
                 @if($goods->shop_id>0)
-                    <img src="https://dtc.gogo198.net{{$goods->goods_image}}" style="width:100%;height:100%;"/>
+                    <img src="{{$goods->goods_image}}" style="width:100%;height:100%;"/>
                 @else
                     <img src="{{$goods->goods_image}}" style="width:100%;height:100%;"/>
                 @endif

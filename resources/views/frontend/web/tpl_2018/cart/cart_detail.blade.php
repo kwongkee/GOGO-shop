@@ -396,21 +396,33 @@
                                             <div class="disf" style="justify-content: end;">
                                                 <div class="leftContent"></div>
                                                 <div class="rightContent">
-                                                    @if($cart_buylist['status']==-9 || $cart_buylist['status']==-10 || $cart_buylist['status']==0)
-                                                        <div class="disf">
-                                                            <div class="btn_group not_selpay" onclick="pay_orderlist(this,{{$cart_buylist['id']}},1)">勾选，请求支付</div>
-                                                            <div class="btn_group close_orderlist" onclick="close_orderlist(this,{{$cart_buylist['id']}})">关闭订单</div>
-                                                        </div>
-                                                    @elseif($cart_buylist['status']==-14)
-                                                        <div class="disf">
-                                                            <a href="/cashier?orderid={{$cart_buylist['id']}}" target="_blank" class="btn_group alr_selpay">前往结算</a>
-{{--                                                            <div class="btn_group alr_selpay" onclick="pay_orderlist(this,{{$cart_buylist['id']}},3)">前往收银台</div>--}}
-                                                        </div>
-                                                    @elseif($cart_buylist['status']==1)
-{{--                                                        <div class="disf">--}}
-{{--                                                            <a class="btn_group view_btn" href="/cart/pay_order?oid={{$cart_buylist['id']}}" target="_blank">查看支付订单</a>--}}
-{{--                                                        </div>--}}
+                                                    @if($order_type==2)
+                                                        <!--代发-->
+                                                        @if($cart_buylist['status']==-9 || $cart_buylist['status']==-10)
+                                                            <div class="disf">
+                                                                <div class="btn_group not_selpay" onclick="pay_orderlist(this,{{$cart_buylist['id']}},1)">勾选，请求支付</div>
+                                                                <div class="btn_group close_orderlist" onclick="close_orderlist(this,{{$cart_buylist['id']}})">关闭订单</div>
+                                                            </div>
+                                                        @elseif($cart_buylist['status']==-14  || $cart_buylist['status']==0)
+                                                            <div class="disf">
+                                                                <a href="/cashier?orderid={{$cart_buylist['id']}}" target="_blank" class="btn_group alr_selpay">前往结算</a>
+    {{--                                                            <div class="btn_group alr_selpay" onclick="pay_orderlist(this,{{$cart_buylist['id']}},3)">前往收银台</div>--}}
+                                                            </div>
+                                                        @elseif($cart_buylist['status']==1)
+    {{--                                                        <div class="disf">--}}
+    {{--                                                            <a class="btn_group view_btn" href="/cart/pay_order?oid={{$cart_buylist['id']}}" target="_blank">查看支付订单</a>--}}
+    {{--                                                        </div>--}}
+                                                        @endif
+                                                    @elseif($order_type==1)
+                                                        <!--直发-->
+                                                        @if($cart_buylist['status']==0)
+                                                            <div class="disf">
+                                                                <a href="/cashier?orderid={{$cart_buylist['id']}}" target="_blank" class="btn_group alr_selpay">前往结算</a>
+    {{--                                                            <div class="btn_group alr_selpay" onclick="pay_orderlist(this,{{$cart_buylist['id']}},3)">前往收银台</div>--}}
+                                                            </div>
+                                                        @endif
                                                     @endif
+                                                    
                                                 </div>
                                             </div>
                                         </div>

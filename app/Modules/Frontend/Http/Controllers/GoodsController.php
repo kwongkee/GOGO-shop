@@ -2468,6 +2468,22 @@ class GoodsController extends Frontend
                 $sku = objtoarr($sku);
                 $sku['sku_prices'] = json_decode($sku['sku_prices'], true);
 
+                //获取商品可售库存
+                if($goods['shop_id']>0){
+                    $post = [
+                        'goods_id' => $goods['goods_id'],
+                        'sku_id'   => $sku['sku_id'],
+                        'shop_id'  => $goods['shop_id'],
+                        'wid'      => $goods['wid'],
+                        'goods_type'=>$goods['goods_type']
+                    ];
+                    
+                    $skunum = httpRequest('https://shop.gogo198.cn/collect_website/public/?s=api/func/get_goods_num', $post);
+                    
+                    #商品&规格可售库存
+                    $sku['sku_prices']['goods_number'] = $skunum;
+                }
+
                 #判断有无超过商品数量
                 if ($v['buy_num']>$sku['sku_prices']['goods_number']) {
                     $content['buy_attr'][$k]['buy_num'] = $sku['sku_prices']['goods_number'];
@@ -2678,7 +2694,23 @@ class GoodsController extends Frontend
         $goods_sku = objtoarr($goods_sku);
 
         $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
-
+        
+        //获取商品可售库存
+        if($goods['shop_id']>0){
+            $post = [
+                'goods_id' => $data['goods_id'],
+                'sku_id'   => $goods_sku['sku_id'],
+                'shop_id'  => $goods['shop_id'],
+                'wid'      => $goods['wid'],
+                'goods_type'=>$goods['goods_type']
+            ];
+            
+            $skunum = httpRequest('https://shop.gogo198.cn/collect_website/public/?s=api/func/get_goods_num', $post);
+            
+            #商品&规格可售库存
+            $goods_sku['sku_prices']['goods_number'] = $skunum;
+        }
+        
         #判断有无超过商品数量
         if ($data['number']>$goods_sku['sku_prices']['goods_number']) {
             $data['number'] = $goods_sku['sku_prices']['goods_number'];
@@ -3659,7 +3691,11 @@ class GoodsController extends Frontend
             #这层相当于在店铺
             $data[$k]['sku_info'] = Db::table('cart_sku')->where(['cart_id'=>$v['cart_id'],'selected'=>1,'is_buy'=>0])->get();
             $data[$k]['sku_info'] = objtoarr($data[$k]['sku_info']);
-
+            
+            #查找商品
+            $goods = Db::table('goods')->where(['goods_id'=>$v['goods_id']])->select(['shop_id','wid','goods_type'])->first();
+            $goods = objtoarr($goods);
+            
             #当前购物车的商品价格
             $goods_price = 0;
 
@@ -3672,7 +3708,23 @@ class GoodsController extends Frontend
                 $goods_sku = Db::table('goods_sku')->where(['sku_id'=>$v2['sku_id']])->first();
                 $goods_sku = objtoarr($goods_sku);
                 $goods_sku['sku_prices'] = json_decode($goods_sku['sku_prices'], true);
-
+                
+                //获取商品可售库存
+                if($goods['shop_id']>0){
+                    $post = [
+                        'goods_id' => $v['goods_id'],
+                        'sku_id'   => $goods_sku['sku_id'],
+                        'shop_id'  => $goods['shop_id'],
+                        'wid'      => $goods['wid'],
+                        'goods_type'=>$goods['goods_type']
+                    ];
+                    
+                    $skunum = httpRequest('https://shop.gogo198.cn/collect_website/public/?s=api/func/get_goods_num', $post);
+                    
+                    #商品&规格可售库存
+                    $goods_sku['sku_prices']['goods_number'] = $skunum;
+                }
+                
                 $goods = Db::table('goods')->where(['goods_id'=>$goods_sku['goods_id']])->first();
                 $goods = objtoarr($goods);
                 $goods['other_shop'] = json_decode($goods['other_shop'], true);
@@ -4531,7 +4583,7 @@ class GoodsController extends Frontend
         return $shop_money;
     }
 
-    #申请订购
+    #申请订购（代发的仓库商品才需要申请订购）
     public function apply_order(Request $request)
     {
         $data = $request->except(['_token']);
@@ -4759,7 +4811,7 @@ class GoodsController extends Frontend
     {
         $data = $request->except(['_token']);
 //        $datas = $data['data'];
-
+        
 //        DB::beginTransaction();
 //        try {
         #1、获取商品信息

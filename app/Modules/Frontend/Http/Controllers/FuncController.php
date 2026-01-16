@@ -2979,23 +2979,27 @@ class FuncController extends Frontend
         #体积分泡名称
         $freight_detail['fenpao'][0] = Db::connection('shop_db')->table('centralize_lines_strict')->where(['id'=>$freight_detail['fenpao'][0]])->select('name')->first()->name;
         $k=0;
+        // print_r($freight_detail['currency']);die;
         foreach($freight_detail['qj1'][0] as $k2=>$v2){
-            
             foreach($freight_detail['jf_method'][$k][$k2] as $k3=>$v3){
-                $freight_detail['currency_name'][$k][$k2][0] ='';$freight_detail['currency_name'][$k][$k2][1] ='';$freight_detail['currency_name'][$k][$k2][2] ='';
+                $freight_detail['currency_name'][$k][$k2][0] ='CNY';$freight_detail['currency_name'][$k][$k2][1] ='CNY';$freight_detail['currency_name'][$k][$k2][2] ='CNY';
                 
                 if($v3==1){
                     #首续
-                    if(isset($freight_detail['currency'][$k][$k2][0])){
+                    
+                    if(isset($freight_detail['currency'][$k][$k2][0]) && !empty($freight_detail['currency'][$k][$k2][0])){
                         $freight_detail['currency_name'][$k][$k2][0] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$freight_detail['currency'][$k][$k2][0]])->select('currency_symbol_standard')->first()->currency_symbol_standard;
                     }
-                    
                 }elseif($v3==2){
                     #按量
-                    $freight_detail['currency_name'][$k][$k2][1] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$freight_detail['currency'][$k][$k2][1]])->select('currency_symbol_standard')->first()->currency_symbol_standard;
+                    if(isset($freight_detail['currency'][$k][$k2][1]) && !empty($freight_detail['currency'][$k][$k2][1])){
+                        $freight_detail['currency_name'][$k][$k2][1] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$freight_detail['currency'][$k][$k2][1]])->select('currency_symbol_standard')->first()->currency_symbol_standard;
+                    }
                 }elseif($v3==3){
                     #分段
-                    $freight_detail['currency_name'][$k][$k2][2] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$freight_detail['currency'][$k][$k2][2]])->select('currency_symbol_standard')->first()->currency_symbol_standard;
+                    if(isset($freight_detail['currency'][$k][$k2][2]) && !empty($freight_detail['currency'][$k][$k2][2])){
+                        $freight_detail['currency_name'][$k][$k2][2] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$freight_detail['currency'][$k][$k2][2]])->select('currency_symbol_standard')->first()->currency_symbol_standard;
+                    }
                 }
             }
         }
