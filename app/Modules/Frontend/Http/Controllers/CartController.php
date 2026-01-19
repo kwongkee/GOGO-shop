@@ -1391,6 +1391,34 @@ class CartController extends Frontend
         return view('cart.cart_detail', $compact);
     }
 
+    #查询物流轨迹
+    public function logistics_tracking(Request $request){
+        $data = $request->except(['_token']);
+        $order_id = intval($data['orderid']);
+        $time = time();
+        
+        //查询频率
+        $last_frequency = Db::connection('shop_db')->table('logistics_frequency')->whereRaw('order_id='.$order_id)->orderBy('id','desc')->first();
+        if($time < $last_frequency->times + 1810){
+            //当前的时间小于最近查询的30分钟后则提示
+            echo '操作频繁，请稍后再试';exit;
+        }
+        
+        $post = [
+            'order_id' => $order_id,
+        ];
+        
+        $res = httpRequest('https://shop.gogo198.cn/collect_website/public/?s=api/func/syn_query_single', $post);
+        if($res){
+            $order = Db::connection('shop_db')->table('website_order_list')->where(['id'=>$order_id])->first();
+            $order = objtoarr($order);
+            
+            $order['logistics_track'] = json_decode($order['logistics_track'],true);
+            return view('cart.logistics_track',compact('order'));
+            
+        }
+    }
+
     #创建请求支付单
     public function create_order(Request $request)
     {

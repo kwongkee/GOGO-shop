@@ -143,6 +143,7 @@ Route::group(['domain' => env('FRONTEND_DOMAIN')], function ($router) {
         Route::post('close_order', 'CartController@close_order');//订购清单-关闭清单
         Route::post('create_order', 'CartController@create_order');//订购清单-创建支付单
         Route::any('cart_detail', 'CartController@cart_detail');//订购清单-清单详情
+        Route::any('logistics_tracking', 'CartController@logistics_tracking');//订购清单-清单详情-查询物流轨迹
         Route::any('pay_order', 'CartController@pay_order');//订购清单-支付订单详情
 
         Route::get('box-goods-list.html', 'CartController@boxGoodsList'); // 顶部和右边购物车盒子

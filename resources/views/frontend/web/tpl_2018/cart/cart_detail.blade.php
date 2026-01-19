@@ -423,6 +423,11 @@
                                                         @endif
                                                     @endif
                                                     
+                                                    @if($cart_buylist['status']>=1 && $cart_buylist['is_package']==1)
+                                                        <div class="disf">
+                                                            <a href="/logistics_tracking?orderid={{$cart_buylist['id']}}" target="_blank" class="btn_group alr_selpay">查询物流轨迹</a>
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
