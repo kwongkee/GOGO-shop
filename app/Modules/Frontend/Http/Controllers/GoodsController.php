@@ -570,8 +570,11 @@ class GoodsController extends Frontend
         $shop_logo = 'https://shop.gogo198.cn/collect_website/public/uploads/centralize/website_index/679357cc06e93.png';
         if($goods->shop_id>0){
             $shop_name = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods->shop_id])->select('company')->first()->company;
-            $shop_logo = Db::connection('shop_db')->table('website_basic')->where(['company_id'=>$goods->shop_id,'company_type'=>0])->select('logo')->first()->logo;
-            $shop_logo = '//dtc.gogo198.net'.$shop_logo;
+            try{
+                $shop_logo = Db::connection('shop_db')->table('website_basic')->where(['company_id'=>$goods->shop_id,'company_type'=>0])->select('logo')->first()->logo;
+                $shop_logo = '//dtc.gogo198.net'.$shop_logo;
+            }
+            catch (\Exception $e){}
         }
         $goods_currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$goods->goods_currency])->select('currency_symbol_standard')->first();
         $goods_sku = Db::table('goods_sku')->where(['goods_id'=>$goods_id])->get();

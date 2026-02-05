@@ -59,14 +59,14 @@ class HomeController extends Frontend
 //        require_once(base_path()."/vendor/tinify-php-master/lib/Tinify.php");
 
         #更改节日为当前年份
-//        $festival = Db::connection('shop_db')->table('website_festival')->get();
-//        $festival = objtoarr($festival);
-//        foreach($festival as $k=>$v){
-//            Db::connection('shop_db')->table('website_festival')->where(['id'=>$v['id']])->update([
-//                'date'=>str_replace('2024','2025',$v['date'])
-//            ]);
-//        }
-//        echo 'success';exit;
+        // $festival = Db::connection('shop_db')->table('website_festival')->get();
+        // $festival = objtoarr($festival);
+        // foreach($festival as $k=>$v){
+        //     Db::connection('shop_db')->table('website_festival')->where(['id'=>$v['id']])->update([
+        //         'date'=>str_replace('2025','2026',$v['date'])
+        //     ]);
+        // }
+        // echo 'success';exit;
 
         #授权登录跳转=======start
         $data = $request->all();
