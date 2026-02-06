@@ -2843,7 +2843,7 @@ class GoodsController extends Frontend
 //        $data = Db::table('last_sure_buy')->where(['user_id'=>$website_user->id])->first();
 //        $data = objtoarr($data);
 //        $data['content'] = json_decode($data['content'],true);
-        $is_daifa = 2;#1不是代发，2是代发
+        $is_daifa = 2;#1直发，2代发
         $data = Db::table('cart')->whereRaw('cart_id in ('.$cart_id.') and user_id='.$website_user->id)->get();
         $data = objtoarr($data);
         
@@ -3432,9 +3432,23 @@ class GoodsController extends Frontend
             $data[$k]['express_list'] = $express_list;
         }
         
-        #所有购物清单的最终价格
-        $final['final_price'] = number_format($final['final_price'] + $final['freight_price'], 2);
+        #计算立减金额（2026/02/06）到时候再做控件
+        #1、（平台/卖家）订单金额*0.15（15%）
+        $platform_money = ($final['final_price'] + $final['freight_price']) * 0.15;
+        $platform_money = (float)sprintf("%.2f", $platform_money);
         
+        #2、（账户）订单金额*0.2（20%）
+        $member_coupon = Db::connection('shop_db')->table('website_user_coupon')->where(['type'=>3,'uid'=>$website_user->id])->first();
+        $member_money = $member_coupon->price * 0.2;
+        $member_money = (float)sprintf("%.2f", $member_money);
+        
+        #3、抵扣金额，谁小用谁
+        $final['coupon_money'] = 0;
+        if($platform_money>$member_money){$final['coupon_money'] = number_format($member_money, 2);}else{$final['coupon_money'] = number_format($platform_money,2);}
+        
+        #所有购物清单的最终价格
+        $final['final_price'] = number_format($final['final_price'] + $final['freight_price'] - $final['coupon_money'], 2);
+      
         $website = get_website();
         $page_info = get_pageinfo('/goods');
         $website['background'] = $page_info['content']['background'];
@@ -4767,6 +4781,21 @@ class GoodsController extends Frontend
                 #不是代发，系统直接发货
                 $status = 0;
             }
+            
+            #计算立减金额（2026/02/06）到时候再做控件
+            #1、（平台/卖家）订单金额*0.15（15%）
+            $platform_money = ($true_price + $freight_money) * 0.15;
+            $platform_money = (float)sprintf("%.2f", $platform_money);
+            
+            #2、（账户）订单金额*0.2（20%）
+            $member_coupon = Db::connection('shop_db')->table('website_user_coupon')->where(['type'=>3,'uid'=>$website_user->id])->first();
+            $member_money = $member_coupon->price * 0.2;
+            $member_money = (float)sprintf("%.2f", $member_money);
+            
+            #3、抵扣金额，谁小用谁
+            $coupon_money = 0;
+            if($platform_money>$member_money){$coupon_money = number_format($member_money, 2);}else{$coupon_money = number_format($platform_money,2);}
+            
             $orderid = Db::connection('shop_db')->table('website_order_list')->insertGetId([
                 'user_id' => $user->id,
                 'ordersn' => $ordersn,
@@ -4775,7 +4804,8 @@ class GoodsController extends Frontend
                 'pay_method' => 1,
                 'freight_id' => $carts[0]['freight_id'],#不包邮的商品才有数据
                 'freight_money' => $freight_money,
-                'true_money' => $true_price + $freight_money,
+                'coupon_money' => $coupon_money,
+                'true_money' => $true_price + $freight_money - $coupon_money,
                 'content' => json_encode($content, true),
                 'is_daifa' => $is_daifa,
                 'address_id' => $addr_id,

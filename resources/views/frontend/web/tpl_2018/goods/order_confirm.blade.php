@@ -101,7 +101,7 @@
         /*最终价格*/
         .confirm-order {font-size: 12px;/*overflow: hidden;*/position: fixed;left: 50%;background: #fff;bottom: 6%;transform: translate(-50%, 0);width: 100%;max-width: 1210px;box-shadow: 0px 0px 10px 1px #ccc;}
         .confirm-order .leftBox{margin-left:20px;}
-        .confirm-order .total-price{color: #000;height: 74px;line-height: 74px;overflow: hidden;text-align: right;width: 100%;font-size: 15px;font-weight: 800;}
+        .confirm-order .total-price{color: #000;height: 74px;/*line-height: 74px;*/overflow: hidden;text-align: right;width: 100%;font-size: 15px;font-weight: 800;}
         .confirm-order .total-price b {color: #db1d18;float: right;font-size: 26px;}
         .confirm-order .total-price a {float: right;}
         .confirm-order .total-price a .i-cn, .goods_list .total-price a .i-en {color: #000;display: inline-block;line-height: 20px;}
@@ -142,7 +142,7 @@
             .navbar-default .navbar-collapse{margin-top:15px;}
             #translate{display: block;}
             .sure_container .w1210{width:100%;}
-            .sure_container .content{margin-bottom:260px;}
+            .sure_container .content{margin-bottom:300px;}
 
             .goods_list .shop-item{padding-top:10px;}
             .goods_list .shop-item .goods-box .goods-item .good-info{display: inline-block;}
@@ -168,12 +168,15 @@
 
             .confirm-order{box-shadow: 0px 0px 10px 1px #666;}
             .confirm-order .disf{display: block;}
-            .confirm-order .total-price{height:50px;line-height: 50px;text-align: left;padding: 0 20px;}
+            .confirm-order .total-price{/*height:50px;line-height: 50px;*/height:auto;min-height:50px;text-align: left;padding: 10px 20px;box-sizing:border-box;}
+            .confirm-order .total-price .other_fee_div{text-align:right;}
             .confirm-order .total-price b{font-size: 20px;}
             .confirm-order .total-price a{float:unset;}
             .confirm-order .leftBox{margin-left:0;}
             .confirm-order .agree-pro{margin:0 20px;}
             .confirm-order .warm-reminder{float:unset;margin:0 20px;padding:0 20px;}
+            
+            .rule_code{padding:0 10px;box-sizing:border-box;}
         }
     </style>
     <div class="sure_container">
@@ -551,13 +554,14 @@
                     <div class="leftBox">
                         <!--当前所有购物清单的总价-->
                         <div class="total-price">
-                            <b><span class="final_currency">{{$final['final_currency']}}</span> <span class="final_price">{{$final['final_price']}}</span></b>
-                            待支付总价
+                            <p>待支付总价:&nbsp;<b><span class="final_currency">{{$final['final_currency']}}</span> <span class="final_price">{{$final['final_price']}}</span></b></p>
+                            
                             @if(($data[0]['delivery_method']==1 || $data[0]['gather_method']==2) && $data[0]['is_baoyou']==3)
                                 <!--国内收货&自主集运和不包邮-->
-                                <a href="#">
-                                    <span>（需付运费：<span class="freight_currency">CNY</span>&nbsp;<span class="freight_price">@if($data[0]['freight_id'] > 0) {{$final['freight_price']}} @else 0.00 @endif</span>）</span>
-                                </a>
+                                <div class="other_fee_div">
+                                    <p>（需付运费：<span class="freight_currency">CNY</span>&nbsp;<span class="freight_price">@if($data[0]['freight_id'] > 0) {{$final['freight_price']}} @else 0.00 @endif</span>）</p>
+                                    <p>（优惠金额：<span class="freight_currency">CNY</span>&nbsp;<span class="freight_price">- {{$final['coupon_money']}}</span>）</p>
+                                </div>
                             @elseif($data[0]['is_baoyou']==1 || $data[0]['is_baoyou']==2)
                                 <a href="#">（包邮）</a>
                             @elseif($data[0]['delivery_method']==2 && $data[0]['gather_method']==1)
