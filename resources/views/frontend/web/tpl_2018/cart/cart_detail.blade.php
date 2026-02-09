@@ -307,7 +307,7 @@
                                                                             </td>
                                                                             <td class="item--colPublishPrice--_Gft88l td5">
                                                                                 @if($k3==0)
-                                                                                    {{$v['goods_currency']}} <?php echo number_format($v2['services_money']+$v2['otherfee_total']-$v2['reduction_money']-$v2['gift_money']+$v2['noinclude_money']+$v2['potential_money'],2);?>
+                                                                                    {{$v['goods_currency']}} <?php echo number_format($v2['services_money']+$v2['otherfee_total']-$v2['reduction_money']-$v2['gift_money']+$v2['noinclude_money']+$v2['potential_money']+$cart_buylist['freight_money']-$cart_buylist['coupon_money'],2);?>
                                                                                 @endif
                                                                             </td>
                                                                             <td class="item--colSubtotal--wD06b01 td6">
@@ -823,10 +823,23 @@
                                 main_html += '                                                                        CNY ' + res.datas.services[i].info.price + ' + 续CNY ' + res.datas.services[i].info.interval_price + '\n';
                             }
                             else{
-                                main_html += '                                                                        CNY '+ res.datas.services[i].info.price +'\n';
+                                if(res.datas.services[i].info.name == '国内运费'){
+                                    let p = parseFloat(res.datas.services[i].info.price) + parseFloat(res.datas.freight_money);
+                                    main_html += '                                                                        CNY '+ p +'\n';
+                                }else{
+                                    main_html += '                                                                        CNY '+ res.datas.services[i].info.price +'\n';
+                                }
                             }
                             main_html += '                                                                        </td>\n' +
                                 '                                                                                 </tr>\n';
+                        }
+                        
+                        if(res.datas.coupon_money != '' && res.datas.coupon_money>0){
+                            main_html += '                                                                   <tr>\n' +
+                                '                                                                                        <td>减免金额</td>\n' +
+                                '                                                                                        <td>卡券减免</td>\n'+
+                                '                                                                                        <td>CNY -'+res.datas.coupon_money+'</td>\n'+
+                                '                                                                            </tr>';
                         }
 
                         main_html += '                                                                    </tbody>\n' +
@@ -835,7 +848,7 @@
                             if(res.datas.odd_services_money!=''){
                                 main_html += '<div class="origin_price">原价：'+res.datas.otherfee_currency+' '+res.datas.odd_services_money+'</div>';
                             }
-                            main_html += '<div class="now_price"">现价：'+res.datas.services_currency+' '+res.datas.services_money+'</div>';
+                            main_html += '<div class="now_price"">总价：'+res.datas.services_currency+' '+res.datas.services_money+'</div>';
                         }else{
                             main_html += '<div class="now_price">总价：'+res.datas.otherfee_currency+' '+res.datas.services_money+'</div>';
                         }

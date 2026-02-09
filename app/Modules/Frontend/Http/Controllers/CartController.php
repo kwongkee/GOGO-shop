@@ -625,7 +625,15 @@ class CartController extends Frontend
             }
         }
         
-        return response()->json(['code'=>0,'price'=>number_format($total_money + $order['freight_money'], 2)]);
+        $p = $total_money;
+        if($order['freight_money']>0){
+            $p += $order['freight_money'];
+        }
+        if($order['coupon_money']>0){
+            $p -= $order['coupon_money'];
+        }
+        
+        return response()->json(['code'=>0,'price'=>number_format($p, 2)]);
     }
 
     #选购清单记录所选商品
@@ -891,7 +899,7 @@ class CartController extends Frontend
             $gkey = intval($data['gkey']);
             $skey = intval($data['skey']);
             $sku_id = intval($data['sku_id']);
-
+            
             $sku_data = $order['content']['goods_info'][$gkey]['sku_info'][$skey];
             $goods_data = $order['content']['goods_info'][$gkey];
             #其他费用
@@ -956,6 +964,15 @@ class CartController extends Frontend
             #新的商品规格
             $new_skuinfo = Db::table('goods_sku')->where(['sku_id'=>$sku_data['sku_id']])->first()->spec_names;
 
+            #更多服务总价格
+            $services_money = $goods_data['services_money'];
+            if($order['freight_money']>0){
+                $services_money += $order['freight_money'];
+            }
+            if($order['coupon_money']>0){
+                $services_money -= $order['coupon_money'];
+            }
+
             #返回当前规格的信息
             $datas = [
                 #其他费用和内容
@@ -984,11 +1001,15 @@ class CartController extends Frontend
                 'otherfee_currency'=>$goods_data['otherfee_currency'],
                 #其他服务费用
                 'services_currency'=>$goods_data['services_currency'],
-                'services_money'=>number_format($goods_data['services_money'], 2),
+                'services_money'=>number_format($services_money, 2),
                 'odd_services_money'=>isset($goods_data['odd_services_money']) ? $goods_data['odd_services_money'] : '',
                 'services'=>$goods_data['services'],
                 #所需文件
                 'file'=>empty($goods_data['file']) ? '' : $goods_data['file'],
+                #国内快递运费
+                'freight_money'=>$order['freight_money'],
+                #优惠金额
+                'coupon_money'=>$order['coupon_money'],
             ];
 
             return Response()->json(['code'=>0,'datas'=>$datas]);
@@ -1373,7 +1394,7 @@ class CartController extends Frontend
             }
         }
         #清单信息END===========================
-//        dd($shoper,$cart_buylist);
+        // dd($shoper,$cart_buylist);
 
         #获取配置信息
         $website = get_website();

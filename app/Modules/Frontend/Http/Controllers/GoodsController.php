@@ -4794,8 +4794,17 @@ class GoodsController extends Frontend
             
             #3、抵扣金额，谁小用谁
             $coupon_money = 0;
-            if($platform_money>$member_money){$coupon_money = number_format($member_money, 2);}else{$coupon_money = number_format($platform_money,2);}
+            $use_member_coupon = 0;
+            if($platform_money>$member_money){
+                #用户账户卡券
+                $coupon_money = number_format($member_money, 2);
+                $totalAmount = $member_coupon->price - $member_money;
+                Db::connection('shop_db')->table('website_user_coupon')->where(['type'=>3,'uid'=>$website_user->id])->update(['price'=>$totalAmount]);
+                $use_member_coupon = 1;
+                
+            }else{$coupon_money = number_format($platform_money,2);}
             
+            $time = time();
             $orderid = Db::connection('shop_db')->table('website_order_list')->insertGetId([
                 'user_id' => $user->id,
                 'ordersn' => $ordersn,
@@ -4810,8 +4819,24 @@ class GoodsController extends Frontend
                 'is_daifa' => $is_daifa,
                 'address_id' => $addr_id,
                 'status' => $status,#待确认有无货
-                'createtime' => time(),
+                'createtime' => $time,
             ]);
+
+            if($use_member_coupon==1){
+                #使用了会员账户卡券，记录
+                Db::connection('shop_db')->table('website_user_coupon_log')->insert([
+                    'coupon_id'=>$member_coupon->id,
+                    'uid'=>$member_coupon->uid,
+                    'type'=>1,
+                    'order_id'=>$orderid,
+                    'multiple'=>0,
+                    'opera'=>1,
+                    'price'=>$coupon_money,
+                    'desc'=>'卡券余额支付下单：-￥'.$coupon_money,
+                    'status'=>0,
+                    'createtime'=>$time
+                ]);
+            }
 
             if($is_daifa==1){
                 #不是代发
