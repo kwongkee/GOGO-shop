@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="//shop.gogo198.cn/{{$website['slogo']}}" type="image/x-icon" />
     <title>登入/注册</title>
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0">
     <!-- 头部元数据 -->
@@ -16,7 +17,7 @@
         #translate select{width:100px;}
 
         #content{transform: translate(0, 5%);}
-        #content .container{width: 100%;max-width: 400px;padding: 20px;margin: 0 auto;border-radius: 5px;background-color: #fff;box-shadow: 0 0 16px rgba(0,0,0,.04);box-shadow: unset;}
+        #content .container{width: 100%;max-width: 400px;min-height:700px;padding: 20px;margin: 0 auto;border-radius: 5px;background-color: #fff;box-shadow: 0 0 16px rgba(0,0,0,.04);box-shadow: unset;}
         #content .container .logo{width: 140px;}
         #content .container .title{font-size: 30px;padding-left: 10px;margin: 30px 0;}
         .content{padding:20px 20px;box-sizing:border-box;}
@@ -84,8 +85,8 @@
         #content .container .loginBox .btn-submit2 {width: 100%;margin-top: 25px;padding: 7px 0;color: #fff;background: #000;cursor:pointer;font-size:15px;}
 
         /*客服*/
-        #content .container .customerBox{width: 100%;display: flex;align-items: center;justify-content: right;cursor:pointer;}
-        #content .container .customerBox .customerDiv{width: 40px;text-align: center;}
+        #content .container .customerBox{width: 100%;display: flex;align-items: center;justify-content: right;margin-top:15px;}
+        #content .container .customerBox .customerDiv{width: 40px;text-align: center;cursor:pointer;}
         #content .container .customerBox img{width: 30px;}
 
         /*登录说明*/
@@ -118,6 +119,15 @@
             .dropdown .dropbtn span{margin-left:0;}
         }
     </style>
+    <style type="text/css" media="all">
+        /* 国内/境外切换按钮 */
+        .country-switch {border: 1px solid #000;border-radius: 30px;overflow: hidden;width: 100%;margin: 15px auto 10px;}
+        .country-switch .switch-item {padding: 5px 20px;cursor: pointer;font-size: 15px;color: #000;background: #fff;transition: all 0.3s;border-right: 1px solid #000;width:50%;}
+        .country-switch .switch-item:last-child {border-right: none;}
+        .country-switch .switch-item.active {background: #000;color: #fff;}
+        
+        .other_method_loginBox{display: none;}
+    </style>
 </head>
 <script src="/assets/d2eace91/js/jquery.js?v=20180418"></script>
 <script type="text/javascript" charset="utf-8">
@@ -132,41 +142,52 @@
         </div>
         <p class="title">登入/注册</p>
         <div class="loginBox">
-            <div class="methodDiv disf">
-                <div class="methodBox methodAct" onclick="change_method(1,this)">邮箱登录</div>
-{{--                <div class="methodBox" onclick="change_method(2,this)">手机登录</div>--}}
-                <div class="methodBox" onclick="change_method(3,this)">小程序登录</div>
+            <!-- 国内/境外访客切换按钮 -->
+            <div class="country-switch disf" style="justify-content: center; margin: 0 0 10px;">
+                <span class="switch-item active" data-type="domestic">国内访客</span>
+                <span class="switch-item" data-type="foreign">境外访客</span>
             </div>
-            <form name="sentMessage" id="loginForm2" novalidate>
-                <div class="methodContent ">
-                    <input type="hidden" name="reg_method" id="reg_method" value="2">
-                    <div class="numberDiv email_login">
-                        <input type="text" class="form-control" placeholder="请输入您的电子邮箱" id="email" name="email" value=""/>
-                    </div>
-{{--                    <div class="numberDiv phone_login">--}}
-{{--                        <div class="disf">--}}
-{{--                            <div class="selectBox">--}}
-{{--                                <select name="country_code" id="country_code" class="country_code">--}}
-{{--                                    @foreach($country_code as $k=>$vo)--}}
-{{--                                        <option value="{{$vo['id']}}" @if($vo['id']==162)--}}
-{{--                                        selected--}}
-{{--                                                @endif>{{$vo['param6']}} {{$vo['param8']}}</option>--}}
-{{--                                    @endforeach--}}
-{{--                                </select>--}}
-{{--                            </div>--}}
-
-{{--                            <input type="text" class="form-control" placeholder="请输入您的手机号码" id="phone" name="phone"/>--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
-                    <div class="codeDiv disf">
-                        <input type="text" class="form-control" placeholder="请输入6位验证码" id="code" name="code" value=""/>
-                        <div class="sendcode" onclick="send_code()" id="sendCode">获取验证码</div>
-                    </div>
+            
+            <!--国内访客-->
+            <div class="domestic_method_loginBox">
+                <div class="methodDiv disf">
+                    <div class="methodBox methodAct" onclick="change_method(1,this)">邮箱登录</div>
+    {{--                <div class="methodBox" onclick="change_method(2,this)">手机登录</div>--}}
+                    <div class="methodBox xcx" onclick="change_method(3,this)">小程序登录</div>
                 </div>
-                <button type="submit" class="btn pull-center btn-submit">登录/注册</button><br />
-            </form>
-            <div class="other_method_title">或通过以下帐户登入/注册</div>
+                <form name="sentMessage" id="loginForm2" novalidate>
+                    <div class="methodContent ">
+                        <input type="hidden" name="reg_method" id="reg_method" value="2">
+                        <div class="numberDiv email_login">
+                            <input type="text" class="form-control" placeholder="请输入您的电子邮箱" id="email" name="email" value=""/>
+                        </div>
+    {{--                    <div class="numberDiv phone_login">--}}
+    {{--                        <div class="disf">--}}
+    {{--                            <div class="selectBox">--}}
+    {{--                                <select name="country_code" id="country_code" class="country_code">--}}
+    {{--                                    @foreach($country_code as $k=>$vo)--}}
+    {{--                                        <option value="{{$vo['id']}}" @if($vo['id']==162)--}}
+    {{--                                        selected--}}
+    {{--                                                @endif>{{$vo['param6']}} {{$vo['param8']}}</option>--}}
+    {{--                                    @endforeach--}}
+    {{--                                </select>--}}
+    {{--                            </div>--}}
+    
+    {{--                            <input type="text" class="form-control" placeholder="请输入您的手机号码" id="phone" name="phone"/>--}}
+    {{--                        </div>--}}
+    {{--                    </div>--}}
+                        <div class="codeDiv disf">
+                            <input type="text" class="form-control" placeholder="请输入6位验证码" id="code" name="code" value=""/>
+                            <div class="sendcode" onclick="send_code()" id="sendCode">获取验证码</div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn pull-center btn-submit">登录/注册</button><br />
+                </form>
+            </div>
+            
+            <!--境外访客-->
             <div class="other_method_loginBox">
+                <div class="other_method_title">或通过以下帐户登录/注册</div><br />
                 <div class="dropdown disf">
                     <div class="dropdown-input dropbtn">
                         @foreach($autologin_apps2 as $key=>$vo)
@@ -190,7 +211,7 @@
                 </div>
 
 
-                <div class="btn pull-center btn-submit2">前往授权</div><br />
+                <div class="btn pull-center btn-submit2">前往授权</div>
             </div>
         </div>
         <div class="customerBox">
@@ -229,6 +250,27 @@
             , form = layui.form
             , laydate = layui.laydate
             , upload = layui.upload;
+
+        //切换访客登录方式======================================start
+        $('.switch-item').click(function() {
+            var type = $(this).data('type');
+            if(type == 'domestic'){
+                //显示国内访客
+                $('.xcx').show();
+                $('.other_method_loginBox').hide();
+                $('#content .container .loginBox .methodDiv .methodBox:first-child').css('border-right','2px solid #000');
+            }
+            else if(type == 'foreign'){
+                //显示境外访客
+                $('.xcx').hide();
+                $('.other_method_loginBox').show();
+                $('#content .container .loginBox .methodDiv .methodBox:first-child').css('border-right','0');
+            }
+            
+            $(this).addClass('active');
+            $(this).siblings().removeClass('active');
+        });
+        //切换访客登录方式======================================end
 
         //授权应用======================================start
         $(".dropbtn").click(function() {
@@ -518,7 +560,7 @@
         var $ = layui.$
             , layer = layui.layer;
 
-        let html = '<iframe src="//boss.gogo198.cn/?s=customer/customer_online&pa=2&who_send=2&id=0&pid=0&isframe=1&uid=G00014" frameborder="0" style="width:100%;height:100%;"></iframe>';
+        let html = '<iframe src="//boss.gogo198.cn/?s=customer/customer_online&pa=2&who_send=2&id=0&pid=0&isframe=1&uid=G00015" frameborder="0" style="width:100%;height:100%;"></iframe>';
         layer.open({
             type: 1,
             title: '联系客服：',
