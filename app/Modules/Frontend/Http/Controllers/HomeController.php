@@ -104,9 +104,20 @@ class HomeController extends Frontend
         $data['slogan'] = objtoarr($data['slogan']);
         #轮播图
         $rotate = Cache::remember('home_rotate', 86400, function() {
-            return DB::connection('shop_db')->table('website_rotate')->where(['system_id'=>3])->get()->toArray();
+            if(is_mobile()){
+                $rotate_list = DB::connection('shop_db')->table('website_rotate')->where(['system_id'=>3])->get()->toArray();
+                $rotate_list = objtoarr($rotate_list);
+                foreach($rotate_list as $k=>$v){
+                    if(empty($v['mob_thumb'])){
+                        $rotate_list[$k]['thumb'] = $v['mob_thumb'];
+                    }
+                }
+            }else{
+                $rotate_list = DB::connection('shop_db')->table('website_rotate')->where(['system_id'=>3])->get();
+                return objtoarr($rotate_list);
+            }
         });
-        $rotate = objtoarr($rotate);
+        
         #站内消息
         $data['msg'] = Cache::remember('home_msg', 86400, function() {
             return DB::connection('shop_db')->table('website_message_manage')->get();
@@ -223,108 +234,84 @@ class HomeController extends Frontend
         
         #导页版式 START===========================================================
         $cache = is_mobile2() ? 'home_guide_all_mobile' : 'home_guide_all_pc';
-        $guide = Cache::remember($cache, 86400, function () use ($currency) {
-            // 1. 主体 + 版式一次性加载
-            $guide_bodies = DB::table('guide_body')
-                ->where('company_id', 0)
-                ->where('system_id', 3)
-                ->orderBy('displayorders', 'asc')
-                ->get();
-        
-            $content_ids = $guide_bodies->pluck('content_id')->unique()->filter()->values()->all();
-        
-            $formats = DB::table('guide_format')
-                ->whereIn('id', $content_ids)
-                ->get()
-                ->keyBy('id');
-        
-            // 2. 预加载上架商品相关数据（type=7）
-            $all_shelf = DB::table('goods_shelf')
-                ->where('type', 2)
-                ->whereIn('guide_id', $guide_bodies->pluck('id')->all())
-                ->where('keywords', '<>', '')
-                ->get();
-        
-            $all_goods_ids = $all_shelf->pluck('gid')->unique()->all();
-        
-            $goods_map = DB::table('goods')
-                ->whereIn('goods_id', $all_goods_ids)
-                ->where('goods_status', 1)
-                ->get()
-                ->keyBy('goods_id');
-        
-            $sku_map = DB::table('goods_sku')
-                ->whereIn('goods_id', $all_goods_ids)
-                ->get()
-                ->keyBy('goods_id');
-        
-            // 3. 颜色预加载（type=8）
-            $colors = DB::connection('shop_db')
-                ->table('centralize_diycountry_content')
-                ->where('pid', 12)
-                ->inRandomOrder()
-                ->limit(100)
-                ->get()
-                ->toArray();
-        
-            $color_count = count($colors);
-            $color_index = 0;
-        
-            $result = [];
-        
-            foreach ($guide_bodies as $item) {
-                $format = $formats->get($item->content_id);
-                if (!$format) {
-                    continue;
-                }
-        
-                $row = (array) $item;
-                $row['content_info'] = (array) $format;
-        
-                // ========= 类型7：平台推荐商品 =========
-                if ($format->type == 7) {
-                    $goods_list = collect();
-        
-                    // 上架商品匹配
-                    foreach ($all_shelf as $s) {
-                        if ($s->guide_id != $item->id) continue;
-        
-                        $g = $goods_map->get($s->gid);
-                        if (!$g) continue;
-        
-                        $arr1 = array_filter(explode('、', $s->keywords));
-                        $arr2 = array_filter(explode('、', $item->gkeywords));
-                        if (empty(array_intersect($arr1, $arr2))) continue;
-        
-                        $sku = $sku_map->get($g->goods_id);
-                        $sku_prices = $sku ? json_decode($sku->sku_prices, true) : ['price' => [$g->goods_price]];
-        
-                        $goods_list->push((object) [
-                            'goods_id'       => $g->goods_id,
-                            'goods_name'     => $g->goods_name,
-                            'goods_image'    => $g->goods_image,
-                            'company'        => 'Gogo',
-                            'goods_currency' => $currency[$g->goods_currency]['currency_symbol_standard'] ?? 'CNY',
-                            'price'          => number_format(end($sku_prices['price']), 2),
-                        ]);
+        if(1>2){
+            #旧版
+            $guide = Cache::remember($cache, 86400, function () use ($currency) {
+                // 1. 主体 + 版式一次性加载
+                $guide_bodies = DB::table('guide_body')
+                    ->where('company_id', 0)
+                    ->where('system_id', 3)
+                    ->orderBy('displayorders', 'asc')
+                    ->get();
+            
+                $content_ids = $guide_bodies->pluck('content_id')->unique()->filter()->values()->all();
+            
+                $formats = DB::table('guide_format')
+                    ->whereIn('id', $content_ids)
+                    ->get()
+                    ->keyBy('id');
+            
+                // 2. 预加载上架商品相关数据（type=7）
+                $all_shelf = DB::table('goods_shelf')
+                    ->where('type', 2)
+                    ->whereIn('guide_id', $guide_bodies->pluck('id')->all())
+                    ->where('keywords', '<>', '')
+                    ->get();
+            
+                $all_goods_ids = $all_shelf->pluck('gid')->unique()->all();
+            
+                $goods_map = DB::table('goods')
+                    ->whereIn('goods_id', $all_goods_ids)
+                    ->where('goods_status', 1)
+                    ->get()
+                    ->keyBy('goods_id');
+            
+                $sku_map = DB::table('goods_sku')
+                    ->whereIn('goods_id', $all_goods_ids)
+                    ->get()
+                    ->keyBy('goods_id');
+            
+                // 3. 颜色预加载（type=8）
+                $colors = DB::connection('shop_db')
+                    ->table('centralize_diycountry_content')
+                    ->where('pid', 12)
+                    ->inRandomOrder()
+                    ->limit(100)
+                    ->get()
+                    ->toArray();
+            
+                $color_count = count($colors);
+                $color_index = 0;
+            
+                $result = [];
+            
+                foreach ($guide_bodies as $item) {
+                    $format = $formats->get($item->content_id);
+                    if (!$format) {
+                        continue;
                     }
-        
-                    // 关键字兜底商品
-                    if (!empty(trim($item->gkeywords))) {
-                        $keywords = array_filter(explode('、', $item->gkeywords));
-        
-                        $kw_goods = DB::table('goods')
-                            ->join('goods_keywords', 'goods.keywords_id', '=', 'goods_keywords.id')
-                            ->whereIn('goods_keywords.keywords', $keywords)
-                            ->where('goods.goods_status', 1)
-                            ->select('goods.*')
-                            ->limit(30)
-                            ->get();
-        
-                        foreach ($kw_goods as $g) {
+            
+                    $row = (array) $item;
+                    $row['content_info'] = (array) $format;
+            
+                    // ========= 类型7：平台推荐商品 =========
+                    if ($format->type == 7) {
+                        $goods_list = collect();
+            
+                        // 上架商品匹配
+                        foreach ($all_shelf as $s) {
+                            if ($s->guide_id != $item->id) continue;
+            
+                            $g = $goods_map->get($s->gid);
+                            if (!$g) continue;
+            
+                            $arr1 = array_filter(explode('、', $s->keywords));
+                            $arr2 = array_filter(explode('、', $item->gkeywords));
+                            if (empty(array_intersect($arr1, $arr2))) continue;
+            
                             $sku = $sku_map->get($g->goods_id);
                             $sku_prices = $sku ? json_decode($sku->sku_prices, true) : ['price' => [$g->goods_price]];
-        
+            
                             $goods_list->push((object) [
                                 'goods_id'       => $g->goods_id,
                                 'goods_name'     => $g->goods_name,
@@ -334,104 +321,339 @@ class HomeController extends Frontend
                                 'price'          => number_format(end($sku_prices['price']), 2),
                             ]);
                         }
-                    }
-        
-                    $row['goods_info'] = $goods_list->shuffle()->take(30)->values()->toArray();
-                }
-        
-                // ========= 类型8：产业集聚 =========
-                elseif ($format->type == 8) {
-                    $big_children = DB::table('guide_content')
-                        ->where([
-                            'system_id'  => 3,
-                            'company_id' => 0,
-                            'pid'        => $item->id,
-                            'is_show'    => 0,
-                            'type'       => 1
-                        ])
-                        ->orderBy('displayorders', 'asc')
-                        ->get();
-        
-                    $small_all = DB::table('guide_content')
-                        ->where([
-                            'system_id'  => 3,
-                            'company_id' => 0,
-                            'pid'        => $item->id,
-                            'is_show'    => 0,
-                            'type'       => 0
-                        ])
-                        ->get()
-                        ->groupBy('top_id');
-        
-                    foreach ($big_children as $big) {
-                        $big->link2 = $this->getAppLink($big->go_other, (array)$big, 'guide');
-        
-                        $sml = $small_all->get($big->id, collect())
-                                        ->merge($small_all->get(0, collect()))
-                                        ->take(is_mobile2() ? 8 : 12);
-        
-                        foreach ($sml as $s) {
-                            $color = $colors[$color_index % $color_count];
-                            $color_index++;
-        
-                            $s->rand_background = sprintf("#%02x%02x%02x", $color->param1, $color->param2, $color->param3);
-                            $s->name  = mb_substr($s->name, 0, 2, 'UTF-8');
-                            $s->name2 = mb_substr($s->name, 2, null, 'UTF-8');
-                            $s->link2 = $this->getAppLink($s->go_other, (array)$s, 'guide');
+            
+                        // 关键字兜底商品
+                        if (!empty(trim($item->gkeywords))) {
+                            $keywords = array_filter(explode('、', $item->gkeywords));
+            
+                            $kw_goods = DB::table('goods')
+                                ->join('goods_keywords', 'goods.keywords_id', '=', 'goods_keywords.id')
+                                ->whereIn('goods_keywords.keywords', $keywords)
+                                ->where('goods.goods_status', 1)
+                                ->select('goods.*')
+                                ->limit(30)
+                                ->get();
+            
+                            foreach ($kw_goods as $g) {
+                                $sku = $sku_map->get($g->goods_id);
+                                $sku_prices = $sku ? json_decode($sku->sku_prices, true) : ['price' => [$g->goods_price]];
+            
+                                $goods_list->push((object) [
+                                    'goods_id'       => $g->goods_id,
+                                    'goods_name'     => $g->goods_name,
+                                    'goods_image'    => $g->goods_image,
+                                    'company'        => 'Gogo',
+                                    'goods_currency' => $currency[$g->goods_currency]['currency_symbol_standard'] ?? 'CNY',
+                                    'price'          => number_format(end($sku_prices['price']), 2),
+                                ]);
+                            }
                         }
-        
-                        $big->sml_children = $sml->chunk(4)->toArray();
+            
+                        $row['goods_info'] = $goods_list->shuffle()->take(30)->values()->toArray();
                     }
-        
-                    $row['big_children'] = $big_children->toArray();
-                }
-        
-                // ========= 类型9：环球节庆（关键修复：去掉 fn()） =========
-                elseif ($format->type == 9) {
-                    $festival = Cache::remember('home_festival_v2', 86400, function () {
-                        return DB::connection('shop_db')
-                            ->table('website_festival')
-                            ->whereRaw('date >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)')
-                            ->whereRaw('date <= DATE_ADD(CURDATE(), INTERVAL 15 DAY)')
-                            ->orderBy('date', 'asc')
+            
+                    // ========= 类型8：产业集聚 =========
+                    elseif ($format->type == 8) {
+                        $big_children = DB::table('guide_content')
+                            ->where([
+                                'system_id'  => 3,
+                                'company_id' => 0,
+                                'pid'        => $item->id,
+                                'is_show'    => 0,
+                                'type'       => 1
+                            ])
+                            ->orderBy('displayorders', 'asc')
+                            ->get();
+            
+                        $small_all = DB::table('guide_content')
+                            ->where([
+                                'system_id'  => 3,
+                                'company_id' => 0,
+                                'pid'        => $item->id,
+                                'is_show'    => 0,
+                                'type'       => 0
+                            ])
                             ->get()
-                            ->toArray();
-                    });
+                            ->groupBy('top_id');
+            
+                        foreach ($big_children as $big) {
+                            $big->link2 = $this->getAppLink($big->go_other, (array)$big, 'guide');
+            
+                            $sml = $small_all->get($big->id, collect())
+                                            ->merge($small_all->get(0, collect()))
+                                            ->take(is_mobile2() ? 8 : 12);
+            
+                            foreach ($sml as $s) {
+                                $color = $colors[$color_index % $color_count];
+                                $color_index++;
+            
+                                $s->rand_background = sprintf("#%02x%02x%02x", $color->param1, $color->param2, $color->param3);
+                                $s->name  = mb_substr($s->name, 0, 2, 'UTF-8');
+                                $s->name2 = mb_substr($s->name, 2, null, 'UTF-8');
+                                $s->link2 = $this->getAppLink($s->go_other, (array)$s, 'guide');
+                            }
+            
+                            $big->sml_children = $sml->chunk(4)->toArray();
+                        }
+            
+                        $row['big_children'] = $big_children->toArray();
+                    }
+            
+                    // ========= 类型9：环球节庆（关键修复：去掉 fn()） =========
+                    elseif ($format->type == 9) {
+                        $festival = Cache::remember('home_festival_v2', 86400, function () {
+                            return DB::connection('shop_db')
+                                ->table('website_festival')
+                                ->whereRaw('date >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)')
+                                ->whereRaw('date <= DATE_ADD(CURDATE(), INTERVAL 15 DAY)')
+                                ->orderBy('date', 'asc')
+                                ->get()
+                                ->toArray();
+                        });
+            
+                        $festival = addCountryPic(objtoarr($festival));
+            
+                        // 手动过滤（替代 fn()）
+                        $filtered = [];
+                        foreach ($festival as $item) {
+                            if (!isset($item['is_deplicate'])) {
+                                $filtered[] = $item;
+                            }
+                        }
+                        $festival = $filtered;
+            
+                        $festival = array_values($festival);
+                        shuffle($festival);
+            
+                        $chunks = collect($festival)->chunk(is_mobile2() ? 1 : 6);
+                        $final_chunks = [];
+                        foreach ($chunks as $chunk) {
+                            $final_chunks[] = $chunk->chunk(is_mobile2() ? 1 : 3)->toArray();
+                        }
+                        $row['children'] = $final_chunks;
+                    }
+            
+                    $result[] = $row;
+                }
+            
+                return $result;
+            });
+        }else{
+            $guide = Cache::remember($cache, 86400, function () use ($currency) {
+                #首页板块
+                $services = Db::connection('shop_db')->table('website_index')->where(['system_id'=>3])->orderBy('displayorder','asc')->get();
+                $services = objtoarr($services);
+                
+                foreach($services as $k=>$v){
+                    if($v['format_type']==2){
+                        #内容切换框
+                        $services[$k]['content'] = json_decode($v['content'],true);
         
-                    $festival = addCountryPic(objtoarr($festival));
-        
-                    // 手动过滤（替代 fn()）
-                    $filtered = [];
-                    foreach ($festival as $item) {
-                        if (!isset($item['is_deplicate'])) {
-                            $filtered[] = $item;
+                        #按键内容
+                        $services[$k]['btn_content'] = json_decode($v['btn_content'],true);
+                        foreach($services[$k]['btn_content'] as $k2=>$v2){
+                            $services[$k]['btn_content'][$k2]['id'] = $v['id'];
+                            $services[$k]['btn_content'][$k2]['link'] = $this->getAppLink($v2['go_other'],$services[$k]['btn_content'][$k2],'btn');
                         }
                     }
-                    $festival = $filtered;
-        
-                    $festival = array_values($festival);
-                    shuffle($festival);
-        
-                    $chunks = collect($festival)->chunk(is_mobile2() ? 1 : 6);
-                    $final_chunks = [];
-                    foreach ($chunks as $chunk) {
-                        $final_chunks[] = $chunk->chunk(is_mobile2() ? 1 : 3)->toArray();
+                    elseif($v['format_type']==4){
+                        #标题和描述折叠框
+                        $services[$k]['fq_content'] = json_decode($v['fq_content'],true);
                     }
-                    $row['children'] = $final_chunks;
+                    elseif($v['format_type']==5){
+                        #一问一答图文轮播
+                        $services[$k]['fq_category_content'] = json_decode($v['fq_category_content'],true);
+                        foreach($services[$k]['fq_category_content'] as $k2=>$v2){
+                            $services[$k]['fq_category_content'][$k2]['fq_list'] = Db::connection('shop_db')->table('website_image_txt')->whereRaw('id in ('.$v2['fq_ids'].')')->select(['id','name','createtime'])->orderBy('id','desc')->get();
+                            $services[$k]['fq_category_content'][$k2]['fq_list'] = objtoarr($services[$k]['fq_category_content'][$k2]['fq_list']);
+                            foreach($services[$k]['fq_category_content'][$k2]['fq_list'] as $k3=>$v3){
+                                $services[$k]['fq_category_content'][$k2]['fq_list'][$k3]['name'] = json_decode($v3['name'],true)['zh'];
+                                $services[$k]['fq_category_content'][$k2]['fq_list'][$k3]['createtime'] = date('Y-m-d',$v3['createtime']);
+                            }
+                        }
+                    }
+                    elseif($v['format_type']==6){
+                        #标题+描述+图片（一行四个）卡片
+                        $services[$k]['card1_content'] = json_decode($v['card1_content'],true);
+                    }
+                    elseif($v['format_type']==7){
+                        #标题+图标（两行各五个）卡片
+                        $services[$k]['card2_content'] = json_decode($v['card2_content'],true);
+                    }
+                    elseif($v['format_type']==8){
+                        #标题+描述+图片（两行各两个）卡片
+                        $services[$k]['card3_content'] = json_decode($v['card3_content'],true);
+                    }
+                    elseif($v['format_type']==9){
+                        #标题+图片（一排四个）卡片样式
+                        if($v['bind_festival']==1){
+                            $services[$k]['children'] = $this->get_festival();
+                        }elseif(!empty($v['gkeywords'])){
+                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency);
+                        }else{
+                            $services[$k]['children'] = Db::table('guide_content')->where(['pid'=>$v['id'],'system_id'=>3,'top_id'=>0])->get();
+                            $services[$k]['children'] = objtoarr($services[$k]['children']);
+                            foreach($services[$k]['children'] as $k2=>$v2){
+                                $services[$k]['children'][$k2]['back_content'] = 'https://shop.gogo198.cn/'.$v2['back_content'];
+                            }
+                        }
+                        
+                        shuffle($services[$k]['children']);
+                    }
+                    elseif($v['format_type']==10){
+                        #标题+图片（一排三个）卡片样式
+                        
+                        if($v['bind_festival']==1){
+                            $services[$k]['children'] = $this->get_festival();
+                        }elseif(!empty($v['gkeywords'])){
+                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency);
+                        }else{
+                            $services[$k]['children'] = Db::table('guide_content')->where(['pid'=>$v['id'],'system_id'=>3,'top_id'=>0])->get();
+                            $services[$k]['children'] = objtoarr($services[$k]['children']);
+                            foreach($services[$k]['children'] as $k2=>$v2){
+                                $services[$k]['children'][$k2]['back_content'] = 'https://shop.gogo198.cn/'.$v2['back_content'];
+                            }
+                        }
+                        
+                        shuffle($services[$k]['children']);
+                    }
+                    elseif($v['format_type']==11){
+                        #标题+图片（两排六个）卡片样式
+                        
+                        if($v['bind_festival']==1){
+                            $services[$k]['children'] = $this->get_festival();
+                        }elseif(!empty($v['gkeywords'])){
+                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency);
+                        }else{
+                            $services[$k]['children'] = Db::table('guide_content')->where(['pid'=>$v['id'],'system_id'=>3,'top_id'=>0])->get();
+                            $services[$k]['children'] = objtoarr($services[$k]['children']);
+                            // foreach($services[$k]['children'] as $k2=>$v2){
+                            //     $services[$k]['children'][$k2]['back_content'] = 'https://shop.gogo198.cn/'.$v2['back_content'];
+                            // }
+                            
+                            shuffle($services[$k]['children']);
+                            if(is_mobile2()){
+                                $services[$k]['children'] = array_chunk($services[$k]['children'],1);
+                            }else{
+                                $services[$k]['children'] = array_chunk($services[$k]['children'],6);
+                            }
+            
+                            foreach($services[$k]['children'] as $k2=>$v2){
+                                if(is_mobile2()){
+                                    $services[$k]['children'][$k2] = array_chunk($v2,1);
+                                }else{
+                                    $services[$k]['children'][$k2] = array_chunk($v2,3);
+                                }
+                            }
+                        }
+                    }
+                    elseif($v['format_type']==12){
+                        #杂志导航
+                        $services[$k]['big_children'] = Db::table('guide_content')->where(['top_id'=>0,'pid'=>$v['id'],'system_id'=>3,'is_show'=>0])->get();
+                        $services[$k]['big_children'] = objtoarr($services[$k]['big_children']);
+                        foreach($services[$k]['big_children'] as $k2=>$v2){
+                            $services[$k]['big_children'][$k2]['sml_children'] = Db::table('guide_content')->where(['pid'=>$v['id'],'top_id'=>$v2['id'],'system_id'=>3])->get();
+                            $services[$k]['big_children'][$k2]['sml_children'] = objtoarr($services[$k]['big_children'][$k2]['sml_children']);
+        
+                            if(is_mobile2()){
+                                $services[$k]['big_children'][$k2]['sml_children'] = array_chunk($services[$k]['big_children'][$k2]['sml_children'],4);
+                            }else{
+                                $services[$k]['big_children'][$k2]['sml_children'] = array_chunk($services[$k]['big_children'][$k2]['sml_children'],4);
+                            }
+                            foreach($services[$k]['big_children'][$k2]['sml_children'] as $k3=>$v3){
+                                foreach($v3 as $k4=>$v4) {
+                                    $color = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid' => 12])->inRandomOrder()->first();
+    
+                                    $services[$k]['big_children'][$k2]['sml_children'][$k3][$k4]['rand_background'] = sprintf("#%02x%02x%02x", $color->param1, $color->param2, $color->param3);
+                                }
+                            }
+                        }
+                    }
+                    elseif($v['format_type']==13){
+                        #标题+图片（一排两个）卡片样式
+                        
+                        if($v['bind_festival']==1){
+                            $services[$k]['children'] = $this->get_festival();
+                        }elseif(!empty($v['gkeywords'])){
+                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency);
+                        }else{
+                            $services[$k]['children'] = Db::table('guide_content')->where(['pid'=>$v['id'],'system_id'=>3,'top_id'=>0])->get();
+                            $services[$k]['children'] = objtoarr($services[$k]['children']);
+                            foreach($services[$k]['children'] as $k2=>$v2){
+                                $services[$k]['children'][$k2]['back_content'] = 'https://shop.gogo198.cn/'.$v2['back_content'];
+                            }
+                        }
+                        shuffle($services[$k]['children']);
+                    }
+        
+                    if($v['format']==1){
+                        $services[$k]['info'] = Db::connection('shop_db')->table('website_navbar')->where(['id'=>$v['navbar_id']])->select(['id','name','desc','format','color','go_other','other_link','other_navbar','thumb'])->first();
+                        $services[$k]['info'] = objtoarr($services[$k]['info']);
+                        $services[$k]['info']['name'] = json_decode($services[$k]['info']['name'],true)['zh'];
+                        $services[$k]['info']['desc'] = isset($services[$k]['info']['desc'])?json_decode($services[$k]['info']['desc'],true)['zh']:'';
+                        // $services[$k]['info']['desc'] = explode('、',$services[$k]['info']['desc']);
+                        $services[$k]['info']['children'] = Db::connection('shop_db')->table('website_navbar')->where('pid',$services[$k]['info']['id'])->select(['id','name','desc','thumb','format','color','go_other','other_link','other_navbar'])->get();
+                        $services[$k]['info']['children'] = objtoarr($services[$k]['info']['children']);
+                        // dd($services[$k]['info']['children']);
+                        foreach($services[$k]['info']['children'] as $k2=>$v2){
+                            $services[$k]['info']['children'][$k2]['name'] = json_decode($services[$k]['info']['children'][$k2]['name'],true)['zh'];
+                            $services[$k]['info']['children'][$k2]['desc'] = json_decode($services[$k]['info']['children'][$k2]['desc'],true)['zh'];
+                            $services[$k]['info']['children'][$k2]['desc'] = explode('、',$services[$k]['info']['children'][$k2]['desc']);
+                            $services[$k]['info']['children'][$k2]['children'] = Db::connection('shop_db')->table('website_navbar')->where('pid',$v2['id'])->select(['id','name','desc','thumb','format','color','go_other','other_link','other_navbar'])->get();
+                            $services[$k]['info']['children'][$k2]['children'] = objtoarr($services[$k]['info']['children'][$k2]['children']);
+                            foreach($services[$k]['info']['children'][$k2]['children'] as $k3=>$v3){
+                                $services[$k]['info']['children'][$k2]['children'][$k3]['name'] = json_decode($services[$k]['info']['children'][$k2]['children'][$k3]['name'],true)['zh'];
+                                $services[$k]['info']['children'][$k2]['children'][$k3]['desc'] = json_decode($services[$k]['info']['children'][$k2]['children'][$k3]['desc'],true)['zh'];
+                                // $services[$k]['info']['children'][$k2]['children'][$k3]['desc'] = explode('、',$services[$k]['info']['children'][$k2]['children'][$k3]['desc']);
+                            }
+                        }
+                    }
+                    elseif($v['format']==2){
+                        $services[$k]['info'] = Db::connection('shop_db')->table('website_navbar')->where('id',$v['navbar_id'])->select(['id','name','desc','thumb','format','color','go_other','other_link','other_navbar','thumb'])->first();
+                        $services[$k]['info'] = objtoarr($services[$k]['info']);
+                        $services[$k]['info']['name'] = json_decode($services[$k]['info']['name'],true)['zh'];
+                        $services[$k]['info']['desc'] = json_decode($services[$k]['info']['desc'],true)['zh'];
+                        $services[$k]['info']['children'] = Db::connection('shop_db')->table('website_navbar')->where('pid',$services[$k]['info']['id'])->select(['id','name','desc','thumb','format','color','go_other','other_link','other_navbar'])->get();
+                        $services[$k]['info']['children'] = objtoarr($services[$k]['info']['children']);
+                        foreach($services[$k]['info']['children'] as $k2=>$v2){
+                            $services[$k]['info']['children'][$k2]['name'] = json_decode($services[$k]['info']['children'][$k2]['name'],true)['zh'];
+                            $services[$k]['info']['children'][$k2]['desc'] = json_decode($services[$k]['info']['children'][$k2]['desc'],true)['zh'];
+                            $services[$k]['info']['children'][$k2]['children'] = Db::connection('shop_db')->table('website_navbar')->where('pid',$v2['id'])->select(['id','name','desc','thumb','format','color','go_other','other_link','other_navbar'])->get();
+                            $services[$k]['info']['children'][$k2]['children'] = objtoarr($services[$k]['info']['children'][$k2]['children']);
+                            foreach($services[$k]['info']['children'][$k2]['children'] as $k3=>$v3){
+                                $services[$k]['info']['children'][$k2]['children'][$k3]['name'] = json_decode($services[$k]['info']['children'][$k2]['children'][$k3]['name'],true)['zh'];
+                                $services[$k]['info']['children'][$k2]['children'][$k3]['desc'] = json_decode($services[$k]['info']['children'][$k2]['children'][$k3]['desc'],true)['zh'];
+                            }
+                        }
+                    }
+                    elseif($v['format']==0){
+                        if($v['navbar_id']=='A1'){
+                            $services[$k]['info'] = [];
+                            $services[$k]['info']['name'] = '';
+                            $services[$k]['info']['desc'] = '';
+                            $services[$k]['info']['children'] = [];
+                        }elseif($v['navbar_id']=='A2'){
+                            $services[$k]['info'] = [];
+                            $services[$k]['info']['name'] = '常见问题';
+                            $services[$k]['info']['desc'] = '';
+                            $services[$k]['info']['children'] = [];
+                        }
+                    }
                 }
+                
+                return $services;
+            });
+        }
         
-                $result[] = $row;
-            }
+        // $data['guide'] = &$guide;
+        // $data['guide'] = objtoarr($data['guide']);
+        $services = &$guide;
+        // dd($services);
+        #导页版式 END===========================================================
         
-            return $result;
-        });
-        
-        $data['guide'] = &$guide;
-        $data['guide'] = objtoarr($data['guide']);
-
         $currency = objtoarr($currency);
         
-        $compact = compact('page', 'tplHtml', 'navContainerHtml', 'nav_banner', 'webStatic', 'website', 'rotate', 'news', 'currency', 'data', 'citys', 'discovery_rotate', 'hotbuy', 'industry', 'festival');
+        $compact = compact('page', 'tplHtml', 'navContainerHtml', 'nav_banner', 'webStatic', 'website', 'rotate', 'news', 'currency', 'data', 'citys', 'discovery_rotate', 'hotbuy', 'industry', 'festival','services');
 
         $this->show_seo('seo_index'); // SEO
 
@@ -456,6 +678,96 @@ class HomeController extends Frontend
 
         $this->setData($data); // 设置数据
         return $this->displayData(); // 模板渲染及APP客户端返回数据
+    }
+    
+    #根据关键词获取商品
+    public function get_keywords_goods($keywords,$currency){
+        $goods_list = collect();
+        
+        $keywords = array_filter(explode('、', $keywords));
+        
+        $kw_goods = DB::table('goods')
+            ->join('goods_keywords', 'goods.keywords_id', '=', 'goods_keywords.id')
+            ->whereIn('goods_keywords.keywords', $keywords)
+            ->where('goods.goods_status', 1)
+            ->select('goods.*')
+            ->limit(10)
+            ->get();
+
+        foreach ($kw_goods as $g) {
+            // $sku = $sku_map->get($g->goods_id);
+            // $sku_prices = $sku ? json_decode($sku->sku_prices, true) : ['price' => [$g->goods_price]];
+            $gsku = Db::table('goods_sku')->where(['goods_id'=>$g->goods_id])->select(['sku_prices'])->first();
+            $price = json_decode($gsku->sku_prices,true)['price'];
+            
+            $goods_list->push((object) [
+                'goods_id'       => $g->goods_id,
+                'goods_name'     => $g->goods_name,
+                'goods_image'    => $g->goods_image,
+                'company'        => 'Gogo',
+                'goods_currency' => $currency[$g->goods_currency]['currency_symbol_standard'] ?? 'CNY',
+                'price'          => number_format(end($price), 2),
+                
+                'back_content'   => $g->goods_image,
+                'name'           => $g->goods_name,
+                'go_other'       => 2,
+                'info'           => ['currency'=>$currency[$g->goods_currency]['currency_symbol_standard'] ?? 'CNY','goods_price'=>number_format(end($price), 2)],
+                'other_goods'    => $g->goods_id,
+                'desc'           => $g->goods_name,
+            ]);
+        }
+        
+        $row = $goods_list->shuffle()->take(10)->values()->toArray();
+        
+        return objtoarr($row);
+    }
+    
+    #获取节日表信息
+    public function get_festival(){
+        $festival = Cache::remember('home_festival_v2', 86400, function () {
+            return DB::connection('shop_db')
+                ->table('website_festival')
+                ->whereRaw('date >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)')
+                ->whereRaw('date <= DATE_ADD(CURDATE(), INTERVAL 15 DAY)')
+                ->orderBy('date', 'asc')
+                ->get()
+                ->toArray();
+        });
+
+        $festival = addCountryPic(objtoarr($festival));
+        
+        // 手动过滤（替代 fn()）
+        $filtered = [];
+        foreach ($festival as $key => $item) {
+            if(!empty($item['zh_name'])){
+                $festival[$key]['name'] = $item['zh_name'];
+            }elseif(!empty($item['en_name'])){
+                $festival[$key]['name'] = $item['en_name'];
+            }else{
+                $festival[$key]['name'] = '';
+            }
+            $festival[$key]['go_other'] = 5;
+            $festival[$key]['gkeywords'] = $item['keywords'];
+            $festival[$key]['desc'] = $item['keywords'];
+            $festival[$key]['back_content'] = isset($item['national_flag'][0])?str_replace('//shop.gogo198.cn','',$item['national_flag'][0]):$item['back_content'];
+            
+            if (!isset($item['is_deplicate'])) {
+                $filtered[] = $festival[$key];
+            }
+        }
+        $festival = $filtered;
+
+        $festival = array_values($festival);
+        shuffle($festival);
+
+        $chunks = collect($festival)->chunk(is_mobile2() ? 1 : 6);
+        $final_chunks = [];
+        foreach ($chunks as $chunk) {
+            $final_chunks[] = $chunk->chunk(is_mobile2() ? 1 : 3)->toArray();
+        }
+        // $row['children'] = $final_chunks;
+        
+        return $final_chunks;
     }
 
     public function member_login(Request $request)
@@ -583,14 +895,124 @@ class HomeController extends Frontend
             return Response()->json(['code'=>0,'list'=>$list,'adv'=>$adv]);
         }
     }
+    
+    #菜单详情
+    public function detail(Request $request){
+        $dat = $request->except(['_token']);
+        $oid = isset($dat['oid']) ? intval($dat['oid']) : 0;
+        $foid = isset($dat['foid']) ? intval($dat['foid']) : 0;
+        $page_id = isset($dat['id']) ? intval($dat['id']) : 0;
 
+        if ($request->isMethod('post')) {
+        } else {
+            $news = Db::connection('shop_db')->table('website_navbar')->where(['id'=>intval($dat['id'])])->first();
+            $news = objtoarr($news);
+            
+            if($news['go_other']==1){
+                header('Location: '.$news['other_link']);
+            }
+            
+            if (!empty($news['content'])) {
+                $news['content'] = json_decode($news['content'], true)['zh'];
+            }
+            if (!empty($news['color_word'])) {
+                $news['color_word'] = json_decode($news['color_word'], true)['zh'];
+            }
+//            dd($news);
+
+            $stype = isset($dat['type'])?trim($dat['type']):0;
+            $news['share_num'] = 0;
+            $news['like_num'] = 0;
+            $type=1;
+
+            $news['share_num'] = intval($news['share_num']);
+
+            if (empty($news['like_num'])) {
+                $news['like_num'] = rand(100, 999);
+                Db::connection('shop_db')->table('website_navbar')->where(['id'=>intval($dat['id'])])->update(['like_num'=>$news['like_num']]);
+            } else {
+                $news['like_num'] = $news['like_num'];
+            }
+
+            $news['comment_num'] = Db::connection('shop_db')->table('website_crossborder_news_chat')->where(['type'=>$type,'news_id'=>$dat['id']])->count();
+
+            $id = $news['id'];
+            $news['id'] = $id;
+            $news['name'] = json_decode($news['name'], true)['zh'];
+            $news['desc'] = json_decode($news['desc'], true)['zh'];
+            #分享
+            $data['url'] = 'https://'.$_SERVER['HTTP_HOST'].$_SERVER["REQUEST_URI"];
+            $data['name'] = $news['name'];
+            $data['desc'] = $news['desc'];
+            $data['url_this'] = 'https://'.$_SERVER['HTTP_HOST'].$_SERVER["REQUEST_URI"];
+            $data['thumb'] = 'https://shop.gogo198.cn/collect_website/public/uploads/centralize/website_index/64a5282e9bdbf.png';
+            $signPackage = weixin_share($data);
+            $news['link'] = '';
+
+            #随机码
+            $rand = rand(11111, 99999);
+
+            #获取配置信息
+            $website = get_website();
+            $website['name'] = $news['name'];
+            $page_info = get_pageinfo('/msg_detail');
+            $website['background'] = $page_info['content']['background'];
+            $website['content'] = $page_info['content']['content'];
+            $website['fontcolor'] = $page_info['content']['fontcolor'];
+//            $website['name'] = $news['title'];
+//            $website['keywords'] = $news['title'];
+//            $website['desc'] = $news['title'];
+
+            #所有评论
+            $all_comment = Db::connection('shop_db')->table('website_crossborder_news_chat')->where(['news_id'=>$id,'type'=>$type])->orderBy('id', 'desc')->get();
+            $all_comment = objtoarr($all_comment);
+
+            $origin_page = '/detail?id='.$page_id.'&type='.$stype.'&oid='.$id.'&foid='.$foid;
+
+            #是否有配置跳转其他应用
+            $footerInfo = Db::table('footer_body')->where(['id'=>$foid])->first();
+            $footerInfo = objtoarr($footerInfo);
+            if (isset($footerInfo['have_link'])) {
+                $footerInfo['link'] = $this->getAppLink(2, ['other_navbar'=>$footerInfo['content_id']]);
+                $data['link'] = $footerInfo['link'];
+            }
+            
+            return view('home.detail', compact('website', 'news', 'id', 'data', 'signPackage', 'all_comment', 'type', 'rand', 'footerInfo', 'origin_page'));
+        }
+    }
+    
     #新闻详情
     public function news_detail(Request $request)
     {
         $dat = $request->except(['_token']);
         $foid = isset($dat['foid']) ? intval($dat['foid']) : 0;
-
+        
         if ($request->isMethod('post')) {
+            if ($dat['type']==1) {
+                #头部菜单
+                $id = intval($dat['id']);
+                if ($dat['pa']==1) {
+                    $news = Db::connection('shop_db')->table('website_navbar')->where(['id'=>$id])->first();
+                    $news = objtoarr($news);
+                    $res = Db::connection('shop_db')->table('website_navbar')->where(['id'=>$id])->update(['like_num'=>$news['like_num']+1]);
+                    if ($res) {
+                        return Response()->json(['code'=>0,'msg'=>'点赞成功！']);
+                    }
+                } elseif ($dat['pa']==2) {
+                    $time = time();
+                    $res = Db::connection('shop_db')->table('website_crossborder_news_chat')->insert(['news_id'=>$dat['id'],'text'=>trim($dat['val']),'createtime'=>$time,'type'=>$dat['type'],'ip'=>$_SERVER['REMOTE_ADDR']]);
+                    if ($res) {
+                        return Response()->json(['code'=>0,'msg'=>'评论成功！','time'=>date('Y-m-d H:i', $time),'ip'=>$_SERVER['REMOTE_ADDR']]);
+                    }
+                } elseif ($dat['pa']==3) {
+                    $news = Db::connection('shop_db')->table('website_navbar')->where(['id'=>$id])->first();
+                    $news = objtoarr($news);
+                    $res = Db::connection('shop_db')->table('website_navbar')->where(['id'=>$id])->update(['share_num'=>intval($news['share_num'])+1]);
+                    if ($res) {
+                        return Response()->json(['code'=>0,'msg'=>'分享成功！']);
+                    }
+                }
+            }
             if ($dat['type']==3) {
                 #跨境新闻
                 if ($dat['pa']==1) {
@@ -783,12 +1205,13 @@ class HomeController extends Frontend
 //                }
 //            }
         } else {
-            $news = Db::connection('shop_db')->table('website_crossborder_news')->where(['id'=>$dat['id']])->first();
+            $nid = intval($dat['id']);
+            $news = Db::connection('shop_db')->table('website_crossborder_news')->where(['id'=>$nid])->first();
             $news = objtoarr($news);
             $news['share_num'] = intval($news['share_num']);
             if (empty($news['like_num'])) {
                 $news['like_num'] = rand(100, 999);
-                Db::connection('shop_db')->table('website_crossborder_news')->where(['id'=>$dat['id']])->update(['like_num'=>$news['like_num']]);
+                Db::connection('shop_db')->table('website_crossborder_news')->where(['id'=>$nid])->update(['like_num'=>$news['like_num']]);
             }
             $news['comment_num'] = Db::connection('shop_db')->table('website_crossborder_news_chat')->where(['news_id'=>$news['id']])->count();
             $id = $news['id'];
@@ -810,17 +1233,20 @@ class HomeController extends Frontend
             $website['content'] = $page_info['content']['content'];
             $website['fontcolor'] = $page_info['content']['fontcolor'];
 
+            $origin_page = '/news_detail?id='.$id;
+            
             #随机码
             $rand = 0;
             #上一个新闻
-            $prev_news = Db::connection('shop_db')->table('website_crossborder_news')->where('id', '<', $dat['id'])->orderBy('id', 'desc')->limit(1)->first();
+            $prev_news = Db::connection('shop_db')->table('website_crossborder_news')->where('id', '<', $id)->orderBy('id', 'desc')->limit(1)->first();
             $prev_news = objtoarr($prev_news);
             #下一个新闻
-            $next_news = Db::connection('shop_db')->table('website_crossborder_news')->where('id', '>', $dat['id'])->orderBy('id', 'asc')->limit(1)->first();
+            $next_news = Db::connection('shop_db')->table('website_crossborder_news')->where('id', '>', $id)->orderBy('id', 'asc')->limit(1)->first();
             $next_news = objtoarr($next_news);
+            
             #所有评论
             $type=3;
-            $all_comment = Db::connection('shop_db')->table('website_crossborder_news_chat')->where(['news_id'=>$dat['id'],'type'=>$type])->orderBy('id', 'desc')->get();
+            $all_comment = Db::connection('shop_db')->table('website_crossborder_news_chat')->where(['news_id'=>$id,'type'=>$type])->orderBy('id', 'desc')->get();
             $all_comment = objtoarr($all_comment);
 
             #是否有配置跳转其他应用
@@ -830,8 +1256,8 @@ class HomeController extends Frontend
                 $footerInfo['link'] = $this->getAppLink(2, ['other_navbar'=>$footerInfo['content_id']]);
                 $data['url'] = $footerInfo['link'];
             }
-
-            return view('home.news_detail', compact('website', 'news', 'id', 'rand', 'data', 'prev_news', 'next_news', 'signPackage', 'all_comment', 'type', 'footerInfo'));
+            
+            return view('home.news_detail', compact('website', 'news', 'id', 'rand', 'data', 'prev_news', 'next_news', 'signPackage', 'all_comment', 'type', 'footerInfo','origin_page'));
         }
     }
 
@@ -1080,7 +1506,7 @@ class HomeController extends Frontend
                 $footerInfo['link'] = $this->getAppLink(2, ['other_navbar'=>$footerInfo['content_id']]);
                 $data['link'] = $footerInfo['link'];
             }
-
+            
             return view('home.txt_detail', compact('website', 'news', 'id', 'data', 'signPackage', 'all_comment', 'type', 'rand', 'footerInfo', 'origin_page'));
         }
     }

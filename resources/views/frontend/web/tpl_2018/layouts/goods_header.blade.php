@@ -47,7 +47,7 @@
         .navbar-default .navbar-nav>.open>a, .navbar-default .navbar-nav>.open>a:hover, .navbar-default .navbar-nav>.open>a:focus{color:#d17107;}
         .dropdown-menu>li>a{color:#000000;}
         /*头部二级导航*/
-        .navbar_more_content{background: #fff;height: 30px;position: absolute;width: 100%;top: 70px;border-top: 2px solid {{$website['color_word']}};}
+        .navbar_more_content{background: {{$website['color']}};height: 30px;position: absolute;width: 100%;top: 70px;border-top: 2px solid {{$website['color_word']}};}
         .navbar_more_content .navbar_txt a{color:{{$website['color_word']}};font-weight: 800;font-size: 18px;}
         .navbar_more_content .navbarCon{width:850px;margin:0 auto;justify-content: space-evenly;height:100%;}
         /*更多应用*/
@@ -211,12 +211,12 @@
                                             @if($vo2['go_other']==1)
                                                 <li><a href="{{$vo2['other_link']}}" target="_blank" class="f18">{{$vo2['name']}}</a></li>
                                             @elseif($vo2['go_other']==2)
-                                                <li><a href="?s=index/detail&id={{$vo2['other_navbar']}}" target="_blank" class="f18">{{$vo2['name']}}</a></li>
+                                                <li><a href="/detail?id={{$vo2['other_navbar']}}" target="_blank" class="f18">{{$vo2['name']}}</a></li>
                                             @else
                                                 <li><a href="@if($vo2['type']==5)
                                                             javascript:connect_aikefu();
     @else
-                                                            /?s=main/guide_page&page_id={{$vo2['id']}}
+                                                            /detail?={{$vo['id']}}
                                                     @endif" class="f18">{{$vo2['name']}}</a></li>
                                             @endif
                                         @endforeach
@@ -226,9 +226,9 @@
                                 @if($vo['go_other']==1)
                                     <li><a href="{{$vo['other_link']}}" target="_blank" class="f22">{{$vo['name']}}</a></li>
                                 @elseif($vo['go_other']==2)
-                                    <li><a href="?s=index/detail&id={{$vo['other_navbar']}}" target="_blank" class="f22">{{$vo['name']}}</a></li>
+                                    <li><a href="/detail?id={{$vo['other_navbar']}}" target="_blank" class="f22">{{$vo['name']}}</a></li>
                                 @else
-                                    <li><a href="/?s=main/guide_page&page_id={{$vo2['id']}}" class="f22">{{$vo['name']}}</a></li>
+                                    <li><a href="/detail?={{$vo['id']}}" class="f22">{{$vo['name']}}</a></li>
                                 @endif
                             @endif
                         @endforeach

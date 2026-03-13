@@ -2,7 +2,7 @@
         footer{background:#2f2f2f;border-top:2px solid {{$website['color_word']}};position: fixed;bottom:0;left:0;width: 100%;display: none;z-index: 9;padding:10px;}
         footer a:hover{color:unset;}
         footer .footerItem,footer .footerItem2{text-align: center;position:relative;cursor:pointer;font-weight: 600;}
-        footer .footerItem *,footer .footerItem2 *{color:{{$website['color']}};}
+        footer .footerItem *,footer .footerItem2 *{color:{{$website['color_word']}};}
         /*footer .footerItem:hover,footer .footerItem2:hover{color:#e60000;}*/
         footer .footerItem:after{content:'';width: 0;position: absolute;top: 5px;left: 60%;height: 0;border-left: 10px solid transparent;border-right: 10px solid transparent;border-bottom: 10px solid #fff;transform: rotate(180deg);}
         footer .footerItem2:after{content:'';width: 0;position: absolute;top: 5px;left: 60%;height: 0;border-left: 10px solid transparent;border-right: 10px solid transparent;border-bottom: 10px solid #fff;}
@@ -12,8 +12,8 @@
         footer .footerItem2 .footerChildren .footerChildrenItem a span{font-size: 15px;}
         .contact_contain{width: 40%;position: relative;left:10%}
         .foot-menu{justify-content: space-between;align-items:baseline;}
-        footer .widgetheading{color:{{$website['color']}};/*text-shadow: -1px 0px 0px #fff, 0px 1px 0px #fff, 1px 0px 0px #fff, 0px -1px 0px #fff;*/}
-        footer ul.link-list li a{color:{{$website['color']}};}
+        footer .widgetheading{color:{{$website['color_word']}};font-weight:800;/*text-shadow: -1px 0px 0px #fff, 0px 1px 0px #fff, 1px 0px 0px #fff, 0px -1px 0px #fff;*/}
+        footer ul.link-list li a{color:{{$website['color_word']}};}
         footer ul.link-list li a:hover{color:#c60001 !important;}
         .footerDiv{display: grid;grid-template-columns: repeat(4,1fr);-moz-column-gap: 0px;column-gap: 0px;row-gap: 0px;}
 

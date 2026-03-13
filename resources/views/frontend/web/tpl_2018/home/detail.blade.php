@@ -57,14 +57,14 @@
     <section id="content" class="non_topimg">
         <div class="w1200">
             <div class="container detail_container">
-                <p class="navbar_menu"><i class="fa fa-sign-in" style="margin-right:5px;display:none;"></i><a href="/">HOME</a>&nbsp;<span style="color:{{$website['fontcolor']}};">\</span>&nbsp;{{$news['title']}}</p>
+                <p class="navbar_menu"><i class="fa fa-sign-in" style="margin-right:5px;display:none;"></i><a href="/">HOME</a>&nbsp;<span style="color:{{$website['fontcolor']}};">\</span>&nbsp;{{$news['name']}}</p>
                 <hr style="border-top:1px solid {{$website['fontcolor']}};">
             </div>
             <div class="container" style="padding-top:0;">
-            <div class="title">{{$news['title']}}</div>
+            <div class="title">{{$news['name']}}</div>
             <div class="content" >
                 <!--<div class="in_mask"></div>-->
-                <div class="contents">{{$news['descs']}}</div>
+                <div class="contents">{!! $news['content'] !!}</div>
                 @include("layouts.like")
                 <div class="like">
                     <div class="disf">
@@ -83,20 +83,7 @@
                     </div>
                 </div>
             </div>
-            <div class="page_box disf">
-                <div class="prev">@if(empty($prev_news))
-                        上一篇：无
-                    @else
-                        <a href="/news_detail?id={{$prev_news['id']}}"><&nbsp;上一篇</a>
-                    @endif
-                </div>
-                <div class="next">@if(empty($next_news))
-                        下一篇：无
-                    @else
-                        <a href="/news_detail?id={{$next_news['id']}}">下一篇&nbsp;></a>
-                    @endif
-                </div>
-            </div>
+            
             <hr  style="border-top:1px solid #fff;"/>
             <div class="row">
                 <div class="col-md-12">

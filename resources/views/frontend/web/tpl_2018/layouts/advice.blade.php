@@ -168,10 +168,11 @@
             </div>
         </a>
 
-        <a href="https://mp.weixin.qq.com/mp/profile_ext?action=home&__biz=MzA4MDQyMTMxMQ==&scene=110#wechat_redirect">
+        <!--https://mp.weixin.qq.com/mp/profile_ext?action=home&__biz=MzA4MDQyMTMxMQ==&scene=110#wechat_redirect-->
+        <a href="javascript:show_gongzhonghao();">
             <div class="need_share">
                 <img src="https://www.gogo198.net/img/wechat.png" alt="" style="width:20px;">
-                关注公号
+                关注我们
             </div>
         </a>
     </div>
@@ -296,6 +297,14 @@
         </form>
     </div>
 </div>
+<div class="mask_content gongzhonghao" style="background:{$website['color']} !important;border:1px solid {$website['color_word']};">
+    <div style="text-align: center;width:100%;margin-top:60px;">
+        <img src="https://www.gogo198.net/img/qrcode_for_gogo.jpg" style="width:200px;height:200px;">
+    </div>
+    <div class="btn-line">
+        <button class="cancel">关闭</button>
+    </div>
+</div>
 <!--24cc75ad1129c-->
 <script id="-mob-share" src="https://f1.webshare.mob.com/code/mob-share.js?appkey=380c201776a57"></script>
 <script src="/assets/d2eace91/js/jquery.js?v=1.1"></script>
@@ -340,8 +349,22 @@
             $('.mask').fadeOut('slow');
             $('.advice').fadeOut('slow');
         });
+        
+        $('.gongzhonghao .cancel').click(function(){
+            $('.mask').fadeOut('slow');
+            $('.gongzhonghao').fadeOut('slow');
+        });
     });
+    
+    //弹窗显示公众号二维码
+    function show_gongzhonghao(){
+        $('.mask').fadeIn('slow');
 
+        //出现的部分
+        $('.gongzhonghao').fadeIn('slow');
+        $('.gongzhonghao').css('bottom',0);
+    }
+    
     function show_advice(){
         //罩
         // $('.mask').css('height',height);
@@ -351,6 +374,7 @@
         $('.advice').fadeIn('slow');
         $('.advice').css('bottom',0);
     }
+    
     var share_num = 0;
     function show_share(){
         // var height = document.body.scrollHeight;

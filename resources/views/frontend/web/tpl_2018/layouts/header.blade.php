@@ -37,10 +37,12 @@
         .navbar-default .navbar-nav>.open>a, .navbar-default .navbar-nav>.open>a:hover, .navbar-default .navbar-nav>.open>a:focus{background:transparent;}
         header .nav .caret {border-bottom-color: {{$website['color_word']}};border-top-color: {{$website['color_word']}};}
         .navbar .nav > li > a{color:{{$website['color_word']}};font-weight: 800;/*text-shadow: -1px 0px 0px {{$website['color']}}, 0px 1px 0px {{$website['color']}}, 1px 0px 0px {{$website['color']}}, 0px -1px 0px {{$website['color']}};*/}
+        .navbar .nav > li > a:hover{color:{{$website['color_word']}}}
+        .navbar .nav a{color:#000;}
         .navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.active>a:hover, .navbar-default .navbar-nav>.active>a:focus{color:#fff;}
         .dropdown-menu li a:hover{background:#000000 !important;}
         /*.navbar-default .navbar-nav>.open>a, .navbar-default .navbar-nav>.open>a:hover, .navbar-default .navbar-nav>.open>a:focus{color:#d17107;}*/
-        .dropdown-menu>li>a{color:#000000;}
+        .dropdown-menu>li>a{color:{{$website['color_word']}};}
         header .container .containerDiv{width:1210px;margin:0 auto;display:flex;align-items: center;justify-content: space-between;padding:7px 0;box-sizing: border-box;}
         /*更多应用*/
         .appsBox{width: 155px;margin-right:10px;}
@@ -147,7 +149,7 @@
         .next-btn-helper:hover,
         .next-btn:hover,
         .view_btn:hover,
-        .buy_goods:hover{border-color:#c60001 !important;}
+        .buy_goods:hover{border-color:{{$website['color_head']}} !important;}
 
         /**翻译时更改字体**/
         .f32{font-size: 32px !important;}
@@ -191,7 +193,7 @@
                 .newsContainer .news a{color:{{$website['color_word']}};font-weight:800;}
                 .newsContainer .news a p{color:#fff;font-weight:800;line-height: 20px;width:100%;white-space: nowrap;text-overflow:unset;overflow: unset;}
                 /*时间*/
-                .news_box{background:#c60001;width: 100%;margin:0 auto;padding:1px 0px;box-sizing: border-box;border-radius:0px;border:1px solid #000;transition: all 0.3s ease;}
+                .news_box{background:{{$website['color']}};width: 100%;margin:0 auto;padding:1px 0px;box-sizing: border-box;border-radius:0px;border:1px solid #000;transition: all 0.3s ease;}
                 .news_box .time, .news_box .mtime{margin:0px 0px 0;color:#000;font-size:15px;}
                 .news_box .time span, .news_box .mtime span{font-size: 15px;white-space: nowrap;font-weight: 800;color:#fff;}
                 .news_box .time .chosen-container span, .news_box .mtime .chosen-container span{color:#000;}
@@ -422,7 +424,7 @@
                 </div>
             @endif
 
-            <div class="container" style="font-size:20px;background: {{$website['color']}};height:78px;">
+            <div class="container pc_header" style="font-size:20px;background: {{$website['color']}};height:78px;">
                 <div class="containerDiv">
                     <div class="navbar-header">
                         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse2">
@@ -453,12 +455,12 @@
                                                 @if($vo2['go_other']==1)
                                                     <li><a href="{{$vo2['other_link']}}" target="_blank" class="f18">&nbsp;&nbsp;{{$vo2['name']}}</a></li>
                                                 @elseif($vo2['go_other']==2)
-                                                    <li><a href="?s=index/detail&id={{$vo2['other_navbar']}}" target="_blank" class="f18">&nbsp;&nbsp;{{$vo2['name']}}</a></li>
+                                                    <li><a href="/detail?id={{$vo2['other_navbar']}}" target="_blank" class="f18">&nbsp;&nbsp;{{$vo2['name']}}</a></li>
                                                 @else
                                                     <li><a href="@if($vo2['type']==5)
                                                                 javascript:connect_aikefu();
 @else
-                                                                /?s=main/guide_page&page_id={{$vo2['id']}}
+                                                                /detail?id={{$vo2['id']}}
                                                         @endif" class="f18">&nbsp;&nbsp;{{$vo2['name']}}</a></li>
                                                 @endif
                                             @endforeach
@@ -468,9 +470,9 @@
                                     @if($vo['go_other']==1)
                                         <li><a href="{{$vo['other_link']}}" target="_blank" class="f20">&nbsp;&nbsp;{{$vo['name']}}</a></li>
                                     @elseif($vo['go_other']==2)
-                                        <li><a href="?s=index/detail&id={{$vo['other_navbar']}}" target="_blank" class="f20">&nbsp;&nbsp;{{$vo['name']}}</a></li>
+                                        <li><a href="/detail?id={{$vo['other_navbar']}}" target="_blank" class="f20">&nbsp;&nbsp;{{$vo['name']}}</a></li>
                                     @else
-                                        <li><a href="/?s=main/guide_page&page_id={{$vo2['id']}}" class="f20">&nbsp;&nbsp;{{$vo['name']}}</a></li>
+                                        <li><a href="/detail?id={{$vo['id']}}" class="f20">&nbsp;&nbsp;{{$vo['name']}}</a></li>
                                     @endif
                                 @endif
                             @endforeach
@@ -497,7 +499,7 @@
                             <li>
                                 <a href="javascript:connect_kefu();" class="f20" style="margin-right:20px;">
                                     在线客服
-                                    {{--                                    <img src="/images/kefu.png" style="width:30px;height:30px;">--}}
+                                    {{--<img src="/images/kefu.png" style="width:30px;height:30px;">--}}
                                 </a>
                             </li>
                             @if(!empty(session('user')))
@@ -507,7 +509,7 @@
                                 </style>
                                 <li class="dropdown dd_parent" onclick="javascript:removeclass(this);">
                                     <a href="#" data-toggle="dropdown" class="dropdown-toggle f20" style="text-transform:unset;">
-                                        {{--                                        <img src="/images/member.png" style="width:30px;height:30px;">--}}
+                                        {{--<img src="/images/member.png" style="width:30px;height:30px;">--}}
                                         GoFriend
                                         <b class="caret"></b>
                                     </a>
@@ -521,13 +523,10 @@
                             @else
                                 <li class="dropdown dd_parent" onclick="javascript:removeclass(this);">
                                     <a href="/login.html" data-toggle2="dropdown" class="dropdown-toggle f20" style="text-transform:unset;">
-                                        {{--                                        <img src="/images/member.png" style="width:25px;height:25px;"> --}}
+                                        {{--<img src="/images/member.png" style="width:25px;height:25px;"> --}}
                                         注册/登录
                                         <b class="caret"></b>
                                     </a>
-                                    {{--                                    <ul class="dropdown-menu">--}}
-                                    {{--                                        <li><a href="/login.html" class="f18">&nbsp;&nbsp;登录/注册</a></li>--}}
-                                    {{--                                    </ul>--}}
                                 </li>
                             @endif
                         </ul>
@@ -567,12 +566,12 @@
                                                 @if($vo2['go_other']==1)
                                                     <li><a href="{{$vo2['other_link']}}" target="_blank" class="f18">&nbsp;&nbsp;{{$vo2['name']}}</a></li>
                                                 @elseif($vo2['go_other']==2)
-                                                    <li><a href="?s=index/detail&id={{$vo2['other_navbar']}}" target="_blank" class="f18">{{$vo2['name']}}</a></li>
+                                                    <li><a href="/detail?id={{$vo2['other_navbar']}}" target="_blank" class="f18">{{$vo2['name']}}</a></li>
                                                 @else
                                                     <li><a href="@if($vo2['type']==5)
                                                                 javascript:connect_aikefu();
                                                         @else
-                                                                /?s=main/guide_page&page_id={{$vo2['id']}}
+                                                                /detail?id={{$vo2['id']}}
                                                         @endif" class="f18">{{$vo2['name']}}</a></li>
                                                 @endif
                                             @endforeach
@@ -582,9 +581,9 @@
                                     @if($vo['go_other']==1)
                                         <li><a href="{{$vo['other_link']}}" target="_blank" class="f20">{{$vo['name']}}</a></li>
                                     @elseif($vo['go_other']==2)
-                                        <li><a href="?s=index/detail&id={{$vo['other_navbar']}}" target="_blank" class="f20">{{$vo['name']}}</a></li>
+                                        <li><a href="/detail?id={{$vo['other_navbar']}}" target="_blank" class="f20">{{$vo['name']}}</a></li>
                                     @else
-                                        <li><a href="/?s=main/guide_page&page_id={{$vo2['id']}}" class="f20">{{$vo['name']}}</a></li>
+                                        <li><a href="/detail?id={{$vo['id']}}" class="f20">{{$vo['name']}}</a></li>
                                     @endif
                                 @endif
                             @endforeach

@@ -178,8 +178,8 @@
         .purchase_process .new-goods-options-content>.label.label-three:before {background: {{$website['color']}};border-radius: 50%;bottom: 0;color: {{$website['color_word']}};content: "3";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$website['color']}};}
         .purchase_process .new-goods-options-content>.label.label-forth:before {background: {{$website['color']}};border-radius: 50%;bottom: 0;color: {{$website['color_word']}};content: "4";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$website['color']}};}
         .purchase_process .goods-freight {border: 1px solid #eee;color: #999;height: 26px;line-height: 29px;text-indent: 40px;transition: all .3s linear;vertical-align: top;width: 80px;}
-        .new-goods-options-content .label-title {color: {{$website['color_word']}};font-size: 15px;font-weight:600;}
-        .new-goods-options-content>.label .arrow {color: {{$website['color_word']}};font-size: 18px;line-height: 18px;margin: 0px 5px;}
+        .new-goods-options-content .label-title {color: #000;font-size: 15px;font-weight:600;}
+        .new-goods-options-content>.label .arrow {color: #000;font-size: 18px;line-height: 18px;margin: 0px 5px;}
         .new-goods-options-content>.label .label-description {font-size: 12px;}
         .new-goods-options-content>.label .label-description em {color: #333;font-weight: 700;margin-left: 8px;}
         .new-goods-options-content>.label .label-freight {align-items: center;display: flex;margin-left: auto;}
@@ -202,7 +202,7 @@
         .new-goods-options-content>.label .label-freight {align-items: center;display: flex;margin-left: auto;}
         .new-goods-options-content>.label .label-freight>span {font-size: 12px;}
         .new-goods-options-content>.label .label-freight .label-icon {display: flex;}
-        .purchase_process .goods-options-freight a {color: {{$website['color_word']}};}
+        .purchase_process .goods-options-freight a {color: #000;}
         .new-goods-options-content>.label .label-freight .label-icon li span {color: #333;cursor: pointer;font-size: 20px;font-weight: 700;line-height: 24px;margin-left: 8px;transition: all .3s linear;user-select: none;}
         .purchase_process .new-goods-options-content>.label-forth{margin-bottom:0;}
         /*商品规格*/
@@ -317,7 +317,7 @@
         .detailContent .detailHead .detailBtmBox .detailBtmShow{display: block;}
         .detailContent .detailHead .detailBtmBox .detailBtmHide{display: none;}
         .detailContent .detailHead .detailBtmBox .detailBtmDiv{width: 100%;}
-        .detailContent .detailHead .detailBtmBox .detailBtmDiv .detailBtmTxt{font-size: 15px;color:{{$website['color_word']}};display: inline-block;margin-right:50px;font-weight: 800;position:relative;cursor:pointer;}
+        .detailContent .detailHead .detailBtmBox .detailBtmDiv .detailBtmTxt{font-size: 15px;color:#000;display: inline-block;margin-right:50px;font-weight: 800;position:relative;cursor:pointer;}
         .detailContent .detailHead .detailBtmBox .detailBtmTxtAct:after{content:'';position:absolute;left: 50%;bottom: 0;width: calc(100% - 20px);height: 2px;border-bottom: 2px solid {{$website['color']}};transform: translate(-50%, 5px);}
         /*详情底部*/
         .detailContent .detailBtm .detailBtmLeft{width: 70%;height:100%;float:left;margin-bottom:60px;}
@@ -574,7 +574,7 @@
                             .receiver-info {display: flex;align-items: center;margin-bottom: 5px;font-size: 14px;}
                             .receiver-name {font-weight: bold;color: #333;margin-right: 15px;}
                             .receiver-phone {color: #666;margin-right: 10px;}
-                            .default-tag {padding: 2px 6px;background-color: {{$website['color']}};color: #000;border-radius: 2px;font-size: 12px;line-height: 1;}
+                            .default-tag {padding: 2px 6px;background-color: {{$website['color']}};color: {{$website['color_word']}};border-radius: 2px;font-size: 12px;line-height: 1;}
                             .address-detail {color: #666;font-size: 13px;line-height: 1.4;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
                             .no-address-prompt span {color: #000;font-size: 15px;font-weight:600;}
                             .address-arrow {margin-left: 10px;color: #000;transition: transform 0.3s;}
@@ -1372,12 +1372,13 @@
                                                         <div class="layui-input-block postal_div disf">
                                                             <div class="select_box have_postal_code_div">
                                                                 <select name="have_postal_code" id="have_postal_code" lay-verify="required" lay-filter="have_postal_code">
-                                                                    <option value="1" selected>有邮政编码</option>
+                                                                    <option>请选择</option>
+                                                                    <!--<option value="1" selected>有邮政编码</option>-->
                                                                     <option value="2">无邮政编码</option>
                                                                 </select>
                                                             </div>
-                                                            <input type="text" class="layui-input" name="postal" id="postal_code" value="" placeholder="请输入邮政编码">
-                                                            <input type="text" class="layui-input address_pcq pre_box" name="pre_address" style="margin-right:5px;" value="">
+                                                            <input type="text" class="layui-input" name="postal" id="postal_code" value="" placeholder="请输入邮政编码" style="display:none;">
+                                                            <input type="text" class="layui-input address_pcq pre_box" name="pre_address" style="margin-right:5px;display:none;" value="">
                                                         </div>
                                                     </div>
                                                     <div class="layui-form-item select_pcd" style="display:none;">

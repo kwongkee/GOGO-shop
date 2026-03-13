@@ -26,7 +26,7 @@
     .cashierDiv .cashier_head .cashier_title .nav_box a{color:{{$website['color_word']}};font-size:15px;margin-right:30px;}
     .cashierDiv .cashier_head .cashier_title .nav_box a:last-child{margin-right:0;}
     .cashierDiv .cashier_head .order_info{justify-content: space-between;padding:5px 15px;box-sizing: border-box;border:1px solid {{$website['color']}};border-top:0;}
-    .cashierDiv .cashier_head .order_info .left,.cashierDiv .cashier_head .order_info .right a{font-size:16px;color:{{$website['color_word']}};font-weight: 800;}
+    .cashierDiv .cashier_head .order_info .left,.cashierDiv .cashier_head .order_info .right a{font-size:16px;color:{{$website['color']}};font-weight: 800;}
     .cashierDiv .cashier_head .order_money{justify-content: space-between;padding:5px 15px;box-sizing: border-box;border:1px solid {{$website['color_word']}};}
     .cashierDiv .cashier_head .order_money .default_div{color:#000;font-weight: 800;font-size: 16px;}
     .cashierDiv .cashier_head .order_money .active_div{color:#db1d18;font-weight: 800;font-size: 16px;}

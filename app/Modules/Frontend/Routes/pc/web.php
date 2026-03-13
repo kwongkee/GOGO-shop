@@ -40,6 +40,7 @@ Route::group(['domain' => env('FRONTEND_DOMAIN')], function ($router) {
     Route::any('/customer_online', 'HomeController@customer_online'); // 客服中心
     Route::any('/rate_detail', 'HomeController@rate_detail'); // 汇率详情
     Route::any('/txt_detail', 'HomeController@txt_detail'); // 图文详情
+    Route::any('/detail', 'HomeController@detail'); // 菜单详情
     Route::any('/policy_detail', 'HomeController@policy_detail'); // 政策详情
     Route::any('/social_detail', 'HomeController@social_detail'); // 社交详情
     Route::any('/friendly_link', 'HomeController@friendly_link'); // 友情链接

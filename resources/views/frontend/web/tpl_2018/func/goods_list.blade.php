@@ -528,11 +528,7 @@
                                 @foreach($list as $k=>$v)
                                 <div class="goods_box" onclick="view_detail({{$v['goods_id']}})" title="{{$v['goods_name']}}">
                                     <div class="goods_image">
-                                        @if($v['shop_id']>0)
-                                            <img src="https://dtc.gogo198.net{{$v['goods_image']}}" class="img">
-                                        @else
-                                            <img src="{{$v['goods_image']}}" class="img">
-                                        @endif
+                                        <img src="{{$v['goods_image']}}" class="img">
                                     </div>
                                     <div class="goods_info">
                                         <div class="gcon">

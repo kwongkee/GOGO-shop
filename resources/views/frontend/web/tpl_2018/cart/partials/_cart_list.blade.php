@@ -50,11 +50,11 @@
     .cart-tab--remainWrapper--Ad_Lfpg .cart-tab--addressWrapper--fVnyBG0 .cart-tab--addressModify--SVJE0Yf {margin-left: 6px;cursor: pointer;}
     .header-bar--container--XmK_Sks {padding: 5px 0;}
     .header-bar--table--qVDj5tO {border-collapse: collapse;border-spacing: 0;table-layout: fixed;width: 100%}
-    .header-bar--table--qVDj5tO th {color: #000;font-size: 15px;font-weight: 800;}
+    .header-bar--table--qVDj5tO th {color: {{$website['color_head']}};font-size: 15px;font-weight: 800;}
     .nobuy_div{margin-bottom: 140px;}
     .nobuy_div .tui-sticky-view{position: fixed;bottom: 6%;left: 50%;width: 100%;transform: translate(-50%, 0);max-width: 1200px;box-shadow: 0px 0px 10px 1px #ccc;}
-    .albuy_div .header-bar--table--qVDj5tO th {color: #000;font-size: 15px;font-weight: 800;text-align:center;}
-    .closebuy_div .header-bar--table--qVDj5tO th {color: #000;font-size: 15px;font-weight: 800;text-align:center;}
+    .albuy_div .header-bar--table--qVDj5tO th {color: {{$website['color_head']}};font-size: 15px;font-weight: 800;text-align:center;}
+    .closebuy_div .header-bar--table--qVDj5tO th {color: {{$website['color_head']}};font-size: 15px;font-weight: 800;text-align:center;}
     .header-bar--colCheckbox--pDopfHb {text-align: left;width: 114px}
     .header-bar--colGoods--Sk6Gd9f {text-align: left}
     .header-bar--colQuantity--bw3tRQ5 {text-align: center;width: 216px}
