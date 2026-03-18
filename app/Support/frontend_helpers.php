@@ -759,7 +759,7 @@ function get_website()
     $website['apps'] = objtoarr($website['apps']);
 
     #菜单
-    $website['menu'] = Db::connection('shop_db')->table('website_navbar')->where(['system_id'=>3,'pid'=>0])->get();
+    $website['menu'] = Db::connection('shop_db')->table('website_navbar')->where(['system_id'=>3,'pid'=>0])->limit(2)->get();
     $website['menu'] = objtoarr($website['menu']);
     foreach ($website['menu'] as $k=>$v) {
         $website['menu'][$k]['name'] = json_decode($v['name'], true)['zh'];

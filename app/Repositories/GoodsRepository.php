@@ -1607,7 +1607,7 @@ class GoodsRepository
             #我们的商城有三级规格型号
             $spec_name = Db::table('goods_sku')->where(['goods_id'=>$goods_id])->get();
             $spec_name = objtoarr($spec_name);
-
+            
 //            整理格式为：
 //            [0]=>[
 //                  'spec_id'=>21,
@@ -1623,15 +1623,108 @@ class GoodsRepository
                 if ($goods_info['have_specs']==1) {
                     #有规格型号
 
+                    if(1>2){
+                        #旧逻辑
+                        // 第一步：提取所有 spec_id 并去重，得到基础结构
+                        $data2 = [];
+                        foreach ($spec_name as $v) {
+                            $spec_ids = explode('|', $v['spec_ids']); // 兼容多个 spec_id 的情况
+                            foreach ($spec_ids as $specId) {
+                                $data2[] = ['spec_id' => $specId, 'children' => []];
+                            }
+                        }
+                        // 根据 spec_id 去重（保留第一个出现的）
+                        $unique = [];
+                        foreach ($data2 as $item) {
+                            if (!isset($unique[$item['spec_id']])) {
+                                $unique[$item['spec_id']] = $item;
+                            }
+                        }
+                        $data2 = array_values($unique); // 重新索引为 0,1,2...
+                        
+                        // 建立 spec_id 到数组索引的映射，方便快速查找
+                        $specIndexMap = [];
+                        foreach ($data2 as $index => $item) {
+                            $specIndexMap[$item['spec_id']] = $index;
+                        }
+                        
+                        // 第二步：遍历每个 SKU，将子属性添加到对应的 spec_id 下
+                        foreach ($spec_name as $sku) {
+                            // 获取当前 SKU 的 spec_id 列表（可能多个）
+                            $specIds = explode('|', $sku['spec_ids']);
+                            // 处理 spec_vids：可能包含多个值，也可能包含 "-" 分隔的复合值
+                            $specVids = explode('|', $sku['spec_vids']);
+                            
+                            foreach ($specVids as $vid) {
+                                // 分解可能存在的复合值，例如 "1014960-128G"
+                                $parts = explode('-', $vid);
+                                if (count($parts) > 1) {
+                                    $attrId = $parts[0];
+                                    $childVal = $parts[1]; // 子属性值，例如 "128G"
+                                } else {
+                                    $attrId = $vid;
+                                    $childVal = null;
+                                }
+                                
+                                // 将该子属性添加到所有关联的 spec_id 下（通常只有一个）
+                                foreach ($specIds as $specId) {
+                                    if (!isset($specIndexMap[$specId])) {
+                                        continue; // 理论上不会发生，但以防万一
+                                    }
+                                    $targetIndex = $specIndexMap[$specId];
+                                    
+                                    if ($childVal !== null) {
+                                        // 需要处理 have_child 的情况
+                                        $found = false;
+                                        // 使用引用直接修改已有 children
+                                        foreach ($data2[$targetIndex]['children'] as &$child) {
+                                            if ($child['attr_id'] == $attrId) {
+                                                if (!in_array($childVal, $child['have_child'])) {
+                                                    $child['have_child'][] = $childVal;
+                                                }
+                                                $found = true;
+                                                break;
+                                            }
+                                        }
+                                        unset($child); // 断开引用
+                                        if (!$found) {
+                                            $data2[$targetIndex]['children'][] = [
+                                                'attr_id' => $attrId,
+                                                'have_child' => [$childVal]
+                                            ];
+                                        }
+                                    } else {
+                                        // 简单情况：只有 attr_id，没有 have_child
+                                        $exists = false;
+                                        foreach ($data2[$targetIndex]['children'] as $child) {
+                                            if ($child['attr_id'] == $attrId) {
+                                                $exists = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!$exists) {
+                                            $data2[$targetIndex]['children'][] = [
+                                                'attr_id' => $attrId,
+                                                'have_child' => []
+                                            ];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     #1、整理规格型号ID
                     $spec_ids = explode('|', $spec_name[0]['spec_ids']);
                     $data2 = [];
                     foreach ($spec_ids as $k=>$v) {
                         array_push($data2, ['spec_id'=>$v,'children'=>[]]);
                     }
-
+                    // dd($spec_name);
+                    
                     foreach ($spec_name as $k=>$v) {
                         $spec_name[$k]['spec_vids'] = explode('|', $v['spec_vids']);
+                        
                         foreach ($spec_name[$k]['spec_vids'] as $k2=>$v2) {
                             $spec_name[$k]['spec_vids'][$k2] = explode('-', $v2);
                             if (count($spec_name[$k]['spec_vids'][$k2])>1) {
@@ -1662,7 +1755,10 @@ class GoodsRepository
                             }
                         }
                     }
+
+                    // 最终结果
                     // dd($data2);
+                    
                     #2、整理规格型号文本
                     foreach ($data2 as $k=>$v) {
                         $attr_values = [];

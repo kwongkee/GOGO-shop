@@ -695,7 +695,7 @@ class GoodsController extends Frontend
             
             // 商品规格列表 + has_sku 判断（优化 N+1）
             $spec_list = $this->goods->getGoodsSpecList($goods_info);
-    
+            // dd($spec_list);
             if (!empty($spec_list)) {
                 // 一次性取出该商品所有 SKU 的 spec_vids
                 $all_spec_vids = DB::table('goods_sku')
@@ -7464,11 +7464,12 @@ class GoodsController extends Frontend
         $goods_info = $this->goods->getById($goods_id)->toArray();
         $shop_info = [];
         
-        if ($goods_info['shop_id']>0) {
+        // if ($goods_info['shop_id']>0) {
             // 店铺信息
 //            $shop_info = Shop::where('shop_id',$goods_info['shop_id'])->first()->toArray();
 //            $shop_info['opening_hour'] = unserialize($shop_info['opening_hour']);
-        }
+        // }
+        
         // 默认sku
 //        $default_sku = GoodsSku::where('sku_id',$sku_id)->first()->toArray();
         if ($goods_info['shop_id']>0) {
@@ -7492,7 +7493,7 @@ class GoodsController extends Frontend
         $spec_ids = explode('|', $default_sku['spec_ids']);
         $selected_spec_names = $default_sku['spec_names'];
         $selected_spec_id = explode('|', $default_sku['spec_vids'])[0];
-
+        
         //这里是根据规格来更换图片
 //        $selected_spec_id = Db::table('goods_spec')->where([['goods_id',$goods_id],['attr_vid',$selected_spec_id]])->first()->spec_id;
 //        $goods_images = $this->goods->getGoodsImages($goods_id, $selected_spec_id);
@@ -7552,8 +7553,13 @@ class GoodsController extends Frontend
                 $low_price = $v;
             }
         }
+        
         if ($goods_info['shop_id']>0) {
-            $low_price = [$sku_prices['currency'][0],number_format($sku_prices['price'][0], 2)];
+            try{
+                $low_price = [$sku_prices['currency'][0],number_format($sku_prices['price'][0], 2)];
+            }catch (\Exception $e){
+                $low_price = [$sku_prices['currency'][0],$sku_prices['price'][0]];
+            }
         } else {
             $low_price = [$sku_prices['currency'][0],number_format($low_price, 2)];
         }

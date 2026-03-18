@@ -488,8 +488,17 @@ class HomeController extends Frontend
                         #标题+图片（一排四个）卡片样式
                         if($v['bind_festival']==1){
                             $services[$k]['children'] = $this->get_festival();
+                        }elseif($v['supply_show']==0){
+                            #接口商品
+                            $services[$k]['children'] = $this->get_api_goods($v['api_merchant'],$currency,$v);
+                        }elseif($v['supply_show']==1){
+                            #买手商品
+                            $services[$k]['children'] = $this->get_buyer_goods($v['buyer_merchant'],$currency,$v);
+                        }elseif($v['supply_show']==2){
+                            #店铺商品
+                            $services[$k]['children'] = $this->get_shop_goods($v['shop_merchant'],$currency,$v);
                         }elseif(!empty($v['gkeywords'])){
-                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency);
+                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency,$v);
                         }else{
                             $services[$k]['children'] = Db::table('guide_content')->where(['pid'=>$v['id'],'system_id'=>3,'top_id'=>0])->get();
                             $services[$k]['children'] = objtoarr($services[$k]['children']);
@@ -505,8 +514,17 @@ class HomeController extends Frontend
                         
                         if($v['bind_festival']==1){
                             $services[$k]['children'] = $this->get_festival();
+                        }elseif($v['supply_show']==0){
+                            #接口商品
+                            $services[$k]['children'] = $this->get_api_goods($v['api_merchant'],$currency,$v);
+                        }elseif($v['supply_show']==1){
+                            #买手商品
+                            $services[$k]['children'] = $this->get_buyer_goods($v['buyer_merchant'],$currency,$v);
+                        }elseif($v['supply_show']==2){
+                            #店铺商品
+                            $services[$k]['children'] = $this->get_shop_goods($v['shop_merchant'],$currency,$v);
                         }elseif(!empty($v['gkeywords'])){
-                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency);
+                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency,$v);
                         }else{
                             $services[$k]['children'] = Db::table('guide_content')->where(['pid'=>$v['id'],'system_id'=>3,'top_id'=>0])->get();
                             $services[$k]['children'] = objtoarr($services[$k]['children']);
@@ -522,8 +540,17 @@ class HomeController extends Frontend
                         
                         if($v['bind_festival']==1){
                             $services[$k]['children'] = $this->get_festival();
+                        }elseif($v['supply_show']==0){
+                            #接口商品
+                            $services[$k]['children'] = $this->get_api_goods($v['api_merchant'],$currency,$v);
+                        }elseif($v['supply_show']==1){
+                            #买手商品
+                            $services[$k]['children'] = $this->get_buyer_goods($v['buyer_merchant'],$currency,$v);
+                        }elseif($v['supply_show']==2){
+                            #店铺商品
+                            $services[$k]['children'] = $this->get_shop_goods($v['shop_merchant'],$currency,$v);
                         }elseif(!empty($v['gkeywords'])){
-                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency);
+                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency,$v);
                         }else{
                             $services[$k]['children'] = Db::table('guide_content')->where(['pid'=>$v['id'],'system_id'=>3,'top_id'=>0])->get();
                             $services[$k]['children'] = objtoarr($services[$k]['children']);
@@ -574,8 +601,17 @@ class HomeController extends Frontend
                         
                         if($v['bind_festival']==1){
                             $services[$k]['children'] = $this->get_festival();
+                        }elseif($v['supply_show']==0){
+                            #接口商品
+                            $services[$k]['children'] = $this->get_api_goods($v['api_merchant'],$currency,$v);
+                        }elseif($v['supply_show']==1){
+                            #买手商品
+                            $services[$k]['children'] = $this->get_buyer_goods($v['buyer_merchant'],$currency,$v);
+                        }elseif($v['supply_show']==2){
+                            #店铺商品
+                            $services[$k]['children'] = $this->get_shop_goods($v['shop_merchant'],$currency,$v);
                         }elseif(!empty($v['gkeywords'])){
-                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency);
+                            $services[$k]['children'] = $this->get_keywords_goods($v['gkeywords'],$currency,$v);
                         }else{
                             $services[$k]['children'] = Db::table('guide_content')->where(['pid'=>$v['id'],'system_id'=>3,'top_id'=>0])->get();
                             $services[$k]['children'] = objtoarr($services[$k]['children']);
@@ -681,7 +717,7 @@ class HomeController extends Frontend
     }
     
     #根据关键词获取商品
-    public function get_keywords_goods($keywords,$currency){
+    public function get_keywords_goods($keywords,$currency,$navbar=[]){
         $goods_list = collect();
         
         $keywords = array_filter(explode('、', $keywords));
@@ -691,7 +727,8 @@ class HomeController extends Frontend
             ->whereIn('goods_keywords.keywords', $keywords)
             ->where('goods.goods_status', 1)
             ->select('goods.*')
-            ->limit(10)
+            ->inRandomOrder()
+            ->limit(20)
             ->get();
 
         foreach ($kw_goods as $g) {
@@ -717,9 +754,159 @@ class HomeController extends Frontend
             ]);
         }
         
-        $row = $goods_list->shuffle()->take(10)->values()->toArray();
+        $row = $goods_list->shuffle()->take(20)->values()->toArray();
+        $row = objtoarr($row);
         
+        if($keywords[0] == '平台供应商'){
+            #查询商家上架表的当前导页id下是否有相同的关键字对碰
+            $merchant_shelf = Db::table('goods_shelf')->whereRaw('guide_id='.$navbar['id'].' and type=4 and is_shelf_platform=0 and keywords!="" and keywords!=null')->get();
+            $merchant_shelf = objtoarr($merchant_shelf);
+            if(!empty($merchant_shelf)){
+                foreach($merchant_shelf as $k=>$v){
+                    $kwds = explode('、',$v['keywords']);
+                    #两个数组对碰，看看有无相同，叫AI做
+                    // foreach(){
+                        
+                    // }
+                }
+            }
+        }
         return objtoarr($row);
+    }
+    
+    #获取接口商品
+    public function get_api_goods($merchant,$currency,$navbar=[]){
+        $goods_list = collect();
+        $merchant = explode(',',$merchant);
+        
+        $kw_goods = DB::table('goods')
+            ->whereIn('api_id', $merchant)
+            ->where('goods_status', 1)
+            ->select('*')
+            ->inRandomOrder()
+            ->limit(20)
+            ->get();
+
+        foreach ($kw_goods as $g) {
+            $gsku = Db::table('goods_sku')->where(['goods_id'=>$g->goods_id])->select(['sku_prices'])->first();
+            $price = json_decode($gsku->sku_prices,true)['price'];
+            
+            $goods_list->push((object) [
+                'goods_id'       => $g->goods_id,
+                'goods_name'     => $g->goods_name,
+                'goods_image'    => $g->goods_image,
+                'company'        => 'Gogo',
+                'goods_currency' => $currency[$g->goods_currency]['currency_symbol_standard'] ?? 'CNY',
+                'price'          => number_format(end($price), 2),
+                
+                'back_content'   => $g->goods_image,
+                'name'           => $g->goods_name,
+                'go_other'       => 2,
+                'info'           => ['currency'=>$currency[$g->goods_currency]['currency_symbol_standard'] ?? 'CNY','goods_price'=>number_format(end($price), 2)],
+                'other_goods'    => $g->goods_id,
+                'desc'           => $g->goods_name,
+            ]);
+        }
+        
+        $row = $goods_list->shuffle()->take(20)->values()->toArray();
+        $row = objtoarr($row);
+        
+        if(!empty($navbar['keywords'])){
+            $keywords_goods = $this->get_keywords_goods($navbar['keywords'],$currency,$navbar);
+            $row = array_merge($keywords_goods,$row);
+        }
+        
+        return $row;
+    }
+    
+    #获取买手商品
+    public function get_buyer_goods($merchant,$currency,$navbar=[]){
+        $goods_list = collect();
+        $merchant = explode(',',$merchant);
+        
+        $kw_goods = DB::table('goods')
+            ->whereIn('buyer_id', $merchant)
+            ->where('goods_status', 1)
+            ->select('*')
+            ->inRandomOrder()
+            ->limit(20)
+            ->get();
+
+        foreach ($kw_goods as $g) {
+            $gsku = Db::table('goods_sku')->where(['goods_id'=>$g->goods_id])->select(['sku_prices'])->first();
+            $price = json_decode($gsku->sku_prices,true)['price'];
+            
+            $goods_list->push((object) [
+                'goods_id'       => $g->goods_id,
+                'goods_name'     => $g->goods_name,
+                'goods_image'    => $g->goods_image,
+                'company'        => 'Gogo',
+                'goods_currency' => $currency[$g->goods_currency]['currency_symbol_standard'] ?? 'CNY',
+                'price'          => number_format(end($price), 2),
+                
+                'back_content'   => $g->goods_image,
+                'name'           => $g->goods_name,
+                'go_other'       => 2,
+                'info'           => ['currency'=>$currency[$g->goods_currency]['currency_symbol_standard'] ?? 'CNY','goods_price'=>number_format(end($price), 2)],
+                'other_goods'    => $g->goods_id,
+                'desc'           => $g->goods_name,
+            ]);
+        }
+        
+        $row = $goods_list->shuffle()->take(20)->values()->toArray();
+        $row = objtoarr($row);
+        
+        if(!empty($navbar['keywords'])){
+            $keywords_goods = $this->get_keywords_goods($navbar['keywords'],$currency,$navbar);
+            $row = array_merge($keywords_goods,$row);
+        }
+        
+        return $row;
+    }
+    
+    #获取店铺商品
+    public function get_shop_goods($merchant,$currency,$navbar=[]){
+        $goods_list = collect();
+        $merchant = explode(',',$merchant);
+        
+        $kw_goods = DB::table('goods')
+            ->whereIn('shop_id', $merchant)
+            ->where('goods_status', 1)
+            ->select('*')
+            ->inRandomOrder()
+            ->limit(20)
+            ->get();
+
+        foreach ($kw_goods as $g) {
+            $gsku = Db::table('goods_sku')->where(['goods_id'=>$g->goods_id])->select(['sku_prices'])->first();
+            $price = json_decode($gsku->sku_prices,true)['price'];
+            
+            $goods_list->push((object) [
+                'goods_id'       => $g->goods_id,
+                'goods_name'     => $g->goods_name,
+                'goods_image'    => $g->goods_image,
+                'company'        => 'Gogo',
+                'goods_currency' => $currency[$g->goods_currency]['currency_symbol_standard'] ?? 'CNY',
+                'price'          => number_format(end($price), 2),
+                
+                'back_content'   => $g->goods_image,
+                'name'           => $g->goods_name,
+                'go_other'       => 2,
+                'info'           => ['currency'=>$currency[$g->goods_currency]['currency_symbol_standard'] ?? 'CNY','goods_price'=>number_format(end($price), 2)],
+                'other_goods'    => $g->goods_id,
+                'desc'           => $g->goods_name,
+            ]);
+        }
+        
+        $row = $goods_list->shuffle()->take(20)->values()->toArray();
+        $row = objtoarr($row);
+        
+        if(!empty($navbar['keywords'])){
+            $keywords_goods = $this->get_keywords_goods($navbar['keywords'],$currency,$navbar);
+            $row = array_merge($keywords_goods,$row);
+        }
+        
+        return $row;
     }
     
     #获取节日表信息
@@ -2961,6 +3148,106 @@ class HomeController extends Frontend
         $type = intval($dat['type']);
 
         log_user_behavior(['type'=>$type,'ip'=>$ip,'user'=>$user,'goods_id'=>$goods_id,'second'=>$second]);
+    }
+    
+    #成为买手
+    public function become_buyer(Request $request){
+        $dat = $request->except(['_token']);
+        $user = session('user');
+        $id = isset($dat['id'])?intval($dat['id']):0;
+        
+        if (empty($user)) {
+            header('Location: /login.html?open=4&param2='.base64_encode('/become_buyer?id='.$id));
+        }
+        
+        $website_user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>$user['gogo_id']])->first();
+        $website_user = objtoarr($website_user);
+        
+        if ($request->isMethod('post')) {
+            if(empty($id)){
+                #申请成为买手
+                $phone = '';$email = '';$verify_type = '';
+                if($dat['type']==2 || $dat['type']==3){
+                    if($dat['verify_type']==1){
+                        $phone = trim($dat['phone']);
+                        if(empty($phone)){
+                            return Response()->json(['code'=>-1,'msg'=>'手机号码不能为空！']);
+                        }
+                    }elseif($dat['verify_type']==2){
+                        $email = trim($dat['email']);
+                        if(empty($email)){
+                            return Response()->json(['code'=>-1,'msg'=>'邮箱号码不能为空！']);
+                        }
+                    }
+                    $verify_type = $dat['verify_type'];
+                }
+                
+                $time = time();
+                $buyer_id = Db::connection('shop_db')->table('website_buyer')->insertGetId([
+                    'uid'=>$website_user['id'],
+                    'company_id'=>33,#默认钜铭企业买手
+                    'type'=>$dat['type'],
+                    'name'=>trim($dat['name']),
+                    'api_address'=>$dat['type']==1?trim($dat['api_address']):'',
+                    'is_verify'=>$dat['type']==1?1:0,
+                    'is_apply'=>1,
+                    'verify_type'=>$verify_type,
+                    'phone'=>$phone,
+                    'email'=>$email,
+                    'createtime'=>$time
+                ]);
+                if($buyer_id){
+                    #通知总后台
+                    $system = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0])->first();
+                    $system = objtoarr($system);
+                    if ($system['notice_type']==1) {
+                        $post = json_encode([
+                            'call' => 'confirmCollectionNotice',
+                            'first' => '有用户申请成为买手，请进入总后台查看！',
+                            'keyword1' => '有用户申请成为买手，请进入总后台查看！',
+                            'keyword2' => '待审核',
+                            'keyword3' => date('Y-m-d H:i:s', $time),
+                            'remark' => '点击查看详情',
+                            'url' => 'https://gadmin.gogo198.cn',
+    //                    'url' => 'https://shopping.gogo198.cn/check_prescription?prescription_id='.$prescription_id,
+                            'openid' => $system['account'],
+                            'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
+                        ]);
+                        httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+                    }
+                    
+                    return Response()->json(['code'=>0,'msg'=>'已提交申请']);
+                }
+            }else{
+                #平台邀请成为买手
+                $buyer = Db::connection('shop_db')->table('website_buyer')->where(['id'=>$id])->first();
+                $buyer = objtoarr($buyer);
+                
+                $res = Db::connection('shop_db')->table('website_buyer')->where(['id'=>$id])->update(['uid'=>$website_user['id'],'is_verify'=>1]);
+                if($res){
+                    return Response()->json(['code'=>0,'msg'=>'确认成为买手成功！']);
+                }
+                
+                return Response()->json(['code'=>-1,'msg'=>'确认成为买手失败！']);
+            }
+        } else {
+            if(empty($id)){
+                #申请成为买手
+                $info = Db::connection('shop_db')->table('website_buyer')->where(['uid'=>$website_user['id']])->first();
+            }else{
+                #平台邀请成为买手
+                $info = Db::connection('shop_db')->table('website_buyer')->where(['id'=>$id])->first();
+            }
+            $info = objtoarr($info);
+            
+            if(!empty($info)){
+                if($info['is_verify']==1){
+                    header('Location: https://dtc.gogo198.net/?s=index/buyer_manage&company_id='.$info['company_id'].'&company_type=0&buyer_id='.$info['id']);
+                }
+            }
+            
+            return view('home.become_buyer',compact('id','info','website_user'));
+        }
     }
     //新的首页-2024-05-08 end==============================================
 
