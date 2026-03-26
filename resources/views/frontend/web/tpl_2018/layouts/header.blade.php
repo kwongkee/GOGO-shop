@@ -138,7 +138,7 @@
         .viewGoods:hover,
         .swiper-button-prev:hover,
         .swiper-button-next:hover,
-        .storeDiv .hsBox:hover,
+        /*.storeDiv .hsBox:hover,*/
         .storeDiv .hsBox .hsDiv .hsContent .moreBtn .detailDiv a:hover,
         .cont6-bg .serviceBox .leftBox:hover,
         .cont6-bg .serviceBox .rightBox .serviceContent .serviceDiv:hover,
@@ -453,7 +453,7 @@
                                         <ul class="dropdown-menu">
                                             @foreach($vo['childMenu'] as $ke=>$vo2)
                                                 @if($vo2['go_other']==1)
-                                                    <li><a href="{{$vo2['other_link']}}" target="_blank" class="f18">&nbsp;&nbsp;{{$vo2['name']}}</a></li>
+                                                    <li><a href="{{$vo2['other_link']}}?uid=<?php echo base64_encode(session('user.gogo_id'));?>" target="_blank" class="f18">&nbsp;&nbsp;{{$vo2['name']}}</a></li>
                                                 @elseif($vo2['go_other']==2)
                                                     <li><a href="/detail?id={{$vo2['other_navbar']}}" target="_blank" class="f18">&nbsp;&nbsp;{{$vo2['name']}}</a></li>
                                                 @else
@@ -468,7 +468,7 @@
                                     </li>
                                 @else
                                     @if($vo['go_other']==1)
-                                        <li><a href="{{$vo['other_link']}}" target="_blank" class="f20">&nbsp;&nbsp;{{$vo['name']}}</a></li>
+                                        <li><a href="{{$vo['other_link']}}?uid=<?php echo base64_encode(session('user.gogo_id'));?>" target="_blank" class="f20">&nbsp;&nbsp;{{$vo['name']}}</a></li>
                                     @elseif($vo['go_other']==2)
                                         <li><a href="/detail?id={{$vo['other_navbar']}}" target="_blank" class="f20">&nbsp;&nbsp;{{$vo['name']}}</a></li>
                                     @else
@@ -564,7 +564,7 @@
                                         <ul class="dropdown-menu">
                                             @foreach($vo['childMenu'] as $ke=>$vo2)
                                                 @if($vo2['go_other']==1)
-                                                    <li><a href="{{$vo2['other_link']}}" target="_blank" class="f18">&nbsp;&nbsp;{{$vo2['name']}}</a></li>
+                                                    <li><a href="{{$vo2['other_link']}}?uid=<?php echo base64_encode(session('user.gogo_id'));?>" target="_blank" class="f18">&nbsp;&nbsp;{{$vo2['name']}}</a></li>
                                                 @elseif($vo2['go_other']==2)
                                                     <li><a href="/detail?id={{$vo2['other_navbar']}}" target="_blank" class="f18">{{$vo2['name']}}</a></li>
                                                 @else

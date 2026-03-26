@@ -39,7 +39,8 @@
         .navbar-default .navbar-nav>.open>a, .navbar-default .navbar-nav>.open>a:hover, .navbar-default .navbar-nav>.open>a:focus{color:{{$website['color_word']}} !important;}
         .navbar-default .navbar-nav>.open>a, .navbar-default .navbar-nav>.open>a:hover, .navbar-default .navbar-nav>.open>a:focus{background:transparent;}
         header .nav .caret {border-bottom-color: {{$website['color_word']}};border-top-color: {{$website['color_word']}};}
-        .navbar .nav > li > a{color:{{$website['color_word']}};font-weight: 800;/*text-shadow: -1px 0px 0px {{$website['color']}}, 0px 1px 0px {{$website['color']}}, 1px 0px 0px {{$website['color']}}, 0px -1px 0px {{$website['color']}};*/}
+        .navbar .nav > li > a{color:{{$website['color_word']}};font-weight: 800;}
+        .navbar-default .navbar-nav > li > a:hover, .navbar-default .navbar-nav > li > a:focus{color:{{$website['color_word']}};}
         /*.navbar .nav > li > a:hover{color:#fff !important;}*/
         /*.navbar-default .navbar-nav>li>a:hover, .navbar-default .navbar-nav>li>a:focus{color:#fff !important;}*/
         /*.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.active>a:hover, .navbar-default .navbar-nav>.active>a:focus{color:#fff;}*/
@@ -209,7 +210,7 @@
                                     <ul class="dropdown-menu">
                                         @foreach($vo['childMenu'] as $ke=>$vo2)
                                             @if($vo2['go_other']==1)
-                                                <li><a href="{{$vo2['other_link']}}" target="_blank" class="f18">{{$vo2['name']}}</a></li>
+                                                <li><a href="{{$vo2['other_link']}}?uid=<?php echo base64_encode(session('user.gogo_id'));?>" target="_blank" class="f18">{{$vo2['name']}}</a></li>
                                             @elseif($vo2['go_other']==2)
                                                 <li><a href="/detail?id={{$vo2['other_navbar']}}" target="_blank" class="f18">{{$vo2['name']}}</a></li>
                                             @else
@@ -224,11 +225,11 @@
                                 </li>
                             @else
                                 @if($vo['go_other']==1)
-                                    <li><a href="{{$vo['other_link']}}" target="_blank" class="f22">{{$vo['name']}}</a></li>
+                                    <li><a href="{{$vo['other_link']}}?uid=<?php echo base64_encode(session('user.gogo_id'));?>" target="_blank" class="f22">{{$vo['name']}}</a></li>
                                 @elseif($vo['go_other']==2)
                                     <li><a href="/detail?id={{$vo['other_navbar']}}" target="_blank" class="f22">{{$vo['name']}}</a></li>
                                 @else
-                                    <li><a href="/detail?={{$vo['id']}}" class="f22">{{$vo['name']}}</a></li>
+                                    <li><a href="/detail?id={{$vo['id']}}" class="f22">{{$vo['name']}}</a></li>
                                 @endif
                             @endif
                         @endforeach
@@ -249,7 +250,7 @@
                             </li>
                         @else
                             <li class="dropdown dd_parent" onclick="javascript:removeclass(this);">
-                                <a href="#" data-toggle="dropdown" class="dropdown-toggle f20" style="text-transform:unset;">淘中国 <b class="caret"></b></a>
+                                <a href="#" data-toggle="dropdown" class="dropdown-toggle f20" style="text-transform:unset;">注册/登录 <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     <li><a href="/login.html" class="f18">&nbsp;&nbsp;登录/注册</a></li>
                                 </ul>
@@ -266,7 +267,8 @@
                         @if($v['type']==0)
                             <div class="navbar_txt"><a href="javascript:showWindows2(21,{{$v['id']}},2,this);">{{$v['name']}}</a></div>
                         @elseif($v['type']==1)
-                            <div class="navbar_txt"><a href="/guide_page?id={{$v['guide_id']}}" target="_blank">{{$v['name']}}</a></div>
+                        <!--/guide_page?id=$v['guide_id']-->
+                            <div class="navbar_txt"><a href="/goods_list?hotsearchId={{$v['guide_id']}}&frame_id=5" target="_blank">{{$v['name']}}</a></div>
                         @endif
                     @endforeach
                 </div>
@@ -339,6 +341,11 @@
             clearInterval(intervalId);
         }
         //头部滚动======================end
+        
+        //开发中
+        function kaifa_ing(){
+            alert('功能开发中...');
+        }
     </script>
 </body>
 </html>

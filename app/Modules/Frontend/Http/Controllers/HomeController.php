@@ -51,22 +51,13 @@ class HomeController extends Frontend
     //新的首页-2024-04-08 start============================================
     public function home(Request $request)
     {
+        //tinyify文件
 //        require_once(base_path()."/vendor/tinify-php-master/lib/Tinify/Exception.php");
 //        require_once(base_path()."/vendor/tinify-php-master/lib/Tinify/ResultMeta.php");
 //        require_once(base_path()."/vendor/tinify-php-master/lib/Tinify/Result.php");
 //        require_once(base_path()."/vendor/tinify-php-master/lib/Tinify/Source.php");
 //        require_once(base_path()."/vendor/tinify-php-master/lib/Tinify/Client.php");
 //        require_once(base_path()."/vendor/tinify-php-master/lib/Tinify.php");
-
-        #更改节日为当前年份
-        // $festival = Db::connection('shop_db')->table('website_festival')->get();
-        // $festival = objtoarr($festival);
-        // foreach($festival as $k=>$v){
-        //     Db::connection('shop_db')->table('website_festival')->where(['id'=>$v['id']])->update([
-        //         'date'=>str_replace('2025','2026',$v['date'])
-        //     ]);
-        // }
-        // echo 'success';exit;
 
         #授权登录跳转=======start
         $data = $request->all();
@@ -91,7 +82,7 @@ class HomeController extends Frontend
             header("Location: /");
         }
         #授权登录跳转=======end
-
+        
         $template = '';
         #获取配置信息
         $website = get_website();
@@ -180,12 +171,18 @@ class HomeController extends Frontend
 
         #热卖商品
         $hotbuy = Cache::remember('home_hotbuy_v3', 86400, function () use ($currency) {
-            $new_goods = DB::table('goods')->where('goods_status', 1)->orderBy('goods_id', 'desc')->first();
+            #查询板块有无发现轮播样式
+            $website_index_format = Db::connection('shop_db')->table('website_index')->where(['system_id'=>3,'format_type'=>3])->select(['supply_show','api_merchant'])->first();
+            $api_id = [-1];
+            if(!empty($website_index_format->api_merchant)){
+                $api_id = explode(',',$website_index_format->api_merchant);
+            }
+            $new_goods = DB::table('goods')->where(['goods_status'=>1,'shop_id'=>0])->whereIn('api_id',$api_id)->orderBy('goods_id', 'desc')->first();
         
             $hotbuy = DB::table('goods')
-                ->where('goods_status', 1)
-                ->where('level_id', 0)
+                ->where(['goods_status'=>1,'level_id'=>0,'shop_id'=>0])
                 ->where('goods_id', '<>', optional($new_goods)->goods_id)
+                ->whereIn('api_id',$api_id)
                 ->orderBy('goods_id', 'desc')
                 ->limit(60)
                 ->get();
@@ -587,6 +584,7 @@ class HomeController extends Frontend
                             }else{
                                 $services[$k]['big_children'][$k2]['sml_children'] = array_chunk($services[$k]['big_children'][$k2]['sml_children'],4);
                             }
+                            
                             foreach($services[$k]['big_children'][$k2]['sml_children'] as $k3=>$v3){
                                 foreach($v3 as $k4=>$v4) {
                                     $color = Db::connection('shop_db')->table('centralize_diycountry_content')->where(['pid' => 12])->inRandomOrder()->first();
@@ -595,6 +593,9 @@ class HomeController extends Frontend
                                 }
                             }
                         }
+                        
+                        // 调用函数处理 $arr
+                        $services[$k] = $this->fillSmlChildren($services[$k]);
                     }
                     elseif($v['format_type']==13){
                         #标题+图片（一排两个）卡片样式
@@ -663,7 +664,7 @@ class HomeController extends Frontend
                         }
                     }
                     elseif($v['format']==0){
-                        if($v['navbar_id']=='A1'){
+                        if($v['navbar_id']=='A1' || $v['format_type']==3){
                             $services[$k]['info'] = [];
                             $services[$k]['info']['name'] = '';
                             $services[$k]['info']['desc'] = '';
@@ -716,6 +717,47 @@ class HomeController extends Frontend
         return $this->displayData(); // 模板渲染及APP客户端返回数据
     }
     
+    #调整杂志样式的smlchildren，自动填充满4个
+    private function fillSmlChildren(array $arr): array{
+        // 确保存在 big_children 且为数组
+        if (!isset($arr['big_children']) || !is_array($arr['big_children'])) {
+            return $arr;
+        }
+    
+        // 遍历每个大模块
+        foreach ($arr['big_children'] as &$bigChild) {
+            if (!isset($bigChild['sml_children']) || !is_array($bigChild['sml_children'])) {
+                continue;
+            }
+    
+            $groups = &$bigChild['sml_children']; // 引用，便于修改
+            $groupCount = count($groups);
+    
+            // 按顺序处理每个子分组
+            for ($i = 0; $i < $groupCount; $i++) {
+                $current = &$groups[$i];
+                $currentSize = count($current);
+                $need = 4 - $currentSize;
+    
+                // 不足4个且有前一个分组时进行填充
+                if ($need > 0 && $i > 0) {
+                    $prev = $groups[$i - 1]; // 前一个分组（当前状态的副本）
+                    $prevSize = count($prev);
+                    if ($prevSize > 0) {
+                        // 取前 $need 个，若不够则取全部
+                        $take = array_slice($prev, 0, $need);
+                        // 将取出的元素合并到当前分组
+                        $current = array_merge($current, $take);
+                    }
+                }
+            }
+            unset($groups); // 解除引用，避免后续意外修改
+        }
+        unset($bigChild);
+    
+        return $arr;
+    }
+    
     #根据关键词获取商品
     public function get_keywords_goods($keywords,$currency,$navbar=[]){
         $goods_list = collect();
@@ -757,21 +799,50 @@ class HomeController extends Frontend
         $row = $goods_list->shuffle()->take(20)->values()->toArray();
         $row = objtoarr($row);
         
-        if($keywords[0] == '平台供应商'){
+        // if($keywords[0] == '平台供应商'){
             #查询商家上架表的当前导页id下是否有相同的关键字对碰
-            $merchant_shelf = Db::table('goods_shelf')->whereRaw('guide_id='.$navbar['id'].' and type=4 and is_shelf_platform=0 and keywords!="" and keywords!=null')->get();
+            $merchant_shelf = Db::table('goods_shelf')->whereRaw('guide_id='.$navbar['id'].' and type=4 and is_shelf_platform=0 and keywords!=""')->get();
             $merchant_shelf = objtoarr($merchant_shelf);
+            
             if(!empty($merchant_shelf)){
                 foreach($merchant_shelf as $k=>$v){
-                    $kwds = explode('、',$v['keywords']);
-                    #两个数组对碰，看看有无相同，叫AI做
-                    // foreach(){
+                    #商家在平台上架的关键字
+                    $merchant_shelf_kwds = explode('、',$v['keywords']);
+                    #平台该板块的关键字
+                    // $platform_kwds = explode('、',$keywords);
+                    
+                    // 获取两个数组的交集
+                    $intersect_arr = array_intersect($keywords, $merchant_shelf_kwds);
+                    // 如果需要重新索引为连续数字下标
+                    $intersect_arr = array_values($intersect_arr);
+                    
+                    if(!empty($intersect_arr)){
+                        $new_goods = DB::table('goods')->where(['goods_id'=>$v['gid']])->where('goods_status', 1)->first();
                         
-                    // }
+                        $gsku = Db::table('goods_sku')->where(['goods_id'=>$new_goods->goods_id])->select(['sku_prices'])->first();
+                        $price = json_decode($gsku->sku_prices,true)['price'];
+                        $news_goods_arr = [
+                            'goods_id'       => $new_goods->goods_id,
+                            'goods_name'     => $new_goods->goods_name,
+                            'goods_image'    => $new_goods->goods_image,
+                            'company'        => 'Gogo',
+                            'goods_currency' => $currency[$new_goods->goods_currency]['currency_symbol_standard'] ?? 'CNY',
+                            'price'          => number_format(end($price), 2),
+                            
+                            'back_content'   => $new_goods->goods_image,
+                            'name'           => $new_goods->goods_name,
+                            'go_other'       => 2,
+                            'info'           => ['currency'=>$currency[$new_goods->goods_currency]['currency_symbol_standard'] ?? 'CNY','goods_price'=>number_format(end($price), 2)],
+                            'other_goods'    => $new_goods->goods_id,
+                            'desc'           => $new_goods->goods_name,
+                        ];
+                        
+                        array_push($row,$news_goods_arr);
+                    }
                 }
             }
-        }
-        return objtoarr($row);
+        // }
+        return $row;
     }
     
     #获取接口商品
@@ -811,8 +882,8 @@ class HomeController extends Frontend
         $row = $goods_list->shuffle()->take(20)->values()->toArray();
         $row = objtoarr($row);
         
-        if(!empty($navbar['keywords'])){
-            $keywords_goods = $this->get_keywords_goods($navbar['keywords'],$currency,$navbar);
+        if(!empty($navbar['gkeywords'])){
+            $keywords_goods = $this->get_keywords_goods($navbar['gkeywords'],$currency,$navbar);
             $row = array_merge($keywords_goods,$row);
         }
         
@@ -856,8 +927,8 @@ class HomeController extends Frontend
         $row = $goods_list->shuffle()->take(20)->values()->toArray();
         $row = objtoarr($row);
         
-        if(!empty($navbar['keywords'])){
-            $keywords_goods = $this->get_keywords_goods($navbar['keywords'],$currency,$navbar);
+        if(!empty($navbar['gkeywords'])){
+            $keywords_goods = $this->get_keywords_goods($navbar['gkeywords'],$currency,$navbar);
             $row = array_merge($keywords_goods,$row);
         }
         
@@ -871,7 +942,7 @@ class HomeController extends Frontend
         
         $kw_goods = DB::table('goods')
             ->whereIn('shop_id', $merchant)
-            ->where('goods_status', 1)
+            ->where(['goods_status'=>1,'buyer_id'=>0])
             ->select('*')
             ->inRandomOrder()
             ->limit(20)
@@ -901,8 +972,8 @@ class HomeController extends Frontend
         $row = $goods_list->shuffle()->take(20)->values()->toArray();
         $row = objtoarr($row);
         
-        if(!empty($navbar['keywords'])){
-            $keywords_goods = $this->get_keywords_goods($navbar['keywords'],$currency,$navbar);
+        if(!empty($navbar['gkeywords'])){
+            $keywords_goods = $this->get_keywords_goods($navbar['gkeywords'],$currency,$navbar);
             $row = array_merge($keywords_goods,$row);
         }
         
@@ -911,6 +982,16 @@ class HomeController extends Frontend
     
     #获取节日表信息
     public function get_festival(){
+        #更改节日为当前年份
+        // $festival = Db::connection('shop_db')->table('website_festival')->get();
+        // $festival = objtoarr($festival);
+        // foreach($festival as $k=>$v){
+        //     Db::connection('shop_db')->table('website_festival')->where(['id'=>$v['id']])->update([
+        //         'date'=>str_replace('2025','2026',$v['date'])
+        //     ]);
+        // }
+        // echo 'success';exit;
+        
         $festival = Cache::remember('home_festival_v2', 86400, function () {
             return DB::connection('shop_db')
                 ->table('website_festival')
@@ -1014,9 +1095,12 @@ class HomeController extends Frontend
             #消息链接
             return '/msg_detail?id='.$data['other_msg'].'&type='.$type.'&oid='.$data['id'];
         } elseif ($go==5) {
+            #搜索结果链接
+            return '/goods_list?frame_id=3&hotsearchId='.$data['id'].'&searchTitle='.$data['other_keywords'];
+        } elseif ($go==6) {
             #店铺链接
             return '/shop_detail?id='.isset($data['other_shop'])??$data['other_shop'];
-        } elseif ($go==6) {
+        } elseif ($go==7) {
             #政策链接
             return '/policy_detail?id='.$data['other_privacy'].'&type='.$type.'&oid='.$data['id'];
         }

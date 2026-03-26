@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Nexmo\Response;
+use Illuminate\Support\Facades\Cache;
 
 header('Content-Type: application/json;charset=utf-8');
 
@@ -102,7 +103,7 @@ class FuncController extends Frontend
     {
         header('Content-Type: text/html; charset=utf-8');
         $data = $request->except(['_token']);
-        $hotsearchId = isset($data['hotsearchId']) ? intval($data['hotsearchId']) : 0;#导页id、节日id、轮播id、发现id
+        $hotsearchId = isset($data['hotsearchId']) ? intval($data['hotsearchId']) : 0;#导页id、节日id、轮播id、发现id，首页板块id
         $searchTitle = isset($data['searchTitle']) ? trim($data['searchTitle']) : '';#板块名称
         #当前页面的链接
         $origin_page = '/';
@@ -111,9 +112,9 @@ class FuncController extends Frontend
         } else {
             $currency_sel = isset($data['currency_sel']) ? trim($data['currency_sel']) : 158;
             $catename = isset($data['cate_name']) ? trim($data['cate_name']) : '';#关键字搜索
-            $id = isset($data['frame_id']) ? intval($data['frame_id']) : 0;//1导页数据、2节日、3首页轮播、4发现好货
+            $id = isset($data['frame_id']) ? intval($data['frame_id']) : 0;//1导页数据、2节日、3首页轮播、4发现好货、5首页板块
             $sort_info = isset($data['sort_info']) ? trim($data['sort_info']) : 0;
-
+        
             #分页数据====================
             $goods_count = isset($data['goods_count']) ? intval($data['goods_count']) : 0;
             $limit = 10;
@@ -130,10 +131,10 @@ class FuncController extends Frontend
             $origin_field_condition = isset($data['field_condition']) ? $data['field_condition'] : '';
             $field_condition = isset($data['field_condition']) ? base64_decode(str_replace(' ', '', $origin_field_condition)) : '';
             $field_condition = json_decode($field_condition, true);
-
+            
             //二级字段条件
             $condition_arr2 = isset($data['condition_arr2']) ? trim($data['condition_arr2']) : '';
-
+            // dd($sort_info,$g_condition,$origin_field_condition,$field_condition,$condition_arr2);
             #高级条件======END
 
             $result = '没找到相关的商品';
@@ -142,9 +143,9 @@ class FuncController extends Frontend
             if ($hotsearchId>0) {
                 #查找该板块的关键字
                 $keywords = [];
-
+                
                 if ($id==1) {
-                    #导页
+                    #首页小卡片guide_content数据
                     $get_keywords = Db::table('guide_content')->where(['id'=>$hotsearchId])->first();
                     $get_keywords = objtoarr($get_keywords);
 
@@ -187,18 +188,19 @@ class FuncController extends Frontend
                     } else {
                         $keywords = explode('、', $get_keywords['gkeywords'].'、'.rtrim($shelf_keywords, '、'));
                     }
-                } elseif ($id==2) {
-                    #节日
+                }
+                elseif ($id==2) {
+                    #节日表数据
                     $get_keywords = Db::connection('shop_db')->table('website_festival')->where(['id'=>$hotsearchId])->first();
                     $get_keywords = objtoarr($get_keywords);
-
+                    $website_index_festival_id = 63;#首页绑定节日的id
                     #1.1、获取当前导流板块关键字
-                    $datas = Db::table('guide_body')->where(['id'=>13])->first();
+                    $datas = Db::table('guide_body')->where(['id'=>$website_index_festival_id])->first();
                     $datas = objtoarr($datas);
 
                     $shelf_keywords = '';
                     #1.2、获取当前导流板块的商户上架关键字
-                    $goods_shelf = Db::table('goods_shelf')->where(['type'=>2,'guide_id'=>13])->get();
+                    $goods_shelf = Db::table('goods_shelf')->where(['type'=>2,'guide_id'=>$website_index_festival_id])->get();
                     $goods_shelf = objtoarr($goods_shelf);
                     #1.3、对比导流板块关键字是否与商家上架关键字有匹配
                     foreach ($goods_shelf as $k=>$v) {
@@ -232,29 +234,730 @@ class FuncController extends Frontend
                     } else {
                         $keywords = explode('、', $get_keywords['keywords'].'、'.rtrim($shelf_keywords, '、'));
                     }
-                } elseif ($id==3) {
-                    #轮播
+                }
+                elseif ($id==3) {
+                    #首页轮播
                     $get_keywords = Db::connection('shop_db')->table('website_rotate')->where(['id'=>$hotsearchId])->first();
                     $get_keywords = objtoarr($get_keywords);
                     $keywords = explode('、', $get_keywords['other_keywords']);
-                } elseif ($id==4) {
+                }
+                elseif ($id==4) {
                     #发现好货
                     $get_keywords = Db::connection('shop_db')->table('website_discovery_list')->where(['id'=>$hotsearchId])->first();
                     $get_keywords = objtoarr($get_keywords);
                     $keywords = explode('、', $get_keywords['other_keywords']);
                 }
+                elseif ($id==5) {
+                    #首页板块
+                    $website_index = Db::connection('shop_db')->table('website_index')->where(['system_id'=>3,'navbar_id'=>$hotsearchId])->select(['gkeywords','bind_festival','supply_show','api_merchant','buyer_merchant','shop_merchant','id','format_type'])->first();
+                    $website_index = objtoarr($website_index);
+                    
+                    $navbar = Db::connection('shop_db')->table('website_navbar')->where(['id'=>$hotsearchId])->select(['name'])->first();
+                    $searchTitle = json_decode($navbar->name,true)['zh'];
+                    
+                    $where = [['goods_status','=',1]];
+                    $orwhere = [];
+                    $inwhere = [];
+                    // dd($data);
+                    #获取用户曾经已下单的商品分类
+                    $order_goods_category = [];
+                    if(session('user') != null){
+                        #获取用户最近10个订单的商品分类
+                        // $website_user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>session('user.gogo_id')])->first();
+                        
+                        // $last_order = Db::connection('shop_db')->table('website_order_list')->where(['user_id'=>$website_user->id])->select(['id','content'])->limit(10)->orderBy('id','desc')->get();
+                        // $last_order = objtoarr($last_order);
+                        
+                        // foreach($last_order as $k=>$v){
+                        //     $last_order[$k]['content'] = json_decode($v['content'],true);
+                        //     foreach($last_order[$k]['content']['goods_info'] as $k2=>$v2){
+                        //         $gcate = Db::table('goods')->where(['goods_id'=>$v2['good_id']])->select(['cat_id'])->first();
+                        //         if(!empty($gcate)){
+                        //             if($gcate->cat_id>0){
+                        //                 array_push($order_goods_category,$gcate->cat_id);
+                        //             }
+                        //         }
+                        //     }
+                        // }
+                        // if(!empty($order_goods_category)){
+                        //     // 序列化后去重，再反序列化
+                        //     $newArr = array_map('unserialize', array_unique(array_map('serialize', $order_goods_category)));
+                        //     // 重新索引
+                        //     $order_goods_category = array_values($newArr);
+                        // }
+                        
+                        $cacheKey = 'user_purchase_cats_' . session('user.gogo_id');
+                        $order_goods_category = Cache::remember($cacheKey, 3600, function () {
+                            $website_user = Db::connection('shop_db')->table('website_user')
+                                            ->where('custom_id', session('user.gogo_id'))->first();
+                            $last_order = Db::connection('shop_db')->table('website_order_list')
+                                          ->where('user_id', $website_user->id)
+                                          ->select(['id','content'])->limit(10)->orderBy('id','desc')->get();
+                            $last_order = objtoarr($last_order);
+                            $cats = [];
+                            foreach($last_order as $order){
+                                $content = json_decode($order['content'], true);
+                                foreach($content['goods_info'] as $goods){
+                                    $gcate = Db::table('goods')->where('goods_id', $goods['good_id'])->value('cat_id');
+                                    if($gcate > 0) $cats[] = $gcate;
+                                }
+                            }
+                            return array_unique($cats);
+                        });
+                    }
+                    $priority_cat_ids = $order_goods_category;
+                    // $priority_cat_ids = [];
+                    // $priority_cat_ids = [6339,1604,1511];#广东点心，女鞋，婚纱
+                    
+                    #条件存在时，打包搜索
+                    $opt_arr = [];
+                    if (!empty($g_condition)) {
+                        #商品字段条件
+                        foreach ($g_condition as $k=>$v) {
+                            $now_val = explode('_', $v);
+                            if ($now_val[0]=='cate') {
+                                $where = array_merge($where, [['cat_id','=',$now_val[1],'and']]);
+                            } elseif ($now_val[0]=='opt') {
+                                $now_val = explode('|', $now_val[1]);
+                                $opt_arr = array_merge($opt_arr, [['attr_id'=>$now_val[0],'attr_vid'=>$now_val[1]]]);
+                            } elseif ($now_val[0]=='brand') {
+                                $where = array_merge($where, [['brand_id','=',$now_val[1],'and']]);
+                            }
+                        }
+                    }
+                    
+                    if (!empty($field_condition)) {
+                        #自定字段条件
+                        $field_condition2 = [];
+                        foreach ($field_condition as $k=>$v) {
+                            if (empty($field_condition2)) {
+                                $field_condition2 = array_merge($field_condition2, [$v]);
+                            } else {
+                                foreach ($field_condition2 as $k2=>$v2) {
+                                    if ($v2['id']==$v['id']) {
+                                        $field_condition2[$k2]['val'] .=  '_'.$v['val'];
+                                        break;
+                                    } else {
+                                        $field_condition2 = array_merge($field_condition2, [$v]);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+            
+                        foreach ($field_condition2 as $k=>$v) {
+                            $column_condition = Db::table('search_column')->where(['id'=>$v['id']])->first();
+                            $column_condition = objtoarr($column_condition);
+                            if ($column_condition['stype']==1) {
+                                #价幅
+                                $num = explode('_', $v['val']);
+                                if ($num[1]>0 && !empty($column_condition['field'])) {
+                                    $where = array_merge($where, [[$column_condition['field'],'>=',$num[0],'and']]);
+                                    $where = array_merge($where, [[$column_condition['field'],'<=',$num[1],'and']]);
+                                }
+                            } elseif ($column_condition['stype']==2) {
+                                #下拉选择 todo 下拉选择可能要选表中参数
+                                if (!empty($column_condition['field'])) {
+                                    $where = array_merge($where, [[$column_condition['field'],'=',$v['val'],'and']]);
+                                }
+                            } elseif ($column_condition['stype']==3) {
+                                #单选参数 todo 有些参数是1/2/3的，请求只会给0/1
+                                if (!empty($column_condition['field'])) {
+                                    $where = array_merge($where, [[$column_condition['field'],'=',$v['val'],'and']]);
+                                }
+                            } elseif ($column_condition['stype']==4) {
+                                #发货地区
+                                if (!empty($column_condition['field'])) {
+                                    $area = Db::connection('shop_db')->table('centralize_adminstrative_area')->where(['code_name'=>$v['val']])->first();
+                                    $where = array_merge($where, [[$column_condition['field'],'=',$area->id,'and']]);
+                                }
+                            }
+                        }
+                    }
+            
+                    #二级字段
+                    if (!empty($condition_arr2)) {
+                        $condition_arr_new = explode('、', $condition_arr2);
+                        foreach ($condition_arr_new as $k=>$v) {
+                            if (!empty($v)) {
+                                $value = Db::table('search_column_two')->where(['id'=>$v])->first();
+                                $value = objtoarr($value);
+                                $where = array_merge($where, [[$value['field'],'=',1,'and']]);
+                            }
+                        }
+                    }
+                    
+                    if($website_index['format_type']==12){
+                        #杂志样式获取lrw库的guide_content表
+                        
+                        #获取商品关键字id========start
+                        #获取大卡片
+                        $big_card = Db::table('guide_content')->where(['system_id'=>3,'pid'=>$website_index['id'],'top_id'=>0])->select(['id','name'])->get();
+                        $big_card = objtoarr($big_card);
+                        $rand_keywords = '';
+                        #获取小卡片
+                        foreach($big_card as $k=>$v){
+                            $big_card[$k]['children'] = Db::table('guide_content')->where(['top_id'=>$v['id']])->select(['id','name','gkeywords'])->get();
+                            $big_card[$k]['children'] = objtoarr($big_card[$k]['children']);
+                            #获取所有商品关键字
+                            foreach($big_card[$k]['children'] as $k2=>$v2){
+                                $rand_keywords .= $big_card[$k]['children'][$k2]['gkeywords'];
+                            }
+                        }
+                        #拆分和打乱商品关键字
+                        $rand_keywords = explode('、',$rand_keywords);
+                        // if(!isset($data['pa'])){
+                        //     shuffle($rand_keywords);#不能随机，因为分页会随机，第一次进来随机关键字
+                        // }
+                        #获取商品关键字id
+                        $keywords_id_arr = [];
+                        foreach($rand_keywords as $k=>$v){
+                            $goods_keywords = Db::table('goods_keywords')->where(['keywords'=>$v])->select(['id'])->first();
+                            
+                            if(!empty($goods_keywords)){
+                                array_push($keywords_id_arr,[$goods_keywords->id]);
+                            }
+                        }
+                        #获取商品关键字id========end
+                        
+                        // 构建基础查询（带筛选条件）
+                        $baseQuery = function ($query) use ($where, $orwhere, $inwhere) {
+                            // 应用 $where 条件（注意处理 'and' 键）
+                            foreach ($where as $condition) {
+                                if (count($condition) >= 3) {
+                                    $query->where($condition[0], $condition[1], $condition[2]);
+                                }
+                            }
+                            // 应用 $orwhere 条件（需要 OR 分组）
+                            if (!empty($orwhere)) {
+                                $query->where(function ($q) use ($orwhere) {
+                                    foreach ($orwhere as $cond) {
+                                        $q->orWhere($cond[0], $cond[1], $cond[2]);
+                                    }
+                                });
+                            }
+                            // 应用 $inwhere 条件
+                            foreach ($inwhere as $item) {
+                                $field = $item[0];
+                                $values = explode(',', $item[1]);
+                                $query->whereIn($field, $values);
+                            }
+                        };
+                    
+                        // 获取所有可能用到的商品ID，并建立 cat_id 映射（避免重复查询）
+                        $allGoodsIds = [];
+                        foreach ($keywords_id_arr as $keywordId) {
+                            $temp = Db::table('goods')
+                                ->where('keywords_id', $keywordId)
+                                ->where('goods_status', 1);
+                            $baseQuery($temp);
+                            
+                            $tempIds = $temp->pluck('goods_id')->toArray();
+                            $allGoodsIds = array_merge($allGoodsIds, $tempIds);
+                        }
+                        $allGoodsIds = array_unique($allGoodsIds);
+                        
+                        $catMap = [];
+                        if (!empty($allGoodsIds)) {
+                            $cats = Db::table('goods')
+                                ->whereIn('goods_id', $allGoodsIds)
+                                ->select('goods_id', 'cat_id')
+                                ->get()
+                                ->keyBy('goods_id')
+                                ->toArray();
+                            foreach ($cats as $kid => $row) {
+                                $catMap[$kid] = $row->cat_id;
+                            }
+                        }
+                        
+                        // 1. 获取每个关键词的商品 ID 列表（带筛选条件）
+                        $lists = [];
+                        foreach ($keywords_id_arr as $keywordId) {
+                            $querys = Db::table('goods')
+                                ->where('keywords_id', $keywordId)
+                                ->where('goods_status', 1);
+                            
+                            // 应用筛选条件
+                            $baseQuery($querys);
+                            
+                            $ids = $querys->pluck('goods_id')->toArray();
+                            
+                            if (!empty($ids)) {
+                                $lists[] = $ids;
+                            }
+                        }
+                        
+                        // 2. 构建轮询顺序数组
+                        $roundRobinIds = $this->buildRoundRobinArray($lists);
+                        if(count($where)==1 && empty($orwhere) && empty($inwhere)){
+                            #在板块进来的时候才显示，之后这样不显示，要按照条件显示
+                            // 将商品分为优先（购买分类）和普通
+                            $priority = [];
+                            $normal = [];
+                            foreach ($roundRobinIds as $vid) {
+                                $cat = $catMap[$vid] ?? 0;
+                                
+                                if (in_array($cat, $priority_cat_ids)) {
+                                    $priority[] = $vid;
+                                } else {
+                                    $normal[] = $vid;
+                                }
+                            }
+                            // 合并，优先在前，普通在后（各自保持原顺序）
+                            $new_ids = array_merge($priority, $normal);
+                            $roundRobinIds = &$new_ids;
+                        }
+                        
+                        // 按排序字段排序
+                        if ($sort_info != 0 && !empty($sort_info)) {
+                            $sort_info2 = explode('_', $sort_info);
+                            $sort_field = Db::table('search_column')->where(['id' => $sort_info[0]])->first();
+                            if ($sort_field) {
+                                $order = $sort_info2[1] == 1 ? 'asc' : 'desc';
+                                
+                                // 1. 获取所有商品的价格映射（goods_id => price）
+                                $prices = Db::table('goods')
+                                    ->whereIn('goods_id', $roundRobinIds)
+                                    ->pluck($sort_field->field, 'goods_id')
+                                    ->toArray();
+                        
+                                // 2. 使用 usort 对 $roundRobinIds 排序（原数组顺序会被修改）
+                                usort($roundRobinIds, function($a, $b) use ($prices, $order) {
+                                    $priceA = $prices[$a] ?? 0; // 如果价格不存在，默认为0
+                                    $priceB = $prices[$b] ?? 0;
+                        
+                                    if ($order == 'asc') {
+                                        return $priceA <=> $priceB; // 升序
+                                    } else {
+                                        return $priceB <=> $priceA; // 降序
+                                    }
+                                });
+                            }
+                        }
+                        
+                        // 3. 总商品数（轮询数组的长度）
+                        $totalGoodsCount = count($roundRobinIds);
+                        $goods_count = $totalGoodsCount;
+                        
+                        // 4. 分页参数
+                        $currentPage = isset($data['page']) ? intval($data['page']) : 1;
+                        $offset = ($currentPage - 1) * $limit;
+                        
+                        // 5. 取出当前页的商品ID
+                        $idsOnPage = array_slice($roundRobinIds, $offset, $limit);
+                        
+                        // 6. 查询当前页商品详情
+                        if (empty($idsOnPage)) {
+                            $list = [];
+                        }
+                        else {
+                            $querys = Db::table('goods')
+                                ->whereIn('goods_id', $idsOnPage);
+                            
+                            // 应用筛选条件
+                            $baseQuery($querys);
+                            // 按排序字段排序
+                            if ($sort_info != 0 && !empty($sort_info)) {
+                                $sort_info2 = explode('_', $sort_info);
+                                $sort_field = Db::table('search_column')->where(['id' => $sort_info[0]])->first();
+                                if ($sort_field) {
+                                    $order = $sort_info2[1] == 1 ? 'asc' : 'desc';
+                                    $querys->orderBy($sort_field->field, $order);
+                                }
+                            }
+                            
+                            $list = $querys->get()
+                                    ->keyBy('goods_id')
+                                    ->only($idsOnPage)
+                                    ->values()
+                                    ->toArray();
+                        }
+                        
+                        // 7. 价格范围（可选）
+                        if ($totalGoodsCount > 0) {
+                            $priceQuery = Db::table('goods')
+                                ->whereIn('keywords_id', $keywords_id_arr);
+                            $baseQuery($priceQuery); // 应用筛选条件
+                            $minprice = $priceQuery->min('goods_price');
+                            $maxprice = $priceQuery->max('goods_price');
+                        }
+                        else {
+                            $minprice = $maxprice = 0;
+                        }
+
+                        $list = objtoarr($list);
+                        
+                         #获取原“商品名称/分类名称”的条件
+                        $list2 = objtoarr($querys->get());
+                        $condition = $this->get_condition($id, $list2, 1, ['value_show'=>0,'brand_show'=>0]);
+                        
+                    }
+                    elseif($website_index['bind_festival']==0){
+                        #不是绑定节日
+                        
+                        if(!empty($website_index['gkeywords'])){
+                            #查找“关键字商品”
+                            $keywords = explode('、',$website_index['gkeywords']);
+                            if(!empty($keywords)){
+                                foreach($keywords as $k=>$v){
+                                    if(!empty($v)){
+                                        array_push($orwhere,['goods_name','like','%'.$v.'%']);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        #查找“销售商上架商品”，对碰并找到商品id
+                        $merchant_shelf = Db::table('goods_shelf')->whereRaw('guide_id='.$website_index['id'].' and type=4 and is_shelf_platform=0 and keywords!=""')->get();
+                        $merchant_shelf = objtoarr($merchant_shelf);
+                        if(!empty($merchant_shelf)){
+                            foreach($merchant_shelf as $k=>$v){
+                                #商家在平台上架的关键字
+                                $merchant_shelf_kwds = explode('、',$v['keywords']);
+                                // 获取两个数组的交集
+                                $intersect_arr = array_intersect($keywords, $merchant_shelf_kwds);
+                                // 如果需要重新索引为连续数字下标
+                                $intersect_arr = array_values($intersect_arr);
+                                
+                                if(!empty($intersect_arr)){
+                                    array_push($orwhere,['goods_id','=',$v['gid']]);
+                                }
+                            }
+                        }
+                    
+                        #判断是0“接口供货”、1“买手供货”、2“商家供货”
+                        if($website_index['supply_show']==0){
+                            #接口供货
+                            array_push($inwhere,['api_id',$website_index['api_merchant']]);
+                        }
+                        elseif($website_index['supply_show']==1){
+                            #买手供货
+                            array_push($inwhere,['buyer_id',$website_index['buyer_merchant']]);
+                        }
+                        elseif($website_index['supply_show']==2){
+                            #商家供货
+                            array_push($inwhere,['shop_id',$website_index['shop_merchant']]);
+                            // array_push($where,['buyer_id','=',0]);
+                        }
+                        
+                        $querys = Db::table('goods');
+                        // 将 OR 组的所有条件统一构建
+                        $querys->where(function ($query) use ($orwhere, $inwhere) {
+                            // 处理 $orwhere
+                            foreach ($orwhere as $cond) {
+                                $query->orWhere($cond[0], $cond[1], $cond[2]);
+                            }
+                            // 处理 $inwhere
+                            foreach ($inwhere as $item) {
+                                $field = $item[0];
+                                $values = explode(',', $item[1]);
+                                $query->orWhereIn($field, $values);
+                            }
+                        });
+                        
+                        // 普通 AND 条件（如果有）
+                        if (!empty($where)) {
+                            $querys->where($where);
+                        }
+                        
+                        $goods_count = $querys->count();
+                        $minprice = $querys->min('goods_price');
+                        $maxprice = $querys->max('goods_price');
+                        
+                        #按“x”字段排序商品
+                        if ($sort_info!=0 && !empty($sort_info)) {
+                            $sort_info2 = explode('_', $sort_info);
+                            $sort_field = Db::table('search_column')->where(['id'=>$sort_info[0]])->first();
+                            
+                            if ($sort_info2[1]==1) {
+                                #升序
+                                $querys->orderBy($sort_field->field, 'asc');
+                            } elseif ($sort_info2[1]==2) {
+                                #降序
+                                $querys->orderBy($sort_field->field, 'desc');
+                            }
+                        }
+                        
+                        $list = objtoarr($querys->get());
+                        
+                        if(count($where)==1){
+                            #在板块进来的时候才显示，之后这样不显示，要按照条件显示
+                            #判断用户曾经已下单的商品分类，若出现相同则显示最前面
+                            // 将商品分为优先（购买分类）和普通
+                            $priority = [];
+                            $normal = [];
+                            
+                            foreach ($list as $val) {
+                                if (in_array($val['cat_id'], $priority_cat_ids)) {
+                                    $priority[] = $val;
+                                } else {
+                                    $normal[] = $val;
+                                }
+                            }
+                            // 合并，优先在前，普通在后（各自保持原顺序）
+                            $new_list = array_merge($priority, $normal);
+                            $list = &$new_list;
+                            
+                            // 不能用随机，因为下一页也会随机
+                            // if(empty($priority)){
+                            //     if(!isset($data['pa'])){
+                            //         //随机数组
+                            //         shuffle($list);
+                            //     }
+                            // }
+                            
+                        }
+                        
+                        // 分页参数
+                        $currentPage = isset($data['page']) ? intval($data['page']) : 1;
+                        $offset = ($currentPage - 1) * $limit;
+                        $list = array_slice($list, $offset, $limit);
+                        // $list = objtoarr($querys->offset($page)->limit($limit)->get());
+                        
+                        #获取原“商品名称/分类名称”的条件
+                        $list2 = objtoarr($querys->get());
+                        $condition = $this->get_condition($id, $list2, 1, ['value_show'=>0,'brand_show'=>0]);
+                        
+                        // print_r($querys->toSql());
+                        // echo '</br>';
+                        // print_r($querys->getBindings());
+                        // echo '</br>';
+                        // print_r($list);
+                        // die;
+                    }
+                    elseif($website_index['bind_festival']==1){
+                        #是绑定节日
+                        
+                        #获取商品关键字id========start
+                        #获取当前节日的商品信息
+                        $festival = Cache::remember('home_festival_v2', 86400, function () {
+                            return DB::connection('shop_db')
+                                ->table('website_festival')
+                                ->whereRaw('date >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)')
+                                ->whereRaw('date <= DATE_ADD(CURDATE(), INTERVAL 15 DAY)')
+                                ->orderBy('date', 'asc')
+                                ->get()
+                                ->toArray();
+                        });
+                        $festival = objtoarr($festival);
+                        #拼接关键字
+                        $rand_keywords = '';
+                        foreach($festival as $k=>$v){
+                            if($k<30){
+                                $rand_keywords .= $v['keywords'].'、'; 
+                            }
+                        }
+                        $rand_keywords = array_filter(explode('、',$rand_keywords));
+                        // if(!isset($data['pa'])){
+                        //     shuffle($rand_keywords);#不能随机，因为分页会随机，第一次进来随机关键字
+                        // }
+                        #获取商品关键字id
+                        $keywords_id_arr = [];
+                        foreach($rand_keywords as $k=>$v){
+                            $goods_keywords = Db::table('goods_keywords')->where(['keywords'=>$v])->select(['id'])->first();
+                            
+                            if(!empty($goods_keywords)){
+                                array_push($keywords_id_arr,[$goods_keywords->id]);
+                            }
+                        }
+                        #获取商品关键字id========end
+                        // dd($where, $orwhere, $inwhere);
+                        
+                        // 构建基础查询（带筛选条件）
+                        $baseQuery = function ($query) use ($where, $orwhere, $inwhere) {
+                            // 应用 $where 条件（注意处理 'and' 键）
+                            foreach ($where as $condition) {
+                                if (count($condition) >= 3) {
+                                    $query->where($condition[0], $condition[1], $condition[2]);
+                                }
+                            }
+                            // 应用 $orwhere 条件（需要 OR 分组）
+                            if (!empty($orwhere)) {
+                                $query->where(function ($q) use ($orwhere) {
+                                    foreach ($orwhere as $cond) {
+                                        $q->orWhere($cond[0], $cond[1], $cond[2]);
+                                    }
+                                });
+                            }
+                            // 应用 $inwhere 条件
+                            foreach ($inwhere as $item) {
+                                $field = $item[0];
+                                $values = explode(',', $item[1]);
+                                $query->whereIn($field, $values);
+                            }
+                        };
+                    
+                        // 获取所有可能用到的商品ID，并建立 cat_id 映射（避免重复查询）
+                        $allGoodsIds = [];
+                        foreach ($keywords_id_arr as $keywordId) {
+                            $temp = Db::table('goods')
+                                ->where('keywords_id', $keywordId)
+                                ->where('goods_status', 1);
+                            $baseQuery($temp);
+                            
+                            $tempIds = $temp->pluck('goods_id')->toArray();
+                            $allGoodsIds = array_merge($allGoodsIds, $tempIds);
+                        }
+                        $allGoodsIds = array_unique($allGoodsIds);
+                        
+                        $catMap = [];
+                        if (!empty($allGoodsIds)) {
+                            $cats = Db::table('goods')
+                                ->whereIn('goods_id', $allGoodsIds)
+                                ->select('goods_id', 'cat_id')
+                                ->get()
+                                ->keyBy('goods_id')
+                                ->toArray();
+                            foreach ($cats as $kid => $row) {
+                                $catMap[$kid] = $row->cat_id;
+                            }
+                        }
+                        
+                        // 1. 获取每个关键词的商品 ID 列表（带筛选条件）
+                        $lists = [];
+                        foreach ($keywords_id_arr as $keywordId) {
+                            $querys = Db::table('goods')
+                                ->where('keywords_id', $keywordId)
+                                ->where('goods_status', 1);
+                            
+                            // 应用筛选条件
+                            $baseQuery($querys);
+                            
+                            $ids = $querys->pluck('goods_id')->toArray();
+                            if (!empty($ids)) {
+                                $lists[] = $ids;
+                            }
+                        }
+                        
+                        // 2. 构建轮询顺序数组
+                        $roundRobinIds = $this->buildRoundRobinArray($lists);
+                        $roundRobinIds = array_unique($roundRobinIds);
+                        
+                        if(count($where)==1 && empty($orwhere) && empty($inwhere)){
+                            #在板块进来的时候才显示，之后这样不显示，要按照条件显示
+                            // 将商品分为优先（购买分类）和普通
+                            $priority = [];
+                            $normal = [];
+                            foreach ($roundRobinIds as $vid) {
+                                $cat = $catMap[$vid] ?? 0;
+                                
+                                if (in_array($cat, $priority_cat_ids)) {
+                                    $priority[] = $vid;
+                                } else {
+                                    $normal[] = $vid;
+                                }
+                            }
+                            // 合并，优先在前，普通在后（各自保持原顺序）
+                            $new_ids = array_merge($priority, $normal);
+                            $roundRobinIds = &$new_ids;
+                        }
+                        
+                        // 按排序字段排序
+                        if ($sort_info != 0 && !empty($sort_info)) {
+                            $sort_info2 = explode('_', $sort_info);
+                            $sort_field = Db::table('search_column')->where(['id' => $sort_info[0]])->first();
+                            if ($sort_field) {
+                                $order = $sort_info2[1] == 1 ? 'asc' : 'desc';
+                                
+                                // 1. 获取所有商品的价格映射（goods_id => price）
+                                $prices = Db::table('goods')
+                                    ->whereIn('goods_id', $roundRobinIds)
+                                    ->pluck($sort_field->field, 'goods_id')
+                                    ->toArray();
+                        
+                                // 2. 使用 usort 对 $roundRobinIds 排序（原数组顺序会被修改）
+                                usort($roundRobinIds, function($a, $b) use ($prices, $order) {
+                                    $priceA = $prices[$a] ?? 0; // 如果价格不存在，默认为0
+                                    $priceB = $prices[$b] ?? 0;
+                        
+                                    if ($order == 'asc') {
+                                        return $priceA <=> $priceB; // 升序
+                                    } else {
+                                        return $priceB <=> $priceA; // 降序
+                                    }
+                                });
+                            }
+                        }
+                        
+                        // 3. 总商品数（轮询数组的长度）
+                        $totalGoodsCount = count($roundRobinIds);
+                        $goods_count = $totalGoodsCount;
+                        
+                        // 4. 分页参数
+                        $currentPage = isset($data['page']) ? intval($data['page']) : 1;
+                        $offset = ($currentPage - 1) * $limit;
+                        
+                        // 5. 取出当前页的商品ID
+                        $idsOnPage = array_slice($roundRobinIds, $offset, $limit);
+                        
+                        // 6. 查询商品详情
+                        if (empty($idsOnPage)) {
+                            $list = [];
+                        }
+                        else {
+                            $querys = Db::table('goods')
+                                ->whereIn('goods_id', $idsOnPage);
+                            
+                            // 应用筛选条件
+                            $baseQuery($querys);
+                            
+                            // 按排序字段排序
+                            if ($sort_info != 0 && !empty($sort_info)) {
+                                $sort_info2 = explode('_', $sort_info);
+                                $sort_field = Db::table('search_column')->where(['id' => $sort_info[0]])->first();
+                                if ($sort_field) {
+                                    $order = $sort_info2[1] == 1 ? 'asc' : 'desc';
+                                    $querys->orderBy($sort_field->field, $order);
+                                }
+                            }
+                            
+                            $list = $querys->get()
+                                    ->keyBy('goods_id')
+                                    ->only($idsOnPage)
+                                    ->values()
+                                    ->toArray();
+                        }
+                        
+                        // 7. 价格范围（可选）
+                        if ($totalGoodsCount > 0) {
+                            $priceQuery = Db::table('goods')
+                                ->whereIn('keywords_id', $keywords_id_arr);
+                            $baseQuery($priceQuery); // 应用筛选条件
+                            $minprice = $priceQuery->min('goods_price');
+                            $maxprice = $priceQuery->max('goods_price');
+                        }
+                        else {
+                            $minprice = $maxprice = 0;
+                        }
+
+                        $list = objtoarr($list);
+                        
+                         #获取原“商品名称/分类名称”的条件
+                        $list2 = objtoarr($querys->get());
+                        $condition = $this->get_condition($id, $list2, 1, ['value_show'=>0,'brand_show'=>0]);
+                    }
+                }
 
                 $keywords_id = [];
-                foreach ($keywords as $k=>$v) {
-                    $this_keyword = Db::table('goods_keywords')->where(['keywords'=>$v])->first();
-                    $this_keyword = objtoarr($this_keyword);
-                    array_push($keywords_id, $this_keyword['id']);
+                $cateinfo1 = ['goods_id'=>0];
+                if($id!=5){
+                    foreach ($keywords as $k=>$v) {
+                        if(!empty($v)){
+                            $this_keyword = Db::table('goods_keywords')->where(['keywords'=>$v])->first();
+                            $this_keyword = objtoarr($this_keyword);
+                            array_push($keywords_id, $this_keyword['id']);
+                        }
+                    }
+                    
+                    $cateinfo1 = Db::table('goods')->whereIn('keywords_id', $keywords_id)->first();
+                    $cateinfo1 = objtoarr($cateinfo1);
                 }
-                $cateinfo1 = Db::table('goods')->whereIn('keywords_id', $keywords_id)->first();
-                $cateinfo1 = objtoarr($cateinfo1);
-
-                $list = [];
-                $condition = [];
+                
+                if($id!=5){
+                    $list = [];
+                    $condition = [];
+                }
+                
                 if ($cateinfo1['goods_id']>0) {
                     #获取高级条件
                     $list_info = $this->getTotalWhere($catename, $g_condition, $field_condition, $condition_arr2, [['goods_status','=',1]], $keywords_id, $sort_info, ['page'=>$page,'limit'=>$limit]);
@@ -263,50 +966,51 @@ class FuncController extends Frontend
                     $goods_count = $list_info[1];
                     $minprice = $list_info[2];
                     $maxprice = $list_info[3];
-//                    if($hotsearchId==0) {
+
                     #获取原“商品名称/分类名称”的条件
-//                    ,['hotsearch_id', '=', $hotsearchId]
                     $list2 = Db::table('goods')->whereIn('keywords_id', $keywords_id)->get();
                     $list2 = objtoarr($list2);
                     $condition = $this->get_condition($id, $list2, 1, ['value_show'=>0,'brand_show'=>0]);
-//                    }
-                } else {
-                    $result = '暂无商品';
-                    #执行爬虫任务(废弃)
-                    if (1>2) {
-                        $conditions = Db::table('guide_content')->whereRaw('gkeywords<>"" and is_show=0 and id='.$hotsearchId)->first();
-                        $conditions = objtoarr($conditions);
-
-                        if (!empty($conditions['gkeywords'])) {
-                            $keywords = explode('、', $conditions['gkeywords']);
-                            foreach ($keywords as $k2=>$v2) {
-                                #keyword_query
-                                $size = 20;
-                                $options = [
-                                    'http' => [
-                                        'timeout' => 10000, // 设置超时时间为3000秒
-                                    ],
-                                ];
-                                $context = stream_context_create($options);
-                                $goods = json_decode(file_get_contents('https://shop.gogo198.cn/collect_website/public/?s=api/getgoods/keyword_query&current='.$conditions['get_times'].'&size='.$size.'&keyword='.$v2, false, $context), true);
-                                if (!empty($goods['data'])) {
-                                    #1、先获取表里是否存在此商品
-                                    $list = $this->save_goods($goods['data'], $hotsearchId);
-                                    sleep(1);
-                                    $goods_count = Db::table('goods')->where(['hotsearch_id'=>$hotsearchId])->count();
-                                    $goods_count = $this->get_fiveList($goods_count);
-                                    $list = Db::table('goods')->where(['hotsearch_id'=>$hotsearchId])->offset($page)->limit($limit)->get();
-                                    $list = objtoarr($list);
-
-//                                if($hotsearchId==0) {
-                                    #获取原“商品名称/分类名称”的条件
-                                    $list2 = Db::table('goods')->where([['hotsearch_id', '=', $hotsearchId]])->get();
-                                    $list2 = objtoarr($list2);
-                                    $condition = $this->get_condition($id, $list2, 1, ['value_show'=>0,'brand_show'=>0]);
-//                                }
-                                    #3、爬取次数++
-                                    $current = $conditions['get_times']+1;
-                                    Db::table('guide_content')->where(['id'=>$conditions['id']])->update(['get_times'=>$current]);
+                }
+                else {
+                    if($id!=5){
+                        $result = '暂无商品';
+                        #执行爬虫任务(废弃)
+                        if (1>2) {
+                            $conditions = Db::table('guide_content')->whereRaw('gkeywords<>"" and is_show=0 and id='.$hotsearchId)->first();
+                            $conditions = objtoarr($conditions);
+    
+                            if (!empty($conditions['gkeywords'])) {
+                                $keywords = explode('、', $conditions['gkeywords']);
+                                foreach ($keywords as $k2=>$v2) {
+                                    #keyword_query
+                                    $size = 20;
+                                    $options = [
+                                        'http' => [
+                                            'timeout' => 10000, // 设置超时时间为3000秒
+                                        ],
+                                    ];
+                                    $context = stream_context_create($options);
+                                    $goods = json_decode(file_get_contents('https://shop.gogo198.cn/collect_website/public/?s=api/getgoods/keyword_query&current='.$conditions['get_times'].'&size='.$size.'&keyword='.$v2, false, $context), true);
+                                    if (!empty($goods['data'])) {
+                                        #1、先获取表里是否存在此商品
+                                        $list = $this->save_goods($goods['data'], $hotsearchId);
+                                        sleep(1);
+                                        $goods_count = Db::table('goods')->where(['hotsearch_id'=>$hotsearchId])->count();
+                                        $goods_count = $this->get_fiveList($goods_count);
+                                        $list = Db::table('goods')->where(['hotsearch_id'=>$hotsearchId])->offset($page)->limit($limit)->get();
+                                        $list = objtoarr($list);
+    
+    //                                if($hotsearchId==0) {
+                                        #获取原“商品名称/分类名称”的条件
+                                        $list2 = Db::table('goods')->where([['hotsearch_id', '=', $hotsearchId]])->get();
+                                        $list2 = objtoarr($list2);
+                                        $condition = $this->get_condition($id, $list2, 1, ['value_show'=>0,'brand_show'=>0]);
+    //                                }
+                                        #3、爬取次数++
+                                        $current = $conditions['get_times']+1;
+                                        Db::table('guide_content')->where(['id'=>$conditions['id']])->update(['get_times'=>$current]);
+                                    }
                                 }
                             }
                         }
@@ -315,7 +1019,9 @@ class FuncController extends Frontend
 
                 #当前页面的链接
                 $origin_page = '/login.html?open=4&param2='.base64_encode('/goods_list?frame_id='.$data['frame_id'].'&hotsearchId='.$hotsearchId.'&searchTitle='.$searchTitle);
-            } else {
+                
+            }
+            else {
                 $searchTitle = $catename;
                 #先查询有无此商品名称
                 #后再查询分类名称
@@ -357,7 +1063,6 @@ class FuncController extends Frontend
                 #当前页面的链接
                 $origin_page = '/login.html?open=4&param2='.base64_encode('/goods_list?cate_name='.$catename);
             }
-//            dd($keywords_id);
 
             #币种转换
             if (!empty($list)) {
@@ -379,13 +1084,11 @@ class FuncController extends Frontend
 
             #获取配置信息
             $website = get_website();
+            
             $page_info = get_pageinfo('/goods_list');
             $website['background'] = $page_info['content']['background'];
             $website['content'] = $page_info['content']['content'];
             $website['fontcolor'] = $page_info['content']['fontcolor'];
-
-
-//            dd($condition);
 
             #币种
             $currency = Db::connection('shop_db')->table('website_exchange_rate')->get();
@@ -403,6 +1106,31 @@ class FuncController extends Frontend
             
             return view('func.goods_list', compact('condition', 'list', 'website', 'origin_field_condition', 'field_condition', 'origin_condition', 'g_condition', 'catename', 'id', 'g_o', 'sort_info', 'sort', 'hotsearchId', 'goods_count', 'limit', 'currency', 'currency_sel', 'minprice', 'maxprice', 'result', 'searchTitle', 'origin_page', 'two_fields', 'condition_arr2'));
         }
+    }
+    
+    /**
+     * 将多个列表按轮询顺序合并成一个数组（跳过空缺）
+     * @param array $lists 二维数组，每个子数组是商品ID列表
+     * @return array 按轮询顺序排列的商品ID数组
+     */
+    private function buildRoundRobinArray($lists) {
+        $result = [];
+        $listCount = count($lists);
+        $indexes = array_fill(0, $listCount, 0); // 记录每个列表当前取到的位置
+        
+        // 只要还有列表未取完，就继续
+        while (true) {
+            $anyLeft = false;
+            for ($i = 0; $i < $listCount; $i++) {
+                if ($indexes[$i] < count($lists[$i])) {
+                    $result[] = $lists[$i][$indexes[$i]];
+                    $indexes[$i]++;
+                    $anyLeft = true;
+                }
+            }
+            if (!$anyLeft) break;
+        }
+        return $result;
     }
 
     #5个显示，不满5个不显示（废弃）
@@ -3042,9 +3770,9 @@ class FuncController extends Frontend
                 
                 #规格体积（cm）
                 $goods_sku['volume'] = explode('*',$goods_sku['volume']);
-                $long = $goods_sku['volume'][0];
-                $width = $goods_sku['volume'][1];
-                $height = $goods_sku['volume'][2];
+                $long = isset($goods_sku['volume'][0])?$goods_sku['volume'][0]:0;
+                $width = isset($goods_sku['volume'][1])?$goods_sku['volume'][1]:0;
+                $height = isset($goods_sku['volume'][2])?$goods_sku['volume'][2]:0;
                 
                 $vw = 0;
                 #计算体积重（需算上所购规格数量）CM

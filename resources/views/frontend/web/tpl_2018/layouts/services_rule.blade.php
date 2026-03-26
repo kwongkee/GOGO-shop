@@ -6,7 +6,7 @@
     .layer_frame .check_content {padding:0;height: 610px;background: #fff;}
     .layer_frame .layui-tab-card{margin:0;}
     .layer_frame .check_content .change_window{background:#fff;}
-    .layer_frame .layui-btn-normal{background:{{$website['color']}};}
+    .layer_frame .layui-btn-normal{background:#009688;}
     .layer_frame .layui-btn-danger{background:#db1d18;}
     .layer_frame .layui-btn+.layui-btn{margin-left:20px;}
     /*解决弹框问题===end*/

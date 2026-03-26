@@ -438,7 +438,7 @@
                         </a>
 
                         {{--加入分销--}}
-                        <a href="javascript:void(0);" class="goods-compare compare-btn fr add-compare" data-goods-id="" data-sku-id="" data-image-url="?x-oss-process=image/resize,m_pad,limit_0,h_320,w_320">
+                        <a href="javascript:kaifa_ing();" class="goods-compare compare-btn fr add-compare" data-goods-id="" data-sku-id="" data-image-url="?x-oss-process=image/resize,m_pad,limit_0,h_320,w_320">
                             <i class="iconfont icon-shuma"></i>
                             加入分销
                         </a>
@@ -550,7 +550,7 @@
                                     @endif
                                 </div>
                                 <div class="operaDiv">
-                                    <div class="operaBtn">个性定制&nbsp;></div>
+                                    <div class="operaBtn" onclick="kaifa_ing()">个性定制&nbsp;></div>
                                     <div class="operaBtn" onclick="exchangeBtn({{$goods['goods_price']}})">币种换算&nbsp;></div>
                                 </div>
                             </div>
@@ -660,7 +660,6 @@
                                 align-items: center;
                                 justify-content: center;
                                 padding: 8px 20px;
-                                background-color: {{$website['color']}};
                                 color: #000;
                                 border: none;
                                 border-radius: 4px;
@@ -670,13 +669,13 @@
                             }
                             
                             .add-address-btn:hover {
-                                background-color: {{$website['color']}};
-                                opacity: 0.9;
+                                /*background-color: {{$website['color']}};*/
+                                /*opacity: 0.9;*/
                             }
                             
                             .add-address-btn .iconfont {
                                 margin-right: 5px;
-                                font-size: 16px;
+                                font-size: 20px;
                             }
                         </style>
                                             
@@ -691,7 +690,7 @@
                                             <span class="label-title"></span>
                                             <select id="selectDeliveryMethod" class="chosen-select delivery-selects">
                                                 <option value="">请选择</option>
-                                                @if($goods['shop_id']>0)
+                                                @if($goods['shop_id']>0 || $goods['buyer_id']>0)
                                                 <option value="1">中国收货</option>
                                                 @endif
                                                 <option value="2" @if($goods['service_type']==2) disabled @endif>海外收货</option>
@@ -1762,7 +1761,7 @@
                                     // 添加地址按钮（放在循环外）
                                     html += '           <div class="address-dropdown-footer">\n'+
                                             '               <div class="add-address-btn" onclick="add_addr()">\n'+
-                                            '                   <i class="iconfont">+</i>\n添加新的收货地址'+
+                                            '                   <i class="iconfont">+</i>\n添加'+
                                             '               </div>\n'+
                                             '           </div>\n'+
                                             '       </div>\n'+
@@ -1810,7 +1809,7 @@
                                             '               </div>\n'+
                                             '               <div class="address-dropdown-footer">\n'+
                                             '                   <div class="add-address-btn" onclick="add_addr()">\n'+
-                                            '                       <i class="iconfont">+</i>\n添加新的收货地址'+
+                                            '                       <i class="iconfont">+</i>\n添加'+
                                             '                   </div>\n'+
                                             '               </div>\n'+
                                             '           </div>\n'+
@@ -5606,7 +5605,7 @@
                 , form = layui.form
                 , layer = layui.layer;
            
-            $.getJSON('/get_miniprogram',{'goods_id':"{{$goods['goods_id']}}",'_token':"{{csrf_token()}}"},function(res){
+            $.getJSON('/get_miniprogram',{'goods_id':"{{$goods['goods_id']}}",'share_uid':"{{$share_uid}}",'campaign_id':"{{$campaign_id}}",'_token':"{{csrf_token()}}"},function(res){
                 layer.closeAll('loading');
                 layer.msg(res.msg,{time:2000}, function () {
                     if (res.code == 0) {

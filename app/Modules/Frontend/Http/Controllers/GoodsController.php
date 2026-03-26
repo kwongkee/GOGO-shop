@@ -688,7 +688,7 @@ class GoodsController extends Frontend
             }
     
             $goods = $goods_info->toArray();
-    
+            
             // 商品sku列表（保持原 Repository 调用）
             $sku_list = $this->goods->getFrontendSkuList($goods_id);
             $base_sku_list = array_values($sku_list);
@@ -3530,6 +3530,7 @@ class GoodsController extends Frontend
             $freight_info = Db::connection('shop_db')->table('centralize_freight_config')->where(['id'=>$freight_id])->first();
             $freight_info = objtoarr($freight_info);
             $freight_info['config_data'] = json_decode($freight_info['config_data'],true);
+            
             // print_r($freight_info['config_data']);die;
             foreach ($data as $k=>$v) {
                 $data[$k]['sku_info'] = Db::table('cart_sku')->where(['cart_id'=>$v['cart_id'],'selected'=>1,'is_buy'=>0])->get();
@@ -3546,9 +3547,9 @@ class GoodsController extends Frontend
                     
                     #规格体积（cm）
                     $goods_sku['volume'] = explode('*',$goods_sku['volume']);
-                    $long = $goods_sku['volume'][0];
-                    $width = $goods_sku['volume'][1];
-                    $height = $goods_sku['volume'][2];
+                    $long = isset($goods_sku['volume'][0])?$goods_sku['volume'][0]:0;
+                    $width = isset($goods_sku['volume'][1])?$goods_sku['volume'][1]:0;
+                    $height = isset($goods_sku['volume'][2])?$goods_sku['volume'][2]:0;
                     
                     $vw = 0;
                     #计算体积重（需算上所购规格数量）CM
@@ -5151,8 +5152,8 @@ class GoodsController extends Frontend
         elseif($order['content']['delivery_method']==2 && $order['content']['gather_method']==1){
             #海外收货-平台集运，只能海外支付
             
-            #国家
-            $country = Db::connection('shop_db')->table('centralize_diycountry_content')->whereRaw('pid=5 and id<>162')->get();
+            #国家and id<>162
+            $country = Db::connection('shop_db')->table('centralize_diycountry_content')->whereRaw('pid=5 ')->get();
             $country = objtoarr($country);
         }
         
@@ -7949,8 +7950,8 @@ class GoodsController extends Frontend
         $time = time();
         $goods_id = intval($data['goods_id']);
         $method = isset($data['method'])?intval($data['method']):0;
-        $share_uid = intval($data['share_uid']);
-        $campaign_id = intval($data['campaign_id']);
+        $share_uid = isset($data['share_uid'])?intval($data['share_uid']):0;
+        $campaign_id = isset($data['campaign_id'])?intval($data['campaign_id']):0;
         
         if($method==2){
             //转发链接
@@ -7989,8 +7990,10 @@ class GoodsController extends Frontend
         $shop_logo = 'https://shop.gogo198.cn/collect_website/public/uploads/centralize/website_index/679357cc06e93.png';
         if($goods->shop_id>0){
             $shop_name = Db::connection('shop_db')->table('website_user_company')->where(['id'=>$goods->shop_id])->select('company')->first()->company;
-            $shop_logo = Db::connection('shop_db')->table('website_basic')->where(['company_id'=>$goods->shop_id,'company_type'=>0])->select('logo')->first()->logo;
-            $shop_logo = 'https://dtc.gogo198.net'.$shop_logo;
+            $shop_logo2 = Db::connection('shop_db')->table('website_basic')->where(['company_id'=>$goods->shop_id,'company_type'=>0])->select('logo')->first();
+            if(!empty($shop_logo2)){
+                $shop_logo = 'https://dtc.gogo198.net'.$shop_logo2->logo;
+            }
         }
         
         #3、随机颜色

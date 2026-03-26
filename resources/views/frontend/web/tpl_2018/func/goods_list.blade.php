@@ -21,7 +21,7 @@
         .w1200 .headTxt .headTxtAct{font-weight: 800;color:#db1d18;}
         .login-form .login-con{box-sizing: revert;}
         .login-wrap .form-group .text {border-bottom: 1px solid #ddd !important;}
-
+        
         #content{padding:20px;box-sizing:border-box;margin-bottom:50px;}
         #content .content .conditionDiv{background:{{$website['color']}};padding:10px;box-shadow: 0px 0px 8px 1px #525252;}
 
@@ -41,6 +41,7 @@
         .high_search .rightVal .valItem{font-size:13px;width: 63px;display: inline-block;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;cursor:pointer;padding:5px 0;color:{{$website['fontcolor']}};}
         .high_search .rightVal .valItem_act{color:#e60000;}
         .high_search .rightVal .valItem:hover{color:#e60000;}
+        .high_search .rightVal .valItem:nth-of-type(4){margin-right:30px;}
         .high_search .rightVal .loadmore_search{position: absolute;top: 4px;right: 4px;font-size: 13px;padding: 3px 8px;display: flex;align-items: center;border:1px solid {{$website['content']}};cursor:pointer;transition: all 0.3s ease;}
         .high_search .rightVal .loadmore_search .more_icon{width:7px;height:7px;border-top:1px solid {{$website['content']}};border-right:1px solid {{$website['content']}};transform: rotate(135deg);margin-left:5px;background:#ffffff;}
         .high_search .rightVal .loadmore_search2 {position: absolute;top: 4px;right: 4px;font-size: 13px;padding: 3px 8px;display: flex;align-items: center;border:1px solid {{$website['content']}};cursor:pointer;transition: all 0.3s ease;}
@@ -92,24 +93,25 @@
 
         /**商品列表**/
         .goods_list{position: relative;box-sizing: border-box;}
-        .goods_box{width: 18%;height: 325px;background-color: #fff;display:inline-block;overflow: hidden;margin: 0 2.15% 2.15% 0px;border-radius:8px;cursor:pointer;border:3px solid {{$website['color_word']}};}
+        .goods_box{width: 18%;/*height: 325px;*/background-color: #fff;display:inline-block;overflow: hidden;margin: 0 2.15% 2.15% 0px;border-radius:8px;cursor:pointer;border:3px solid {{$website['color_word']}};}
         .goods_box:hover{border:3px solid #c60001;box-shadow: 0px 0px 10px 1px #525252;}
         /*.goods_box:nth-of-type(1){margin-left:0;}  .goods_box:nth-of-type(6){margin-left:0;}  .goods_box:nth-of-type(11){margin-left:0;}  .goods_box:nth-of-type(16){margin-left:0;}*/
         .goods_box:nth-child(5n){margin-right:0;}
-        .goods_box .goods_image{width:100%;padding:10px;}
+        .goods_box .goods_image{width:100%;padding:0px;}
         .goods_box .goods_image img{width:100%;height:205px;/*border:5px solid #dbd9d9;*/}
         /*.goods_box:hover .goods_image img{box-shadow: 0px 0px 10px 1px #000;}*/
 
         .goods_box .goods_info{width: 100%;height: 105px;border: none;overflow: hidden;text-align: center;padding-top:2px;}
-        .goods_box .goods_info .gcon{background:#fff;padding:8px;height: 100%;padding-top:0;}
-        .goods_box .goods_info .goods_name{width: 100%;height: 55px;padding-right: 0px;margin-right: 0px;font-size: 13px;text-align: left;line-height: 19px;color: #000;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 3;overflow: hidden;text-overflow: ellipsis;/**background:#fff;**/font-weight: 800;}
+        .goods_box .goods_info .gcon{background:{{$website['color']}};padding:10px;height: 100%;}
+        .goods_box .goods_info .goods_name{width: 100%;height: 55px;padding-right: 0px;margin-right: 0px;font-size: 13px;text-align: left;line-height: 19px;color: {{$website['color_word']}};display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 3;overflow: hidden;text-overflow: ellipsis;font-weight: 800;}
         .goods_box .goods_info .operate{width: 100%;line-height: 30px;  margin-top:10px;}
         .goods_box .goods_info .operate .goods_price{width: 100%;height:100%;line-height: 30px;font-size: 13px;font-weight: bold;text-align: center;margin: 0 auto;color:#000;}
         .goods_box .goods_info .operate .view_detail{width: 90px;height: 30px;line-height: 30px;color: #fff;font-size:13px;text-align: center;display: inline-block;background:#E31939;cursor:pointer;}
 
         /**分页**/
         .layui-laypage a:hover{color:#1f5188;}
-        .layui-laypage .layui-laypage-curr .layui-laypage-em{background:{{$website['color_word']}};border-top:1px solid {{$website['color_word']}};border-bottom:1px solid {{$website['color_word']}};color:{{$website['color_word']}};height: 26px;}
+        .layui-laypage .layui-laypage-curr em{color:{{$website['color_word']}};}
+        .layui-laypage .layui-laypage-curr .layui-laypage-em{background:{{$website['color']}};border-top:1px solid {{$website['color_word']}};border-bottom:1px solid {{$website['color_word']}};color:{{$website['color_word']}};height: 26px;}
 
         /**更多**/
         .searchContent{text-align: center;margin-top:15px;}
@@ -117,7 +119,7 @@
 
         .noresult-content{text-align: center;}
         .noresult-content img{width: 205px;height:205px;margin-top:10px;}
-        .noresult-content .noresult-hd{font-size: 20px;margin-top:10px;color:#fff;}
+        .noresult-content .noresult-hd{font-size: 20px;font-weight:800;margin-top:10px;color:#fff;}
 
         footer{display: block !important;}
         #pagination *{font-weight:800;}
@@ -185,7 +187,7 @@
                     <!--顶部统一二行格式-->
                     <div class="disf headCon headCon2" style="background: #fff;padding:10px;margin-top:10px;">
                         @foreach($two_fields as $k=>$v)
-                        <div class="conSelItem" style="font-size:15px;margin-right:10px;color:#000;"><input type="checkbox" style="margin-right:5px;" onclick="showCondition2({{$v['id']}},this)"                             @if(strpos($condition_arr2,$v['id'].'、') !== false)
+                        <div class="conSelItem" style="font-size:15px;margin-right:10px;color:#000;"><input type="checkbox" style="margin-right:5px;" onclick="showCondition2({{$v['id']}},this)" @if(strpos($condition_arr2,$v['id'].'、') !== false)
                                 checked
                             @endif>{{$v['name']}}</div>
                         @endforeach
@@ -528,15 +530,15 @@
                                 @foreach($list as $k=>$v)
                                 <div class="goods_box" onclick="view_detail({{$v['goods_id']}})" title="{{$v['goods_name']}}">
                                     <div class="goods_image">
-                                        <img src="{{$v['goods_image']}}" class="img">
+                                        <img src="{{$v['goods_image']}}" class="img" onerror="this.src='/images/no_list.png'">
                                     </div>
                                     <div class="goods_info">
                                         <div class="gcon">
                                             <div class="goods_name">{{$v['goods_name']}}</div>
                                             <div class="operate">
                                                 <div class="goods_price disf" style="justify-content: center;">
-                                                    <div style="font-size: 18px;color:#000;margin-right:5px;">{{$v['goods_currency']}}</div>
-                                                    <div style="font-size:18px;font-weight: 800;color:#db1d18;">{{$v['goods_price']}}</div>
+                                                    <div style="font-size: 18px;color:{{$website['color_word']}};margin-right:5px;">{{$v['goods_currency']}}</div>
+                                                    <div style="font-size:18px;font-weight: 800;color:{{$website['color_word']}};">{{$v['goods_price']}}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -554,7 +556,7 @@
                             </div>
                         @else
                             <div class="noresult-content">
-                                <img src="https://cbu01.alicdn.com/cms/upload/2013/909/997/1799909_1367035968.png" >
+                                <img src="/images/no_list.png" >
                                 <h2 class="noresult-hd">{{$result}}</h2>
     {{--                            <p class="noresult-item-hd">您可以：</p>--}}
     {{--                            <p class="noresult-item">1. 缩短或修改您的搜索词，重新搜索</p>--}}
@@ -611,10 +613,10 @@
                                         html += '<div class="goods_box" onclick="view_detail('+res.data[i].goods_id+')" title="'+res.data[i].goods_name+'">\n' +
                                             '                                <div class="goods_image">\n';
                                             if(res.data[i].shop_id>0){
-                                                html += '                                    <img src="https://dtc.gogo198.net'+res.data[i].goods_image+'" class="img">\n';
+                                                html += '                                    <img src="'+res.data[i].goods_image+'" class="img" onerror="this.src=\'/images/no_list.png\'">\n';
                                             }
                                             else{
-                                                html += '                                    <img src="'+res.data[i].goods_image+'" class="img">\n';
+                                                html += '                                    <img src="'+res.data[i].goods_image+'" class="img" onerror="this.src=\'/images/no_list.png\'">\n';
                                             }
                                             html += '                                </div>\n' +
                                             '                                <div class="goods_info">\n' +
@@ -1279,10 +1281,10 @@
             //二级字段
             var condition_arr2 = $('.condition_arr2').val();
 
-            // console.log(field_arr);return false;
+            // console.log(condition_arr2);return false;
             condition_arr = btoa(unescape(encodeURIComponent(condition_arr)));
             field_arr = btoa(unescape(encodeURIComponent(JSON.stringify((field_arr)))));
-            window.location.href="/goods_list?cate_name={{$catename}}&frame_id={{$id}}&g_condition="+condition_arr+"&field_condition="+field_arr+'&sort_info='+sort_info+'&hotsearchId={{$hotsearchId}}&currency_sel='+currency_sel+'&condition_arr2='+condition_arr2;
+            window.location.href="/goods_list?cate_name={{$catename}}&frame_id={{$id}}&g_condition="+condition_arr+"&field_condition="+field_arr+'&sort_info='+sort_info+'&hotsearchId={{$hotsearchId}}&currency_sel='+currency_sel+'&condition_arr2='+condition_arr2+"&searchTitle={{$searchTitle}}";
         }
 
         function checkbox_click(t){
