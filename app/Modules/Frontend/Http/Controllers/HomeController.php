@@ -3282,22 +3282,29 @@ class HomeController extends Frontend
                 ]);
                 if($buyer_id){
                     #通知总后台
-                    $system = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0])->first();
-                    $system = objtoarr($system);
-                    if ($system['notice_type']==1) {
-                        $post = json_encode([
-                            'call' => 'confirmCollectionNotice',
-                            'first' => '有用户申请成为买手，请进入总后台查看！',
-                            'keyword1' => '有用户申请成为买手，请进入总后台查看！',
-                            'keyword2' => '待审核',
-                            'keyword3' => date('Y-m-d H:i:s', $time),
-                            'remark' => '点击查看详情',
-                            'url' => 'https://gadmin.gogo198.cn',
-    //                    'url' => 'https://shopping.gogo198.cn/check_prescription?prescription_id='.$prescription_id,
-                            'openid' => $system['account'],
-                            'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
-                        ]);
-                        httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+                    // $system = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0])->first();
+                    // $system = objtoarr($system);
+                    // if ($system['notice_type']==1) {
+                    $servicers = Db::connection('shop_db')->table('centralize_system_servicer')->where(['status'=>1])->get();
+                    $servicers = objtoarr($servicers);
+                    foreach($servicers as $k=>$v) {
+                        $muser = Db::connection('shop_db')->table('website_user')->where(['id' => $v['uid']])->first();
+                        $muser = objtoarr($muser);
+                        if (!empty($muser['openid'])) {
+                            $post = json_encode([
+                                'call' => 'confirmCollectionNotice',
+                                'first' => '有用户申请成为买手，请进入总后台查看！',
+                                'keyword1' => '有用户申请成为买手，请进入总后台查看！',
+                                'keyword2' => '待审核',
+                                'keyword3' => date('Y-m-d H:i:s', $time),
+                                'remark' => '点击查看详情',
+                                'url' => 'https://gadmin.gogo198.cn',
+        //                    'url' => 'https://shopping.gogo198.cn/check_prescription?prescription_id='.$prescription_id,
+                                'openid' => $muser['openid'],
+                                'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
+                            ]);
+                            httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+                        }
                     }
                     
                     return Response()->json(['code'=>0,'msg'=>'已提交申请']);
@@ -3331,6 +3338,65 @@ class HomeController extends Frontend
             }
             
             return view('home.become_buyer',compact('id','info','website_user'));
+        }
+    }
+    
+    #成为客服
+    public function become_servicer(Request $request){
+        $dat = $request->except(['_token']);
+        $user = session('user');
+        $id = isset($dat['id'])?intval($dat['id']):0;
+        
+        if (empty($user)) {
+            header('Location: /login.html?open=4&param2='.base64_encode('/become_servicer?id='.$id));
+        }
+        
+        $website_user = Db::connection('shop_db')->table('website_user')->where(['custom_id'=>$user['gogo_id']])->first();
+        $website_user = objtoarr($website_user);
+        
+        if ($request->isMethod('post')) {
+            #平台邀请成为客服
+            $res = Db::connection('shop_db')->table('centralize_system_servicer')->where(['id'=>$id])->update(['uid'=>$website_user['id'],'status'=>1,'suretime'=>time()]);
+            if($res){
+                // $ishave = Db::connection('shop_db')->table('centralize_system_notice')->where(['member_id'=>$website_user['id'],'servicer_id'=>$id,'uid'=>0])->first();
+                
+                // if(empty($ishave)){
+                //     $notice_type = 1;#1微信公众号，2微信小程序，3邮箱，4手机
+                //     $account = '';
+                //     if(!empty($website_user['openid'])){
+                //         $notice_type = 1;
+                //         $account = $website_user['openid'];
+                //     }elseif(!empty($website_user['sns_openid'])){
+                //         $notice_type = 2;
+                //         $account = $website_user['sns_openid'];
+                //     }elseif(!empty($website_user['email'])){
+                //         $notice_type = 3;
+                //         $account = $website_user['email'];
+                //     }elseif(!empty($website_user['phone'])){
+                //         $notice_type = 4;
+                //         $account = $website_user['phone'];
+                //     }
+                    
+                    // Db::connection('shop_db')->table('centralize_system_notice')->insert([
+                    //     'uid'=>0,//平台
+                    //     'system_type'=>1,
+                    //     'notice_type'=>$notice_type,
+                    //     'account'=>$account,
+                    //     'member_id'=>$website_user['id'],
+                    //     'servicer_id'=>$id
+                    // ]);
+                // }
+                return Response()->json(['code'=>0,'msg'=>'确认成为客服成功！']);
+            }
+            
+            return Response()->json(['code'=>-1,'msg'=>'确认成为客服失败！']);
+        }
+        else {
+            #平台邀请成为客服
+            $info = Db::connection('shop_db')->table('centralize_system_servicer')->where(['id'=>$id])->first();
+            $info = objtoarr($info);
+            
+            return view('home.become_servicer',compact('id','info','website_user'));
         }
     }
     //新的首页-2024-05-08 end==============================================

@@ -58,6 +58,7 @@ Route::group(['domain' => env('FRONTEND_DOMAIN')], function ($router) {
     Route::any('/search_info', 'HomeController@search_info'); // 搜索
     Route::any('/user_record', 'HomeController@user_record'); // 记录用户行为
     Route::any('/become_buyer', 'HomeController@become_buyer'); // 成为买手
+    Route::any('/become_servicer', 'HomeController@become_servicer'); // 成为客服
     
     #会员中心
     Route::any('/members/member_center', 'MembersController@member_center'); //会员中心页面

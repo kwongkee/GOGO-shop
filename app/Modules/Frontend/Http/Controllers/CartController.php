@@ -1816,6 +1816,7 @@ class CartController extends Frontend
                         '0',
                         STR_PAD_LEFT
                     ) . substr(microtime(), 2, 6);
+                    
                     $collect_id = Db::connection('shop_db')->table('customs_collection')->insertGetId([
                         'uniacid' => 3,
                         'openid' => $user->openid,

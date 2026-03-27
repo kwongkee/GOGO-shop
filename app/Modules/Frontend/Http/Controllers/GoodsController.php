@@ -6360,34 +6360,41 @@ class GoodsController extends Frontend
 
     public function notice($arr)
     {
-        $data = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0,'system_type'=>1])->first();
-        $data = objtoarr($data);
+        // $data = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0,'system_type'=>1])->first();
+        // $data = objtoarr($data);
         $url = 'https://gadmin.gogo198.cn';
 
-        if ($data['notice_type']==1) {
-            #微信
-            $post = json_encode([
-                'call'=>'confirmCollectionNotice',
-                'find' =>"用户[".$arr['gogo_id']."]发起了在线咨询，请打开查看！",
-                'keyword1' => "用户[".$arr['gogo_id']."]发起了在线咨询，请打开查看！",
-                'keyword2' => '已提交待操作',
-                'keyword3' => date('Y-m-d H:i:s', time()),
-                'remark' => '点击查看详情',
-                'url' => $url,
-                'openid' => $data['account'],
-                'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
-            ]);
-
-            httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
-        } elseif ($data['notice_type']==3) {
-            $title = "管理员您好，用户[".$arr['gogo_id'].']发起了在线咨询，请进入总后台进行操作！';
-            $post_data = json_encode(['email'=>$data['account'],'title'=>$title,'content'=>$url], true);
-            $res = httpRequest('https://admin.gogo198.cn/collect_website/public/?s=api/sendemail/index', $post_data, [
-                'Content-Type: application/json; charset=utf-8',
-                'Content-Length:' . strlen($post_data),
-                'Cache-Control: no-cache',
-                'Pragma: no-cache'
-            ]);
+        // if ($data['notice_type']==1) {
+        $servicers = Db::connection('shop_db')->table('centralize_system_servicer')->where(['status'=>1])->get();
+        $servicers = objtoarr($servicers);
+        foreach($servicers as $k=>$v) {
+            $muser = Db::connection('shop_db')->table('website_user')->where(['id' => $v['uid']])->first();
+            $muser = objtoarr($muser);
+            if (!empty($muser['openid'])) {
+                #微信
+                $post = json_encode([
+                    'call'=>'confirmCollectionNotice',
+                    'find' =>"用户[".$arr['gogo_id']."]发起了在线咨询，请打开查看！",
+                    'keyword1' => "用户[".$arr['gogo_id']."]发起了在线咨询，请打开查看！",
+                    'keyword2' => '已提交待操作',
+                    'keyword3' => date('Y-m-d H:i:s', time()),
+                    'remark' => '点击查看详情',
+                    'url' => $url,
+                    'openid' => $muser['openid'],
+                    'temp_id' => 'SVVs5OeD3FfsGwW0PEfYlZWetjScIT8kDxht5tlI1V8'
+                ]);
+    
+                httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+            } elseif (!empty($muser['email'])) {
+                $title = "管理员您好，用户[".$arr['gogo_id'].']发起了在线咨询，请进入总后台进行操作！';
+                $post_data = json_encode(['email'=>$muser['email'],'title'=>$title,'content'=>$url], true);
+                $res = httpRequest('https://admin.gogo198.cn/collect_website/public/?s=api/sendemail/index', $post_data, [
+                    'Content-Type: application/json; charset=utf-8',
+                    'Content-Length:' . strlen($post_data),
+                    'Cache-Control: no-cache',
+                    'Pragma: no-cache'
+                ]);
+            }
         }
     }
 

@@ -993,21 +993,28 @@ function httpRequest_wx($url, $data = null) {
 function sendWechat($msg=[])
 {
     $time = time();
-    $system = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0])->first();
-    $system = objtoarr($system);
-    if ($system['notice_type']==1) {
-        $post = json_encode([
-            'call'=>'confirmCollectionNotice',
-            'first' =>$msg['first'],
-            'keyword1' => $msg['keyword1'],
-            'keyword2' => $msg['keyword2'],
-            'keyword3' => date('Y-m-d H:i:s', $time),
-            'remark' => $msg['remark'],
-            'url' => $msg['url'],
-            'openid' => $system['account'],
-            'temp_id' => $msg['temp_id']
-        ]);
-        httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+    // $system = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0])->first();
+    // $system = objtoarr($system);
+    // if ($system['notice_type']==1) {
+    $servicers = Db::connection('shop_db')->table('centralize_system_servicer')->where(['status'=>1])->get();
+    $servicers = objtoarr($servicers);
+    foreach($servicers as $k=>$v) {
+        $muser = Db::connection('shop_db')->table('website_user')->where(['id' => $v['uid']])->first();
+        $muser = objtoarr($muser);
+        if (!empty($muser['openid'])) {
+            $post = json_encode([
+                'call'=>'confirmCollectionNotice',
+                'first' =>$msg['first'],
+                'keyword1' => $msg['keyword1'],
+                'keyword2' => $msg['keyword2'],
+                'keyword3' => date('Y-m-d H:i:s', $time),
+                'remark' => $msg['remark'],
+                'url' => $msg['url'],
+                'openid' => $muser['openid'],
+                'temp_id' => $msg['temp_id']
+            ]);
+            httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+        }
     }
 }
 
@@ -1023,21 +1030,29 @@ function shuntWechat($msg=[])
 
 //    if(!empty($user['openid'])){
 //        $user['openid']
-    $system = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0])->first();
-    $system = objtoarr($system);
+    // $system = Db::connection('shop_db')->table('centralize_system_notice')->where(['uid'=>0])->first();
+    // $system = objtoarr($system);
 
-    $post = json_encode([
-            'call'=>'confirmCollectionNotice',
-            'first' =>$msg['first'],
-            'keyword1' => $msg['keyword1'],
-            'keyword2' => $msg['keyword2'],
-            'keyword3' => date('Y-m-d H:i:s', $time),
-            'remark' => $msg['remark'],
-            'url' => $msg['url'],
-            'openid' => $system['account'],
-            'temp_id' => $msg['temp_id']
-        ]);
-    httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+    $servicers = Db::connection('shop_db')->table('centralize_system_servicer')->where(['status'=>1])->get();
+    $servicers = objtoarr($servicers);
+    foreach($servicers as $k=>$v) {
+        $muser = Db::connection('shop_db')->table('website_user')->where(['id' => $v['uid']])->first();
+        $muser = objtoarr($muser);
+        if (!empty($muser['openid'])) {
+            $post = json_encode([
+                'call'=>'confirmCollectionNotice',
+                'first' =>$msg['first'],
+                'keyword1' => $msg['keyword1'],
+                'keyword2' => $msg['keyword2'],
+                'keyword3' => date('Y-m-d H:i:s', $time),
+                'remark' => $msg['remark'],
+                'url' => $msg['url'],
+                'openid' => $muser['openid'],
+                'temp_id' => $msg['temp_id']
+            ]);
+            httpRequest('https://shop.gogo198.cn/api/sendwechattemplatenotice.php', $post);
+        }
+    }
 //    }
 }
 
