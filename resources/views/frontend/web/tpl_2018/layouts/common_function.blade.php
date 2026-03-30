@@ -46,9 +46,15 @@
             }
 
             {{--let html = '<div class="body" style="padding:10px;box-sizing: border-box;height:100%;"><iframe src="https://boss.gogo198.cn/?s=customer/customer_ai&pa=2&who_send=2&id=0&pid=0&isframe=1&company_id=0&uid=php echo session('user.gogo_id');" frameborder="0" style="width:100%;height:100%;"></iframe></div>';--}}
-            let html = '<div class="body" style="padding:10px;box-sizing: border-box;height:100%;"><iframe src="https://boss.gogo198.cn/?s=memberc/member_center&identify=0&is_shopping=1&outsideUrl=\''+location+'\'&mid=<?php echo base64_encode(session('user.gogo_id'));?>" frameborder="0" style="width:100%;height:100%;"></iframe></div>';
-        // let html = '<div class="body" style="padding:10px;box-sizing: border-box;height:100%;"><iframe src="https://aigogo.gogo198.cn/chat/453cf84ae8ae3d60" frameborder="0" style="width:100%;height:100%;"></iframe></div>';
-
+            //默认平台客服（购购网平台）
+            let html = '<div class="body" style="padding:10px;box-sizing: border-box;height:100%;"><iframe src="https://boss.gogo198.cn/?s=memberc/member_center&identify=0&is_shopping=1&outsideUrl=\''+location+'\'&company_id=0&mid=<?php echo base64_encode(session('user.gogo_id'));?>" frameborder="0" style="width:100%;height:100%;"></iframe></div>';
+            //商家id
+            @if(isset($goods->shop_id))
+                html = '<div class="body" style="padding:10px;box-sizing: border-box;height:100%;"><iframe src="https://boss.gogo198.cn/?s=memberc/member_center&identify=0&is_shopping=1&outsideUrl=\''+location+'\'&company_id={{$goods->shop_id}}&mid=<?php echo base64_encode(session('user.gogo_id'));?>" frameborder="0" style="width:100%;height:100%;"></iframe></div>';
+            @elseif(isset($goods['shop_id']))
+                html = '<div class="body" style="padding:10px;box-sizing: border-box;height:100%;"><iframe src="https://boss.gogo198.cn/?s=memberc/member_center&identify=0&is_shopping=1&outsideUrl=\''+location+'\'&company_id={{$goods['shop_id']}}&mid=<?php echo base64_encode(session('user.gogo_id'));?>" frameborder="0" style="width:100%;height:100%;"></iframe></div>';
+            @endif
+            
             var layer_frame_div = layer.open({
                 skin:'layer_frame',
                 type: 1,

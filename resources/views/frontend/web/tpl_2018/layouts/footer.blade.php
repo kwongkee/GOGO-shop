@@ -83,7 +83,7 @@
             <div class="footerItem f15">
                 <span>备案信息</span>
                 <div class="footerChildren">
-                    <div class="footerChildrenItem">
+                    <div class="footerChildrenItem" style="max-width:350px;">
                         {!! $website['copyright'] !!}
                     </div>
                 </div>
