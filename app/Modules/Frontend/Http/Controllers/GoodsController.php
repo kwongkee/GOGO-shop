@@ -5127,17 +5127,19 @@ class GoodsController extends Frontend
         // dd($order['content']);
         #订单币种
         $order['currency'] = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$order['currency']])->first()->currency_symbol_standard;
-
+        
         #查看商品的商家是否包含货到付款
         $cash_on_delivery = ['cash_on_delivery'=>1,'down_payment'=>1,'prepaid_method'=>1,'prepaid_percent'=>'','prepaid_currency'=>'','prepaid_amount'=>''];
         foreach ($order['content']['goods_info'] as $k=>$v) {
             $g = Db::table('goods')->where(['goods_id'=>$v['good_id']])->select('shop_id')->first();
             if ($g->shop_id > 0) {
                 $basic = Db::connection('shop_db')->table('website_basic')->where(['company_id'=>$g->shop_id])->select(['cash_on_delivery','down_payment','prepaid_method','prepaid_percent','prepaid_currency','prepaid_amount'])->first();
-                if ($basic->cash_on_delivery==2) {
-                    #有商家支持货到付款
-                    $currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$basic->prepaid_currency])->first()->currency_symbol_standard;
-                    $cash_on_delivery = ['cash_on_delivery'=>2,'down_payment'=>$basic->down_payment,'prepaid_method'=>$basic->prepaid_method,'prepaid_percent'=>$basic->prepaid_percent,'prepaid_currency'=>$currency,'prepaid_amount'=>$basic->prepaid_amount];
+                if(isset($basic)){
+                    if ($basic->cash_on_delivery==2) {
+                        #有商家支持货到付款
+                        $currency = Db::connection('shop_db')->table('centralize_currency')->where(['id'=>$basic->prepaid_currency])->first()->currency_symbol_standard;
+                        $cash_on_delivery = ['cash_on_delivery'=>2,'down_payment'=>$basic->down_payment,'prepaid_method'=>$basic->prepaid_method,'prepaid_percent'=>$basic->prepaid_percent,'prepaid_currency'=>$currency,'prepaid_amount'=>$basic->prepaid_amount];
+                    }
                 }
             }
         }

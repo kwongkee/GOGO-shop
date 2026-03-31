@@ -48,7 +48,7 @@
         .goods_list .shop-item .shop-title {align-items: center;display: flex;overflow: hidden;padding-bottom: 6px;}
         .goods_list .shop-item .shop-img {float: left;height: 16px;margin: 0 10px 0 0;width: 16px;}
         .goods_list .shop-item .shop-name, .goods_list .shop-item .special-shop-name {-webkit-line-clamp: 2;-webkit-box-orient: vertical;display: -webkit-box;float: left;font-size: 15px;line-height: 18px;margin-right: 10px;overflow: hidden;text-overflow: ellipsis;}
-        .goods_list .shop-item .shop-name {color: {{$website['color_word']}};font-weight:800;}
+        .goods_list .shop-item .shop-name {color: #000;font-weight:800;}
         .goods_list .shop-item .warehouse {background: {{$website['color']}};border-radius: 2px;color: {{$website['color_word']}};border:1px solid {{$website['color_word']}};float: left;margin-right: 10px;padding: 5px 9px;font-size:14px;font-weight:800;}
         .goods_list .shop-item .goods-box {border: 1px solid #dfdfdf;}
         .goods_list .shop-item .goods-box .goods-item {background: #E3E6EB;border-bottom: 1px solid #ddd;display: flex;flex-direction: column;padding-top: 20px;position: relative;width: 100%;}

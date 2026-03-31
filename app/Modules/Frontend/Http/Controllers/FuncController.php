@@ -3407,7 +3407,7 @@ class FuncController extends Frontend
                     
                     $list[$k]['true_addr'] = $list[$k]['country_name'] .' '. $list[$k]['province_name'] .' '. $list[$k]['city_name'] .' '. $list[$k]['district_name'] .' '. $list[$k]['town_name'] .' '. $list[$k]['village_name'] . $v['address1'];
                 }
-                elseif($v['have_postal_code']==1){
+                elseif($v['have_postal_code']==0 || $v['have_postal_code']==1){
                     $list[$k]['true_addr'] = $v['pre_address'] . $v['address1'].'（'.$v['postal'].'）';
                 }
             }
