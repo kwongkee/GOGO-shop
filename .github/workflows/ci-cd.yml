@@ -4,7 +4,7 @@
 # Priority: TOP
 # Deployment Mode: Git Pull
 
-name: GOGO-Admin CI/CD
+name: GOGO-shop CI/CD
 
 on:
   push:
@@ -13,10 +13,11 @@ on:
     branches: [ main ]
 
 env:
-  PROJECT_NAME: gogo-admin
-  PROJECT_PATH: /www/wwwroot/boss.gogo198.cn
+  PROJECT_NAME: gogo-shop
+  PROJECT_PATH: /www/wwwroot/gogo198shop
   SERVER_IP: 39.108.11.214
   SONAR_PROJECT_KEY: gogo-shop
+
 
 jobs:
   code-review:
