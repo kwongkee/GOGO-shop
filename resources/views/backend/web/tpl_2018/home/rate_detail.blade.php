@@ -5,11 +5,11 @@
 
 <style type="text/css" media="all">
     *{line-height:24px;}
-    body{background:{{$data['websites']['info']['color']}} !important;}
-    .title{font-size:30px;font-weight:600;color:{{$data['websites']['info']['color']}};text-align:center;margin:18px 0;}
+    body{background:{{$data['websites']['info']['color'] ?? ''}} !important;}
+    .title{font-size:30px;font-weight:600;color:{{$data['websites']['info']['color'] ?? ''}};text-align:center;margin:18px 0;}
     /*.disf{display:flex;align-items: center;}*/
     #content{padding:20px 0;}
-    #content .container .content{border: 1px solid {{$data['websites']['info']['color']}};padding:30px 20px 60px;box-sizing:border-box;position:relative;margin-top:10px;height:630px;}
+    #content .container .content{border: 1px solid {{$data['websites']['info']['color'] ?? ''}};padding:30px 20px 60px;box-sizing:border-box;position:relative;margin-top:10px;height:630px;}
     #content .container .content .in_mask{background-color: #000;opacity: 0.4;position: absolute;left: 0;top: 0;height: 100%;width: 100%;z-index: 1;}
     #content .container .content .contents{z-index:2;position:relative;color:#000;font-size: 15px;}
     #content .container{padding-bottom:0px;}
@@ -33,18 +33,18 @@
         .detail_topimg, .non_topimg{margin-top:0px;}
         .title{line-height: 30px;}
     }
-    .need_service,.need_share,.need_advice{padding:7px 10px;box-sizing:border-box;font-size:15px;font-weight:800;box-shadow:1px 1px 10px #333;text-align:center;/* margin-top:15px; */border:1px solid #D2A778;color:{{$data['websites']['info']['color_word']}}fff;background:#0B2074;white-space:nowrap;}
+    .need_service,.need_share,.need_advice{padding:7px 10px;box-sizing:border-box;font-size:15px;font-weight:800;box-shadow:1px 1px 10px #333;text-align:center;/* margin-top:15px; */border:1px solid #D2A778;color:{{$data['websites']['info']['color_word'] ?? ''}}fff;background:#0B2074;white-space:nowrap;}
 
     .detail_container .row .about-logo *{background:#666666 !important;font-size:16px;}
     .detail_container .row .about-logo img{box-shadow:1px 1px 15px #000;}
 
     .box_content a:nth-of-type(1){display:none;}
     .box_content a:nth-of-type(2){display:none;}
-    a{color:{{$data['websites']['info']['color_word']}};}
-    a:hover{color:{{$data['websites']['info']['color']}};}
-    .navbar_menu{color:{{$data['websites']['info']['color']}};font-size:16px;border-bottom: 1px solid {{$data['websites']['info']['color']}};}
-    .navbar_menu a{color:{{$data['websites']['info']['color']}};}
-    .navbar_menu a:last-child{color:{{$data['websites']['info']['color']}};font-weight:700;}
+    a{color:{{$data['websites']['info']['color_word'] ?? ''}};}
+    a:hover{color:{{$data['websites']['info']['color'] ?? ''}};}
+    .navbar_menu{color:{{$data['websites']['info']['color'] ?? ''}};font-size:16px;border-bottom: 1px solid {{$data['websites']['info']['color'] ?? ''}};}
+    .navbar_menu a{color:{{$data['websites']['info']['color'] ?? ''}};}
+    .navbar_menu a:last-child{color:{{$data['websites']['info']['color'] ?? ''}};font-weight:700;}
 
     footer{display: block !important;}
     .footer ul.social-network li{height:24px !important;}
@@ -60,10 +60,10 @@
         #content .container .content{height:400px;}
     @endif
 </style>
-<section id="content" class="non_topimg" style="background: {{$data['websites']['info']['color_inner']}};">
+<section id="content" class="non_topimg" style="background: {{$data['websites']['info']['color_inner'] ?? ''}};">
     <div class="w1200">
         <div class="container detail_container">
-            <p class="navbar_menu"><a href="/">HOME</a>&nbsp;<span style="color:{{$data['websites']['info']['color']}};">\</span>&nbsp;人民币兑换{{$rate['name']}}汇率</p>
+            <p class="navbar_menu"><a href="/">HOME</a>&nbsp;<span style="color:{{$data['websites']['info']['color'] ?? ''}};">\</span>&nbsp;人民币兑换{{$rate['name']}}汇率</p>
         </div>
         <div class="container" style="padding-top:0;">
             <div class="title">人民币兑换{{$rate['name']}}汇率</div>
@@ -81,7 +81,7 @@
                                 <input type="text" class="layui-input currency" name="from_money" id="from_money" value="{{$price}}" onchange="from_moneys(this)">
                             </div>
                             <div class="rightBox disf">
-                                <p style="color:{{$data['websites']['info']['color_word']}};font-size:18px;">&nbsp;≈&nbsp;</p>
+                                <p style="color:{{$data['websites']['info']['color_word'] ?? ''}};font-size:18px;">&nbsp;≈&nbsp;</p>
                                 <select name="to_currency" id="to_currency" lay-filter="to_currency" lay-search>
                                     <option value="158">CNY：人民币</option>
                                     @foreach($currency as $k=>$v)

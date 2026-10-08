@@ -1,6 +1,6 @@
 <!--首页轮播图-->
 <style>
-    #banner{border:1px solid {{$data['websites']['info']['color']}};height:550px;width: 100%;}
+    #banner{border:1px solid {{$data['websites']['info']['color'] ?? ''}};height:550px;width: 100%;}
     #banner .swiper-container{width:100%;height:100%;}
     #banner .swiper-container img{width:100%;height:100%;}
 

@@ -1,36 +1,36 @@
 <style>
     /*杂志导航版式*/
-    .industryDiv {width: 100%;margin: 50px 0px 0px;padding: 20px;position: relative;border: 2px solid {{$data['websites']['info']['color']}};box-sizing: border-box;border-radius: 5px;border-top-left-radius: 0;}
-    .industryDiv .storeTitle {position: absolute;top: -36px;left: -2px;background: #1761b7;color: {{$data['websites']['info']['color_word']}};padding: 5px 10px;border: 2px solid {{$data['websites']['info']['color']}};z-index: 9;border-bottom: 0;border-radius: 5px;border-bottom-right-radius: 0;border-bottom-left-radius: 0;font-weight: 800;}
+    .industryDiv {width: 100%;margin: 50px 0px 0px;padding: 20px;position: relative;border: 2px solid {{$data['websites']['info']['color'] ?? ''}};box-sizing: border-box;border-radius: 5px;border-top-left-radius: 0;}
+    .industryDiv .storeTitle {position: absolute;top: -36px;left: -2px;background: #1761b7;color: {{$data['websites']['info']['color_word'] ?? ''}};padding: 5px 10px;border: 2px solid {{$data['websites']['info']['color'] ?? ''}};z-index: 9;border-bottom: 0;border-radius: 5px;border-bottom-right-radius: 0;border-bottom-left-radius: 0;font-weight: 800;}
     .industryDiv .serviceBox{width: 100%;margin-top:0px;display: grid;grid-template-columns: repeat(3,1fr);-moz-column-gap: 20px;column-gap: 20px;row-gap: 20px;align-items: flex-start;}
-    .industryDiv .serviceBox .leftBox{width: 370px;height:568px;border:2px solid {{$data['websites']['info']['color_word']}};border-radius: 8px;box-shadow: 0px 0px 8px 0px #797777;margin-right:0px;}
-    .industryDiv .serviceBox .leftBox:hover{border-color:{{$data['websites']['info']['color']}};}
+    .industryDiv .serviceBox .leftBox{width: 370px;height:568px;border:2px solid {{$data['websites']['info']['color_word'] ?? ''}};border-radius: 8px;box-shadow: 0px 0px 8px 0px #797777;margin-right:0px;}
+    .industryDiv .serviceBox .leftBox:hover{border-color:{{$data['websites']['info']['color'] ?? ''}};}
     .industryDiv .serviceBox .leftBox .cont6{position: relative;width: 100%;height:100%;overflow: hidden;}
     .industryDiv .serviceBox .leftBox .cont6 .serviceContent{background-size: 100%;background-repeat:no-repeat;width: -webkit-fill-available;height:100%;position: relative;cursor: pointer;border-radius: 6px;}
     .industryDiv .serviceBox .leftBox .cont6 .searviceMask{position: absolute;bottom:0;left:0;background:#000;z-index: 10;opacity: 0.7;width: 100%;height:100%;border-radius: 6px;display: none;}
     .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv{z-index: 12;position: absolute;bottom:-40px;left:50%;transform:translate(-15%,-100%);width: 100%;margin:0 auto;}
     .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .serviceTitle{font-size:25px;font-weight: 800;color:#1f5188;}
     .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .serviceDesc{font-size:15px;font-weight: 800;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 7;overflow: hidden;text-overflow: ellipsis;width: 100%;margin-top:15px;color:#1f5188;}
-    .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .serviceIn{font-weight:800;margin-top:15px;width: fit-content;color: {{$data['websites']['info']['color_word']}};font-size: 15px;background: #1f5188;padding: 4px 15px;border-radius: 15px;border: 2px solid {{$data['websites']['info']['color_word']}};}
-    .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .serviceIn:hover{color:{{$data['websites']['info']['color_word']}};background:#e60000;}
+    .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .serviceIn{font-weight:800;margin-top:15px;width: fit-content;color: {{$data['websites']['info']['color_word'] ?? ''}};font-size: 15px;background: #1f5188;padding: 4px 15px;border-radius: 15px;border: 2px solid {{$data['websites']['info']['color_word'] ?? ''}};}
+    .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .serviceIn:hover{color:{{$data['websites']['info']['color_word'] ?? ''}};background:#e60000;}
     .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .mob_cont6{display:none;}
     .industryDiv .serviceBox .rightBox{width:100%;height:100%;grid-column-start: 2;grid-column-end: 4;}
     .industryDiv .serviceBox .rightBox .serviceContent{width:100%;height:100%;}
     .industryDiv .serviceBox .rightBox .serviceContent .swiper-container{display: none;}
     .industryDiv .serviceBox .rightBox .serviceContent .swiper-slide{display: grid;grid-template-columns: repeat(2,1fr);-moz-column-gap: 20px;column-gap: 20px;row-gap: 20px;padding:0px;}
-    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv{width:-webkit-fill-available;height:274px;border:2px solid {{$data['websites']['info']['color_word']}};border-radius: 8px;box-shadow: 0px 0px 8px 0px #797777;padding:22px 22px 22px 32px;background: #d1d0d0;position:relative;}
+    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv{width:-webkit-fill-available;height:274px;border:2px solid {{$data['websites']['info']['color_word'] ?? ''}};border-radius: 8px;box-shadow: 0px 0px 8px 0px #797777;padding:22px 22px 22px 32px;background: #d1d0d0;position:relative;}
     .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceImg{margin-right:20px;width: 50%;height: 190px;border-radius: 8px;box-shadow: 0px 0px 8px 0px #797977;text-align: center;}
-    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceImg img{width:150px;height:150px;border-radius: 8px;border: 2px solid {{$data['websites']['info']['color_word']}};box-shadow: 0px 0px 8px 0px #797977;}
-    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceTitleTop{font-size:25px;font-weight: 800;color:{{$data['websites']['info']['color_word']}};margin-bottom:0px;text-align: center;margin-top:50%;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;width: 150px;padding: 0 5px;box-sizing: border-box;}
-    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceTitle{font-size:25px;font-weight: 800;color:{{$data['websites']['info']['color_word']}};margin-bottom:0px;text-align: center;margin-top:5px;}
+    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceImg img{width:150px;height:150px;border-radius: 8px;border: 2px solid {{$data['websites']['info']['color_word'] ?? ''}};box-shadow: 0px 0px 8px 0px #797977;}
+    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceTitleTop{font-size:25px;font-weight: 800;color:{{$data['websites']['info']['color_word'] ?? ''}};margin-bottom:0px;text-align: center;margin-top:50%;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;width: 150px;padding: 0 5px;box-sizing: border-box;}
+    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceTitle{font-size:25px;font-weight: 800;color:{{$data['websites']['info']['color_word'] ?? ''}};margin-bottom:0px;text-align: center;margin-top:5px;}
     .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceTxt{width:50%;}
     .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceTxt .serviceDesc{font-size:15px;font-weight: 800;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 8;overflow: hidden;text-overflow: ellipsis;width: 100%;margin-top:0px;color:#1f5188;}
-    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv:hover{border-color:{{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};}
-    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv:hover .serviceTitle{color:{{$data['websites']['info']['color_word']}};}
-    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv:hover .serviceDesc{color:{{$data['websites']['info']['color_word']}};}
+    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv:hover{border-color:{{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};}
+    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv:hover .serviceTitle{color:{{$data['websites']['info']['color_word'] ?? ''}};}
+    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv:hover .serviceDesc{color:{{$data['websites']['info']['color_word'] ?? ''}};}
     .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceTxt .moreBtn{width: 100%;text-align: right;position:absolute;bottom: 10px;right: 5px;}
     .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceTxt .moreBtn a:hover{background:#e60000;}
-    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceTxt .moreBtn a{color:{{$data['websites']['info']['color_word']}};font-size: 15px;background: {{$data['websites']['info']['color']}};padding: 4px 15px;border-radius: 15px;border: 2px solid {{$data['websites']['info']['color_word']}};}
+    .industryDiv .serviceBox .rightBox .serviceContent .serviceDiv .serviceTxt .moreBtn a{color:{{$data['websites']['info']['color_word'] ?? ''}};font-size: 15px;background: {{$data['websites']['info']['color'] ?? ''}};padding: 4px 15px;border-radius: 15px;border: 2px solid {{$data['websites']['info']['color_word'] ?? ''}};}
     .industryDiv .serviceContent .guide_smlcontent{bottom: var(--swiper-pagination-bottom, 13%);left: var(--swiper-pagination-left, 50%);transform: translate(-38%, 0%);}
 
     @media (max-width: 992px){
@@ -44,7 +44,7 @@
         .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .mob_cont6{display:block;}
 
         .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .mob_cont6 .c6Title{display: inline-block;padding: 0 3px;box-sizing: border-box;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space: nowrap;}
-        .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .mob_cont6 .c6Title a{color:{{$data['websites']['info']['color_word']}};}
+        .industryDiv .serviceBox .leftBox .cont6 .serviceContent .serviceDiv .mob_cont6 .c6Title a{color:{{$data['websites']['info']['color_word'] ?? ''}};}
     }
 </style>
 

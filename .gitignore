@@ -22,4 +22,7 @@ composer.lock
 /app_api
 /docs
 /note.md
-yarn.lock
+yarn.lock.env*
+*.bak*2026*
+gen_cache*.php
+/public/assets/

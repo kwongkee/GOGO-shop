@@ -9,9 +9,9 @@
 
 <style>
     footer{display:block !important;}
-    #content{padding:20px 0;background:{{$data['websites']['info']['color_inner']}};}
+    #content{padding:20px 0;background:{{$data['websites']['info']['color_inner'] ?? ''}};}
     #content .color_word{font-size:16px;padding: 15px 10px;box-sizing:border-box;}
-    #content .container .row{width:100%;margin:0 auto;height: 630px;border:1px solid {{$data['websites']['info']['color']}};}
+    #content .container .row{width:100%;margin:0 auto;height: 630px;border:1px solid {{$data['websites']['info']['color'] ?? ''}};}
     @media (min-width: 1000px){
         .main_img{width:400px;height:280px;text-align:center;margin:20px auto;}
     }
@@ -33,7 +33,7 @@
                 <div class="col-md-12" style="padding:20px;box-sizing:border-box;">
                     <div class="about-logo">
                         <div class="" style="text-align:center;">
-                            <p style="text-align: center;color: {{$data['websites']['info']['color_word']}};font-size: 25px;font-weight: 800;">{{$info['name']}}</p>
+                            <p style="text-align: center;color: {{$data['websites']['info']['color_word'] ?? ''}};font-size: 25px;font-weight: 800;">{{$info['name']}}</p>
                             <img class="main_img" src="{{$data['source_link']}}{{$info['img']}}" alt="" style="height:auto;"/>
                         </div>
                     </div>

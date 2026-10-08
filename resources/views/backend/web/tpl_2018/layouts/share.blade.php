@@ -3,7 +3,7 @@
     .bdshare_dialog_list li{width: 129px;}
 </style>
 <div class="bdsharebuttonbox fr common_inner_background">
-    <a class="bds_more" href="#" data-cmd="more" style="background: {{$data['websites']['info']['color']}}; color: {{$data['websites']['info']['color_word']}};line-height: 30px;display: block;margin: 0 auto;text-align: center;float: unset;width: fit-content;padding-left: 0;padding: 5px 25px;font-size: 15px;height: auto;box-sizing: border-box;" onclick="close_layer_frame_div(this)">
+    <a class="bds_more" href="#" data-cmd="more" style="background: {{$data['websites']['info']['color'] ?? ''}}; color: {{$data['websites']['info']['color_word'] ?? ''}};line-height: 30px;display: block;margin: 0 auto;text-align: center;float: unset;width: fit-content;padding-left: 0;padding: 5px 25px;font-size: 15px;height: auto;box-sizing: border-box;" onclick="close_layer_frame_div(this)">
         立即分享
     </a>
 </div>
@@ -12,7 +12,7 @@
     window._bd_share_config = {
         "common": {
             "bdSnsKey": {},
-            "bdText": "我在@" + "{{$data['websites']['info']['name']}}" + " 发现了一个非常不错的内容。感觉不错，分享一下~",
+            "bdText": "我在@" + "{{$data['websites']['info']['name'] ?? ''}}" + " 发现了一个非常不错的内容。感觉不错，分享一下~",
             "bdUrl": '{{$data['websites']['domain']}}',
             "bdMini": "2",
             "bdMiniList": false,

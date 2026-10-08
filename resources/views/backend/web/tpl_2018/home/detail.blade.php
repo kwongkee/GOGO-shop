@@ -3,12 +3,12 @@
 <link rel="stylesheet" href="/assets/d2eace91/layui/css/layui.css?v=23121"/>
 <script type="text/javascript" src="/assets/d2eace91/layui/layui.js"></script>
 <style>
-    body{background:{{$data['websites']['info']['color_inner']}} !important;}
-    #content{width:1200px;margin:20px auto;padding:0;background:{{$data['websites']['info']['color_inner']}};}
-    #content p,#content a,#content span,#content div{color:{{$data['websites']['info']['color_word']}};}
-    .content{min-height: 60vh;border:1px solid {{$data['websites']['info']['color']}};padding:20px;}
+    body{background:{{$data['websites']['info']['color_inner'] ?? ''}} !important;}
+    #content{width:1200px;margin:20px auto;padding:0;background:{{$data['websites']['info']['color_inner'] ?? ''}};}
+    #content p,#content a,#content span,#content div{color:{{$data['websites']['info']['color_word'] ?? ''}};}
+    .content{min-height: 60vh;border:1px solid {{$data['websites']['info']['color'] ?? ''}};padding:20px;}
     #content .box_content{display: flex;align-items: center;justify-content: space-evenly;}
-    .need_service, .need_share, .need_advice {padding: 15px 75px;box-sizing: border-box;font-size: 15px;font-weight: 800;box-shadow: 1px 1px 10px #333;text-align: center;margin-top: 20px;border: 1px solid {{$data['websites']['info']['color']}};color: {{$data['websites']['info']['color_word']}};background: {{$data['websites']['info']['color']}};white-space: nowrap;}
+    .need_service, .need_share, .need_advice {padding: 15px 75px;box-sizing: border-box;font-size: 15px;font-weight: 800;box-shadow: 1px 1px 10px #333;text-align: center;margin-top: 20px;border: 1px solid {{$data['websites']['info']['color'] ?? ''}};color: {{$data['websites']['info']['color_word'] ?? ''}};background: {{$data['websites']['info']['color'] ?? ''}};white-space: nowrap;}
 
     @media (max-width: 992px){
         #content{width:100%;padding:0 20px;}

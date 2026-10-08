@@ -51,6 +51,7 @@ class PassportController extends Backend2
 
         if (empty($cid)) {
             echo '<h1>商家站点ID不能为空，正在跳转至淘中国</h1><script>setTimeout(function(){ window.location.href="//www.gogo198.cn"; },1000);</script>';
+exit;
         }
         #获取商户的企业配置的基本信息
         $this->websites['cid'] = $cid;

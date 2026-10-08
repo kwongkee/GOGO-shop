@@ -1,6 +1,6 @@
 <!-- 菜单栏开始 -->
 <style>
-    header{background:{{$data['websites']['info']['color']}};border:1px solid {{$data['websites']['info']['color']}};}
+    header{background:{{$data['websites']['info']['color'] ?? ''}};border:1px solid {{$data['websites']['info']['color'] ?? ''}};}
     header .navbar-default {width: 100%;box-shadow: 1px 1px 1px rgba(156, 156, 156, 0.36);background:unset;}
     header .navbar {min-height: 82px;background:unset;}
     header .container {width: 1210px;margin-right: auto;margin-left: auto;padding-left: 15px;padding-right: 15px;}
@@ -16,21 +16,21 @@
     header ul.nav li {border: none;margin: 0;padding: 0 !important;}
     header .navbar-nav>li {float: left;}
     header .nav>li {position: relative;display: block;}
-    header .navbar-default .navbar-nav>.active>a{color: {{$data['websites']['info']['color_word']}};}
+    header .navbar-default .navbar-nav>.active>a{color: {{$data['websites']['info']['color_word'] ?? ''}};}
     header ul.nav li {border: none;margin: 0;}
-    header .navbar-default .navbar-nav>li>a{color: {{$data['websites']['info']['color_word']}};}
-    header .nav li a:hover,header .nav li a:focus{color:{{$data['websites']['info']['color_word']}} !important;background:{{$data['websites']['info']['color']}} !important;}
-    header .navbar-default .navbar-nav > .open > a,header .navbar-default .navbar-nav > .open > a:hover,header .navbar-default .navbar-nav > .open > a:focus{background:{{$data['websites']['info']['color']}} !important;color:{{$data['websites']['info']['color_word']}} !important;}
+    header .navbar-default .navbar-nav>li>a{color: {{$data['websites']['info']['color_word'] ?? ''}};}
+    header .nav li a:hover,header .nav li a:focus{color:{{$data['websites']['info']['color_word'] ?? ''}} !important;background:{{$data['websites']['info']['color'] ?? ''}} !important;}
+    header .navbar-default .navbar-nav > .open > a,header .navbar-default .navbar-nav > .open > a:hover,header .navbar-default .navbar-nav > .open > a:focus{background:{{$data['websites']['info']['color'] ?? ''}} !important;color:{{$data['websites']['info']['color_word'] ?? ''}} !important;}
     header .open2>.dropdown-menu{display:block !important;}
-    header ul.nav li.dropdown a {z-index: 1000;display: block;color: {{$data['websites']['info']['color_word']}};}
-    header .nav .caret {border-bottom-color: {{$data['websites']['info']['color_word']}};border-top-color: {{$data['websites']['info']['color_word']}};}
+    header ul.nav li.dropdown a {z-index: 1000;display: block;color: {{$data['websites']['info']['color_word'] ?? ''}};}
+    header .nav .caret {border-bottom-color: {{$data['websites']['info']['color_word'] ?? ''}};border-top-color: {{$data['websites']['info']['color_word'] ?? ''}};}
     header .caret {display: inline-block;width: 0;height: 0;margin-left: 2px;vertical-align: middle;border-top: 4px solid;border-right: 4px solid transparent;border-left: 4px solid transparent;}
     header .navbar .nav li .dropdown-menu {z-index: 2000;}
     header .nav li .dropdown-menu {padding: 0;}
     header .navbar-nav>li>.dropdown-menu {margin-top: 0;border-top-right-radius: 0;border-top-left-radius: 0;}
     header ul.nav li {border: none;margin: 0;}
     header .nav li .dropdown-menu li a {line-height: 28px;padding: 3px 12px;}
-    header .nav li .dropdown-menu li a:hover{background:{{$data['websites']['info']['color']}};}
+    header .nav li .dropdown-menu li a:hover{background:{{$data['websites']['info']['color'] ?? ''}};}
     header .dropdown-menu>li>a {color: #000000;}
 
     .mobile_navbar{display:none;}
@@ -52,13 +52,13 @@
         /*手机版三扛end*/
 
         /**头部样式**/
-        .home-page header .navbar-default{background:{{$data['websites']['info']['color']}} !important;border-bottom:1px solid #fff;}
-        .navbar-default .navbar-toggle{border-color: {{$data['websites']['info']['color_word']}};}
-        .navbar-default .navbar-toggle .icon-bar{background-color:{{$data['websites']['info']['color_word']}};}
-        .navbar-default .navbar-collapse2{background:{{$data['websites']['info']['color']}};margin-top:20px;border-color:{{$data['websites']['info']['color_word']}};box-shadow: 0px 0px 10px 1px #000;}
+        .home-page header .navbar-default{background:{{$data['websites']['info']['color'] ?? ''}} !important;border-bottom:1px solid #fff;}
+        .navbar-default .navbar-toggle{border-color: {{$data['websites']['info']['color_word'] ?? ''}};}
+        .navbar-default .navbar-toggle .icon-bar{background-color:{{$data['websites']['info']['color_word'] ?? ''}};}
+        .navbar-default .navbar-collapse2{background:{{$data['websites']['info']['color'] ?? ''}};margin-top:20px;border-color:{{$data['websites']['info']['color_word'] ?? ''}};box-shadow: 0px 0px 10px 1px #000;}
         .navbar-static-top .container{width:100%;}
-        header .nav .caret{border-bottom-color: {{$data['websites']['info']['color_word']}};border-top-color: {{$data['websites']['info']['color_word']}};}
-        .navbar-default .navbar-nav .open .dropdown-menu>li>a{color:{{$data['websites']['info']['color_word']}};}
+        header .nav .caret{border-bottom-color: {{$data['websites']['info']['color_word'] ?? ''}};border-top-color: {{$data['websites']['info']['color_word'] ?? ''}};}
+        .navbar-default .navbar-nav .open .dropdown-menu>li>a{color:{{$data['websites']['info']['color_word'] ?? ''}};}
         .appsDiv{left:15px;}
         header .container .containerDiv{width: 100%;}
         header .container .containerDiv .navbar-header{width: 100%;}
@@ -89,7 +89,7 @@
                         ×
                     </div>
                 </button>
-                <a class="navbar-brand" href="/?cid={{$data['websites']['cid']}}"><img src="{{$data['source_link']}}{{$data['websites']['info']['logo']}}" alt="logo"/></a>
+                <a class="navbar-brand" href="/?cid={{$data['websites']['cid']}}"><img src="{{$data['source_link']}}{{$data['websites']['info']['logo'] ?? ''}}" alt="logo"/></a>
             </div>
 
             <!--PC版：-->

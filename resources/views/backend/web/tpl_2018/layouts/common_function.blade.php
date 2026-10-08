@@ -1,12 +1,12 @@
 <style>
     /**弹窗样式**/
-    .layer_frame .layui-layer-title{background:{{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};}
+    .layer_frame .layui-layer-title{background:{{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};}
     .layer_frame .layui-layer-content{overflow:unset !important;}
     .layer_frame .layui-layer-setwin{top:12px;}
     .layer_frame .layui-layer-title .disf{height:100%;}
     .layer_frame .exclamation-circle {position: relative;margin-right:8px;}
-    .layer_frame .exclamation-circle span{font-size: 14px;font-weight:900;color: {{$data['websites']['info']['color_word']}};font-family: PingFang SC, Hiragino Sans GB, Heiti SC, Microsoft YaHei, Helvetica, Tahoma, Arial, SimHei, WenQuanYi Micro Hei !important;}
-    .layer_frame .exclamation-circle::after {content: '';position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);width: 14px;height: 14px;background-color: {{$data['websites']['info']['color_word']}};border-radius: 50%;opacity:0.5;}
+    .layer_frame .exclamation-circle span{font-size: 14px;font-weight:900;color: {{$data['websites']['info']['color_word'] ?? ''}};font-family: PingFang SC, Hiragino Sans GB, Heiti SC, Microsoft YaHei, Helvetica, Tahoma, Arial, SimHei, WenQuanYi Micro Hei !important;}
+    .layer_frame .exclamation-circle::after {content: '';position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);width: 14px;height: 14px;background-color: {{$data['websites']['info']['color_word'] ?? ''}};border-radius: 50%;opacity:0.5;}
     .layer_frame .layui-layer-content .rightBox .page_content{height:88%;overflow-y: auto;overflow-x:hidden;}
     .layer_frame .layui-layer-content .rightBox .page_content .rightContent{height:100%;display: none;}
 </style>
@@ -56,7 +56,7 @@
     function open_frame(title='信息',msg="",left_href="",left_txt='',right_href="",right_txt="",opera=1,area,show_btn=1){
         let html = '<div class="body" style="padding:10px;box-sizing: border-box;"><div class="msg" style="font-size: 15px;color: #000;width: 100%;overflow-y: auto;margin-bottom:20px;">'+msg+'</div>';
         if(show_btn==1){
-            html += '<div class="btnGroup" style="display: flex;align-items: center;justify-content: center;"><a style="padding:5px 10px;background:{{$data['websites']['info']['color']}};font-size:15px;font-weight:800;color:{{$data['websites']['info']['color_word']}};margin-right:20px;" href="'+left_href+'">'+left_txt+'</a><a href="'+right_href+'" style="padding:5px 10px;background:#000;font-size:15px;font-weight:800;color:{{$data['websites']['info']['color_word']}};">'+right_txt+'</a></div></div>';
+            html += '<div class="btnGroup" style="display: flex;align-items: center;justify-content: center;"><a style="padding:5px 10px;background:{{$data['websites']['info']['color'] ?? ''}};font-size:15px;font-weight:800;color:{{$data['websites']['info']['color_word'] ?? ''}};margin-right:20px;" href="'+left_href+'">'+left_txt+'</a><a href="'+right_href+'" style="padding:5px 10px;background:#000;font-size:15px;font-weight:800;color:{{$data['websites']['info']['color_word'] ?? ''}};">'+right_txt+'</a></div></div>';
         }
         else{
             html += '</div>';

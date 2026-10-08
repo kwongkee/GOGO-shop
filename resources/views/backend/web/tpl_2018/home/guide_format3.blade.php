@@ -1,7 +1,7 @@
 <style>
     /*触发搜索版式*/
-    .festivalDiv {width: 100%;margin: 50px 0px 0px;padding: 20px;position: relative;border: 2px solid {{$data['websites']['info']['color']}};box-sizing: border-box;border-radius: 5px;border-top-left-radius: 0;}
-    .festivalDiv .storeTitle {position: absolute;top: -36px;left: -2px;background: #1761b7;color: {{$data['websites']['info']['color_word']}};padding: 5px 10px;border: 2px solid {{$data['websites']['info']['color']}};z-index: 9;border-bottom: 0;border-radius: 5px;border-bottom-right-radius: 0;border-bottom-left-radius: 0;font-weight: 800;}
+    .festivalDiv {width: 100%;margin: 50px 0px 0px;padding: 20px;position: relative;border: 2px solid {{$data['websites']['info']['color'] ?? ''}};box-sizing: border-box;border-radius: 5px;border-top-left-radius: 0;}
+    .festivalDiv .storeTitle {position: absolute;top: -36px;left: -2px;background: #1761b7;color: {{$data['websites']['info']['color_word'] ?? ''}};padding: 5px 10px;border: 2px solid {{$data['websites']['info']['color'] ?? ''}};z-index: 9;border-bottom: 0;border-radius: 5px;border-bottom-right-radius: 0;border-bottom-left-radius: 0;font-weight: 800;}
     .festivalDiv .hsColumn {display: grid;grid-template-columns: repeat(3, 1fr);-moz-column-gap: 20px;column-gap: 20px;row-gap: 20px;margin-bottom: 20px;}
     .festivalDiv .hsColumn:nth-of-type(2){margin-bottom: 0;}
     .festivalDiv .hsDiv {height: 220px;position: relative;box-shadow: 0px 0px 8px 0px #797777;}
@@ -11,7 +11,7 @@
     .festivalDiv .hsDiv .hsContent {opacity: 1;color: #fff;z-index: 10;position: absolute;width: 100%;top: 50%;transform: translate(0, -50%);bottom: 3%;transform: unset;top: unset;}
     .festivalDiv .hsDiv .hsContent .title {font-size: 18px;font-weight: 800;text-align: center;padding: 0;font-size: 15px;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-line-clamp: 1;-webkit-box-orient: vertical;margin-bottom:10px;}
     .festivalDiv .hsDiv .hsContent .moreBtn {width: 100%;text-align: center;/*position: absolute;right: -30%;bottom: -1%;*/}
-    .festivalDiv .hsDiv .hsContent .moreBtn a {color: {{$data['websites']['info']['color_word']}};font-size: 15px;background: {{$data['websites']['info']['color']}};padding: 2px 10px;border-radius: 15px;border: 2px solid {{$data['websites']['info']['color_word']}};}
+    .festivalDiv .hsDiv .hsContent .moreBtn a {color: {{$data['websites']['info']['color_word'] ?? ''}};font-size: 15px;background: {{$data['websites']['info']['color'] ?? ''}};padding: 2px 10px;border-radius: 15px;border: 2px solid {{$data['websites']['info']['color_word'] ?? ''}};}
 
     @media (max-width: 992px){
         .festivalDiv .hsColumn {grid-template-columns: repeat(1, 1fr);margin-bottom:0;}

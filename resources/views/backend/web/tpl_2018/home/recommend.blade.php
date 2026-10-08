@@ -1,7 +1,7 @@
 <!--推荐区-->
 <style>
     /*A区*/
-    .recommendBox{width:100%;border:1px solid {{$data['websites']['info']['color']}};}
+    .recommendBox{width:100%;border:1px solid {{$data['websites']['info']['color'] ?? ''}};}
     .recommendBox .column4_list {display: grid;grid-template-columns: repeat(4, 1fr);-moz-column-gap: 10px;column-gap: 10px;row-gap: 10px;margin:10px 10px 10px 10px;}
     .recommendBox .column4_list .column_gad2 {grid-column-start: 1;grid-column-end: 4;}
     .recommendBox .column_item {border-radius: 0px;}
@@ -16,18 +16,18 @@
     .recommendBox .swiper-button-prev:after,.recommendBox .swiper-button-next:after{font-size: 14px;}
     /*B区*/
     .recommendBox .column_gd1{min-width:495px;}
-    .recommendBox .column_gd1 .newsDiv {height: 385px;width: 100%;background: {{$data['websites']['info']['color']}};border-radius: 0px;overflow: hidden;border: 1px solid {{$data['websites']['info']['color']}};}
-    .recommendBox .column_gd1 .newsDiv .newsHead {width: 100%;height: 10%;border-bottom: 1px solid {{$data['websites']['info']['color_word']}};}
-    .recommendBox .column_gd1 .newsDiv .newsHead .newsText {width: 50%;text-align: center;color: {{$data['websites']['info']['color_word']}};padding: 5px 0;cursor: pointer;}
-    .recommendBox .column_gd1 .newsDiv .newsHead .newsAct {background: {{$data['websites']['info']['color_word']}};color: {{$data['websites']['info']['color']}};}
+    .recommendBox .column_gd1 .newsDiv {height: 385px;width: 100%;background: {{$data['websites']['info']['color'] ?? ''}};border-radius: 0px;overflow: hidden;border: 1px solid {{$data['websites']['info']['color'] ?? ''}};}
+    .recommendBox .column_gd1 .newsDiv .newsHead {width: 100%;height: 10%;border-bottom: 1px solid {{$data['websites']['info']['color_word'] ?? ''}};}
+    .recommendBox .column_gd1 .newsDiv .newsHead .newsText {width: 50%;text-align: center;color: {{$data['websites']['info']['color_word'] ?? ''}};padding: 5px 0;cursor: pointer;}
+    .recommendBox .column_gd1 .newsDiv .newsHead .newsAct {background: {{$data['websites']['info']['color_word'] ?? ''}};color: {{$data['websites']['info']['color'] ?? ''}};}
     .recommendBox .column_gd1 .newsDiv .newsCont {height: 90%;max-width: 100%;min-width: 100%;width: 100%;padding: 8px 10px 10px;box-sizing: border-box;position: relative;}
     .recommendBox .column_gd1 .newsDiv .newsCont .swiper-container {height: 100%;width: 100%;}
     .recommendBox .column_gd1 .newsDiv .newsCont .swiper-container .swiper-slide a {overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
     .recommendBox .column_gd1 .goodsDiv .goodsImg {width: calc(20% - 10px);height: 50px;margin-right: 10px;}
     .recommendBox .column_gd1 .goodsDiv .goodsInfo {width: 80%;}
-    .recommendBox .column_gd1 .goodsDiv .goodsInfo .title {width: 100%;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;color: {{$data['websites']['info']['color_word']}};}
-    .recommendBox .column_gd1 .goodsDiv .goodsInfo .price {background: {{$data['websites']['info']['color_word']}};color: {{$data['websites']['info']['color']}};padding: 3px 10px;border-radius: 5px;width: 110px;text-align: center;margin-top: 5px;}
-    .recommendBox .column_gd1 .viewGoods {background: #e60000;color: {{$data['websites']['info']['color_word']}};padding: 3px 10px;border-radius: 5px;width: fit-content;text-align: center;margin-left: 15px;cursor: pointer;margin-top: 5px;}
+    .recommendBox .column_gd1 .goodsDiv .goodsInfo .title {width: 100%;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;color: {{$data['websites']['info']['color_word'] ?? ''}};}
+    .recommendBox .column_gd1 .goodsDiv .goodsInfo .price {background: {{$data['websites']['info']['color_word'] ?? ''}};color: {{$data['websites']['info']['color'] ?? ''}};padding: 3px 10px;border-radius: 5px;width: 110px;text-align: center;margin-top: 5px;}
+    .recommendBox .column_gd1 .viewGoods {background: #e60000;color: {{$data['websites']['info']['color_word'] ?? ''}};padding: 3px 10px;border-radius: 5px;width: fit-content;text-align: center;margin-left: 15px;cursor: pointer;margin-top: 5px;}
 
     @media (max-width: 992px){
         .recommendBox .column4_list{display: block;}

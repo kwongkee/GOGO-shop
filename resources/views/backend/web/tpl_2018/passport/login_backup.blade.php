@@ -5,11 +5,11 @@
 <link rel="stylesheet" href="/assets/d2eace91/layui/css/layui.css">
 
 <style type="text/css" media="all">
-    body{background:{{$data['websites']['info']['color_inner']}} !important;}
+    body{background:{{$data['websites']['info']['color_inner'] ?? ''}} !important;}
     .disf{display:flex;}
-    #content{margin-top:0px;padding:0;background:{{$data['websites']['info']['color_inner']}};}
+    #content{margin-top:0px;padding:0;background:{{$data['websites']['info']['color_inner'] ?? ''}};}
     #content .container{width: 80%;max-width: 1200px;padding: 0px;margin: 30px auto 40px;border-radius: 5px;background-color: unset;box-shadow: 0 0 16px rgba(0,0,0,.04);box-shadow: unset;}
-    .content{padding:50px 20px;box-sizing:border-box;border:1px solid {{$data['websites']['info']['color']}};}
+    .content{padding:50px 20px;box-sizing:border-box;border:1px solid {{$data['websites']['info']['color'] ?? ''}};}
     .content .col-md-12{padding:0;float:unset;}
     .content .box_content{justify-content:center;border-radius:8px;margin-bottom:30px;}
     .content .box_content{background:;color:;border:1px solid ;font-size:25px;text-align:center;padding:30px;width:100%;}
@@ -22,9 +22,9 @@
     .content .control-group #reg_method{width:110px;}
     .content .control-group .phone,.content .control-group .email{width:82.5%;}
     .content .control-group .controls .form-control{width:100%;font-size:15px;}
-    .content .control-group .controls .btn-send{padding:7px 0px;width:25%;background:#1E9FFF;color:{{$data['websites']['info']['color_word']}};border:1px solid {{$data['websites']['info']['color']}};}
+    .content .control-group .controls .btn-send{padding:7px 0px;width:25%;background:#1E9FFF;color:{{$data['websites']['info']['color_word'] ?? ''}};border:1px solid {{$data['websites']['info']['color'] ?? ''}};}
     .content form{text-align:left;}
-    .content form .btn-submit {background: {{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};border: 1px solid {{$data['websites']['info']['color']}};padding: 10px 100px;box-sizing: border-box;float: unset !important;margin-top: 15px;cursor:pointer;}
+    .content form .btn-submit {background: {{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};border: 1px solid {{$data['websites']['info']['color'] ?? ''}};padding: 10px 100px;box-sizing: border-box;float: unset !important;margin-top: 15px;cursor:pointer;}
 
     .form-control {display: block;width: 100%;height: 34px;padding: 6px 12px;font-size: 14px;line-height: 1.428571429;}
 
@@ -33,38 +33,38 @@
 
     .loginBox{width:400px;text-align: center;margin:0 auto;}
     .loginBox .methodDiv{margin-bottom:25px;}
-    .loginBox .methodDiv .methodBox{margin-right:20px;position:relative;color:{{$data['websites']['info']['color_word']}};font-size: 16px;cursor:pointer;}
+    .loginBox .methodDiv .methodBox{margin-right:20px;position:relative;color:{{$data['websites']['info']['color_word'] ?? ''}};font-size: 16px;cursor:pointer;}
     .loginBox .methodDiv .methodAct{font-weight:600;}
     .loginBox .methodDiv .methodAct:after{position:absolute;content:'';left:0;bottom:-10px;width: 100%;height:3px;background:#f1be83;}
-    .loginBox .methodContent .numberDiv{padding-bottom: 5px;border-bottom: 1px solid {{$data['websites']['info']['color_word']}};}
+    .loginBox .methodContent .numberDiv{padding-bottom: 5px;border-bottom: 1px solid {{$data['websites']['info']['color_word'] ?? ''}};}
     .loginBox .methodContent .phone_login .form-control{width:80%;}
     .loginBox .methodContent .phone_login .selectBox{width:25%;}
     .loginBox .methodContent .phone_login .selectBox *{font-family: Courier !important;font-weight: 800;}
     .loginBox .methodContent .phone_login .selectBox .chosen-container{width:100%;text-align: left;background: unset !important;}
-    .loginBox .methodContent .phone_login .selectBox .chosen-container-single .chosen-single{background: unset !important;box-shadow: unset;border: 0;border-right: 1px solid {{$data['websites']['info']['color_word']}};border-radius: 0;position: relative;padding-left:0;}
-    .loginBox .methodContent .phone_login .selectBox .chosen-container-active.chosen-with-drop .chosen-single{background: unset !important;color: {{$data['websites']['info']['color_word']}} !important;font-size: 15px !important;border: 0 !important;outline: unset !important;box-shadow: unset !important;}
-    .loginBox .methodContent .phone_login .selectBox .chosen-container-single .chosen-single span{background: unset !important;color: {{$data['websites']['info']['color_word']}} !important;font-size: 15px;border: 0 !important;outline: unset !important;box-shadow: unset !important;position:relative;font-weight: 800;}
-    .loginBox .methodContent .phone_login .selectBox .chosen-container-single .chosen-single:after{position: absolute;content: '';top: 7px;right: 7px;width: 8px;height: 8px;border: 2px solid {{$data['websites']['info']['color_word']}};border-left: 0;border-bottom: 0;transform: rotate(135deg);}
+    .loginBox .methodContent .phone_login .selectBox .chosen-container-single .chosen-single{background: unset !important;box-shadow: unset;border: 0;border-right: 1px solid {{$data['websites']['info']['color_word'] ?? ''}};border-radius: 0;position: relative;padding-left:0;}
+    .loginBox .methodContent .phone_login .selectBox .chosen-container-active.chosen-with-drop .chosen-single{background: unset !important;color: {{$data['websites']['info']['color_word'] ?? ''}} !important;font-size: 15px !important;border: 0 !important;outline: unset !important;box-shadow: unset !important;}
+    .loginBox .methodContent .phone_login .selectBox .chosen-container-single .chosen-single span{background: unset !important;color: {{$data['websites']['info']['color_word'] ?? ''}} !important;font-size: 15px;border: 0 !important;outline: unset !important;box-shadow: unset !important;position:relative;font-weight: 800;}
+    .loginBox .methodContent .phone_login .selectBox .chosen-container-single .chosen-single:after{position: absolute;content: '';top: 7px;right: 7px;width: 8px;height: 8px;border: 2px solid {{$data['websites']['info']['color_word'] ?? ''}};border-left: 0;border-bottom: 0;transform: rotate(135deg);}
     .loginBox .methodContent .phone_login .selectBox .chosen-container-single .chosen-single div{display:none;}
     .loginBox .methodContent .phone_login .selectBox .chosen-results li{padding:5px 0 !important;}
-    .loginBox .methodContent .phone_login .country_code{background:unset;width:100%;border:0;color:{{$data['websites']['info']['color_word']}};border-right:1px solid {{$data['websites']['info']['color_word']}};}
+    .loginBox .methodContent .phone_login .country_code{background:unset;width:100%;border:0;color:{{$data['websites']['info']['color_word'] ?? ''}};border-right:1px solid {{$data['websites']['info']['color_word'] ?? ''}};}
     .loginBox .methodContent .phone_login #country_code option:not(:checked) {color: #000;}
     .loginBox .methodContent .phone_login #country_code option:not(:checked) span{display: block;}
     .loginBox .methodContent .phone_login #country_code option:checked{color:#000;}
-    .loginBox .methodContent .numberDiv .form-control,.loginBox .methodContent .codeDiv .form-control{background: unset;border: 1;color: {{$data['websites']['info']['color_word']}};}
-    .loginBox .methodContent .numberDiv .form-control::placeholder,.loginBox .methodContent .codeDiv .form-control::placeholder {color: {{$data['websites']['info']['color_word']}};}
+    .loginBox .methodContent .numberDiv .form-control,.loginBox .methodContent .codeDiv .form-control{background: unset;border: 1;color: {{$data['websites']['info']['color_word'] ?? ''}};}
+    .loginBox .methodContent .numberDiv .form-control::placeholder,.loginBox .methodContent .codeDiv .form-control::placeholder {color: {{$data['websites']['info']['color_word'] ?? ''}};}
     .loginBox .methodContent .phone_login{display:none;}
-    .loginBox .methodContent .codeDiv{margin-top:20px;padding-bottom:5px;border-bottom: 1px solid {{$data['websites']['info']['color_word']}};}
-    .loginBox .methodContent .codeDiv .sendcode{padding:7px 25px;color:{{$data['websites']['info']['color_word']}};white-space: nowrap;padding-right:0;cursor:pointer;}
+    .loginBox .methodContent .codeDiv{margin-top:20px;padding-bottom:5px;border-bottom: 1px solid {{$data['websites']['info']['color_word'] ?? ''}};}
+    .loginBox .methodContent .codeDiv .sendcode{padding:7px 25px;color:{{$data['websites']['info']['color_word'] ?? ''}};white-space: nowrap;padding-right:0;cursor:pointer;}
     .loginBox .btn-submit{width:100%;margin-top:24px;padding:7px 0;}
-    .loginBox .other_method_title{margin-top:10px;position: relative;color:{{$data['websites']['info']['color_word']}};font-size:14px;}
-    .loginBox .other_method_title:before{position: absolute;content:'';width: 25%;top: 10px;left: 0;height: 1px;background: {{$data['websites']['info']['color_word']}};}
-    .loginBox .other_method_title:after{position: absolute;content:'';width: 25%;top: 10px;right: 0;height: 1px;background: {{$data['websites']['info']['color_word']}};}
+    .loginBox .other_method_title{margin-top:10px;position: relative;color:{{$data['websites']['info']['color_word'] ?? ''}};font-size:14px;}
+    .loginBox .other_method_title:before{position: absolute;content:'';width: 25%;top: 10px;left: 0;height: 1px;background: {{$data['websites']['info']['color_word'] ?? ''}};}
+    .loginBox .other_method_title:after{position: absolute;content:'';width: 25%;top: 10px;right: 0;height: 1px;background: {{$data['websites']['info']['color_word'] ?? ''}};}
     .loginBox .other_method_loginBox{margin:25px 0;}
     .loginBox .other_method_loginBox .loginImg{width:35px;margin-bottom:5px;display: inline-block;cursor:pointer;}
-    .loginBox .other_method_loginBox p{font-size:13px;color:{{$data['websites']['info']['color_word']}};}
-    .loginBox .signTip{color:{{$data['websites']['info']['color_word']}};margin-top:10px;font-size:14px;}
-    .loginBox .signTip a{color:{{$data['websites']['info']['color_word']}};text-decoration: underline;}
+    .loginBox .other_method_loginBox p{font-size:13px;color:{{$data['websites']['info']['color_word'] ?? ''}};}
+    .loginBox .signTip{color:{{$data['websites']['info']['color_word'] ?? ''}};margin-top:10px;font-size:14px;}
+    .loginBox .signTip a{color:{{$data['websites']['info']['color_word'] ?? ''}};text-decoration: underline;}
     .loginBox input{appearance:none !important;background:unset !important;}
 
 
@@ -125,7 +125,7 @@
                             </div>
                         </div>
                         <button type="submit" class="btn pull-center btn-submit">登录/注册</button><br />
-                        <p style="font-size:14px;color:{{$data['websites']['info']['color_word']}};text-align: left;margin-top:10px;">未注册的手机/邮箱验证通过后将自动注册</p>
+                        <p style="font-size:14px;color:{{$data['websites']['info']['color_word'] ?? ''}};text-align: left;margin-top:10px;">未注册的手机/邮箱验证通过后将自动注册</p>
                     </form>
                     <div class="other_method_title">授权登录(仅支持已注册会员)</div>
                     <div class="other_method_loginBox">

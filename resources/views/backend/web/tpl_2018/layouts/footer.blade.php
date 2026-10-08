@@ -10,18 +10,18 @@
     .layer_frame .layui-layer-title .disf{height:100%;}
     .layer_frame .exclamation-circle {position: relative;margin-right:8px;}
     .layer_frame .exclamation-circle span{font-size: 14px;font-weight:900;color: #fff;font-family: PingFang SC, Hiragino Sans GB, Heiti SC, Microsoft YaHei, Helvetica, Tahoma, Arial, SimHei, WenQuanYi Micro Hei !important;}
-    .layer_frame .exclamation-circle::after {content: '';position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);width: 14px;height: 14px;background-color: {{$data['websites']['info']['color_word']}};border-radius: 50%;opacity:0.5;}
-    .layer_frame .page_innerhead{width:100%;border-bottom:1px solid {{$data['websites']['info']['color']}};}
+    .layer_frame .exclamation-circle::after {content: '';position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);width: 14px;height: 14px;background-color: {{$data['websites']['info']['color_word'] ?? ''}};border-radius: 50%;opacity:0.5;}
+    .layer_frame .page_innerhead{width:100%;border-bottom:1px solid {{$data['websites']['info']['color'] ?? ''}};}
     .layer_frame .page_innerhead .pageBack{width:15%;text-align: center;padding:10px 0;font-size:15px;color:#000;font-weight:600;background:#bebebe;cursor:pointer;position:relative;}
-    .layer_frame .page_innerhead .pageSel{width:42.5%;text-align: center;padding:10px 0;font-size:15px;color:#000;font-weight:600;background:{{$data['websites']['info']['color_word']}};cursor:pointer;position:relative;}
-    .layer_frame .page_innerhead .pageSel:first-child{border-right:1px solid {{$data['websites']['info']['color_word']}};}
-    .layer_frame .page_innerhead .pageAct{background:{{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};}
-    .layer_frame .page_innerhead .pageAct:after {content: '';position: absolute;top: 15px;right: 35px;width: 8px;height: 8px;border-top: 2px solid {{$data['websites']['info']['color_word']}};border-right: 2px solid {{$data['websites']['info']['color_word']}};transform: rotate(135deg);}
+    .layer_frame .page_innerhead .pageSel{width:42.5%;text-align: center;padding:10px 0;font-size:15px;color:#000;font-weight:600;background:{{$data['websites']['info']['color_word'] ?? ''}};cursor:pointer;position:relative;}
+    .layer_frame .page_innerhead .pageSel:first-child{border-right:1px solid {{$data['websites']['info']['color_word'] ?? ''}};}
+    .layer_frame .page_innerhead .pageAct{background:{{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};}
+    .layer_frame .page_innerhead .pageAct:after {content: '';position: absolute;top: 15px;right: 35px;width: 8px;height: 8px;border-top: 2px solid {{$data['websites']['info']['color_word'] ?? ''}};border-right: 2px solid {{$data['websites']['info']['color_word'] ?? ''}};transform: rotate(135deg);}
     .layer_frame .layui-layer-content .rightBox .page_content{height:88%;overflow-y: auto;}
     .layer_frame .layui-layer-content .rightBox .page_content .rightContent{height:100%;}
 
     /*客服样式*/
-    .m-gotop .a {position: relative;display: block;width: 55px;height: 55px;background-color:{{$data['websites']['info']['color']}};color: {{$data['websites']['info']['color_word']}};margin-bottom: 0px;text-align: center;cursor: pointer;outline: none;}
+    .m-gotop .a {position: relative;display: block;width: 55px;height: 55px;background-color:{{$data['websites']['info']['color'] ?? ''}};color: {{$data['websites']['info']['color_word'] ?? ''}};margin-bottom: 0px;text-align: center;cursor: pointer;outline: none;}
     .m-gotop .a>img {width: 30px;margin-top: 22%;}
     .m-mod img {max-width: 100%;border: 0;vertical-align: middle;}
 
@@ -29,8 +29,8 @@
     /*页脚样式*/
     footer .container{width:1200px;padding:0;}
     footer .contact_contain{width: 40%;position: relative;left:10%}
-    footer a:link,footer a:hover,footer ul.link-list li a:hover{color:{{$data['websites']['info']['color_word']}};}
-    footer h1, footer h2, footer h3, footer h4, footer h5, footer h6{color:{{$data['websites']['info']['color_word']}};}
+    footer a:link,footer a:hover,footer ul.link-list li a:hover{color:{{$data['websites']['info']['color_word'] ?? ''}};}
+    footer h1, footer h2, footer h3, footer h4, footer h5, footer h6{color:{{$data['websites']['info']['color_word'] ?? ''}};}
     @media (max-width: 992px) {
         footer .contact_contain{width: 80%;position: relative;left:10%}
     }
@@ -40,7 +40,7 @@
     footer .contact_contain .contact_btn{width: 30px;height: 30px;line-height: 30px;text-align: center;color: #f1be83;font-size: 30px;cursor: pointer;display:none;}
     footer .contact_contain .btn_left{position: absolute;left: -50px;top: 0%;}
     footer .contact_contain .btn_right{position: absolute;right: -50px;top: 0%;}
-    footer ul.social-network li{border:1px solid {{$data['websites']['info']['color_word']}};}
+    footer ul.social-network li{border:1px solid {{$data['websites']['info']['color_word'] ?? ''}};}
     footer .copyright p span:first-child{display:none;}
     footer .trademark{width: 50px;border-radius:50px;margin-bottom:10px;}
     footer .widgetheading{font-weight:800;}
@@ -65,7 +65,7 @@
 @include('layouts.common_function')
 @if(!empty($data['websites']['customer']))
     <div class="m-gotop">
-        <div class="m-gotop-box" style="background:{{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};position:fixed;top:@if($data['websites']['customer']['direction']==1) 20% @elseif($data['websites']['customer']['direction']==2) 50% @elseif($data['websites']['customer']['direction']==2) 80% @endif;right:0;z-index: 11;">
+        <div class="m-gotop-box" style="background:{{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};position:fixed;top:@if($data['websites']['customer']['direction']==1) 20% @elseif($data['websites']['customer']['direction']==2) 50% @elseif($data['websites']['customer']['direction']==2) 80% @endif;right:0;z-index: 11;">
             <a href="javascript:common_operation(7,this);" class="a a-top" style="right:0;z-index:9;box-shadow: rgb(102, 102, 102) 0px 0px 10px;">
                 <img src="{{$data['source_link']}}/img/kefu.png" alt="" style="margin-top:22%;">
             </a>
@@ -73,23 +73,23 @@
     </div>
 @endif
 <!--页脚-->
-<footer style="background: {{$data['websites']['info']['color']}};">
+<footer style="background: {{$data['websites']['info']['color'] ?? ''}};">
     <div class="container" style="font-size:16px;">
         <div class="row">
 
             <div class="col-md-3 col-sm-3">
                 <div class="widget">
-                    <img src="{{$data['source_link']}}{{$data['websites']['info']['slogo']}}" class="trademark">
+                    <img src="{{$data['source_link']}}{{$data['websites']['info']['slogo'] ?? ''}}" class="trademark">
                     <h4 class="widgetheading f18" style="margin-bottom:5px;">联系信息</h4>
                     <p>
-                        @if(!empty($data['websites']['info']['mobile']))
-                            <img src="/images2/website/tel.png" alt="" style="width:18px;"/> <a href="tel:{{$data['websites']['info']['mobile']}}">{{$data['websites']['info']['mobile']}}</a> <br>
+                        @if(!empty($data['websites']['info']['mobile'] ?? ''))
+                            <img src="/images2/website/tel.png" alt="" style="width:18px;"/> <a href="tel:{{$data['websites']['info']['mobile'] ?? ''}}">{{$data['websites']['info']['mobile'] ?? ''}}</a> <br>
                         @endif
-                        @if(!empty($data['websites']['info']['email']))
-                            <img src="/images2/website/email.png" alt="" style="width:18px;"/> <a href="mailto:{{$data['websites']['info']['email']}}">{{$data['websites']['info']['email']}}</a> <br>
+                        @if(!empty($data['websites']['info']['email'] ?? ''))
+                            <img src="/images2/website/email.png" alt="" style="width:18px;"/> <a href="mailto:{{$data['websites']['info']['email'] ?? ''}}">{{$data['websites']['info']['email'] ?? ''}}</a> <br>
                         @endif
-                        @if(!empty($data['websites']['info']['address']))
-                            <img src="/images2/website/address.png" alt="" style="width:18px;"/> <a href="javascript:void(0);">{{$data['websites']['info']['address']}}</a>
+                        @if(!empty($data['websites']['info']['address'] ?? ''))
+                            <img src="/images2/website/address.png" alt="" style="width:18px;"/> <a href="javascript:void(0);">{{$data['websites']['info']['address'] ?? ''}}</a>
                         @endif
                     </p>
                 </div>
@@ -130,11 +130,11 @@
             </div>
         </div>
     </div>
-    <div id="sub-footer" style="padding-top:0;margin-top:0;font-size:16px;background:{{$data['websites']['info']['color']}};">
+    <div id="sub-footer" style="padding-top:0;margin-top:0;font-size:16px;background:{{$data['websites']['info']['color'] ?? ''}};">
         <div class="container">
             <div class="row">
                 <div class="col-lg-5">
-                    <div style="color:{{$data['websites']['info']['color_word']}};font-weight:unset;font-size:18px;white-space: nowrap;margin-bottom:10px;font-weight:800;" class="f18">
+                    <div style="color:{{$data['websites']['info']['color_word'] ?? ''}};font-weight:unset;font-size:18px;white-space: nowrap;margin-bottom:10px;font-weight:800;" class="f18">
                         社媒跟踪
                     </div>
                     <div class="contact_contain">
@@ -157,7 +157,7 @@
                 </div>
                 <div class="col-lg-7">
                     <div class="copyright" style="white-space:normal; word-break:break-all;">
-                        <div style="color:{{$data['websites']['info']['color_word']}};font-weight:unset;font-size:18px;white-space: nowrap;margin-bottom:10px;text-align:center;font-weight:800;" class="f18">
+                        <div style="color:{{$data['websites']['info']['color_word'] ?? ''}};font-weight:unset;font-size:18px;white-space: nowrap;margin-bottom:10px;text-align:center;font-weight:800;" class="f18">
                             网站信息
                         </div>
                         <p style="text-align:center;" class="f16">
@@ -173,13 +173,13 @@
             <div class="row copyright2" style="margin-bottom:0;">
                 <div class="col-lg-12">
                     <div style="text-align:center;">
-                        @if(!empty($data['websites']['info']['publicity_info']))
-                        @foreach($data['websites']['info']['publicity_info'] as $k=>$v)
+                        @if(!empty($data['websites']['info']['publicity_info'] ?? ''))
+                        @foreach(($data['websites']['info']['publicity_info'] ?? [])) as $k=>$v)
                             @if($k!=0) <span>|</span> @endif &nbsp;<a href="{{$v['link']}}" class="f16" target="_blank">{{$v['name']}}</a>&nbsp;
                         @endforeach
                         @endif
                         <br>
-                        {{$data['websites']['info']['copyright']}}
+                        {{$data['websites']['info']['copyright'] ?? ''}}
                     </div>
                 </div>
             </div>
@@ -311,7 +311,7 @@
     }
     //将颜色变成rgb格式2
     $(function(){
-        let calcrgba = calculateRgba('{{$data['websites']['info']['color']}}',0.8);
+        let calcrgba = calculateRgba('{{$data['websites']['info']['color'] ?? ''}}',0.8);
         $('.rotateBox,.recommendBox,.storeDiv,.cardDiv,.festivalDiv,.industryDiv,.rate_content,.loginContainer,.common_inner_background').css('background-color',calcrgba);
     });
 

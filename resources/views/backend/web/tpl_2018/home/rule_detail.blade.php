@@ -8,21 +8,21 @@
 <script src="/assets/d2eace91/js/jquery.js?v=1.1"></script>
 
 <style type="text/css" media="all">
-    body{background:{{$data['websites']['info']['color_inner']}} !important;}
+    body{background:{{$data['websites']['info']['color_inner'] ?? ''}} !important;}
     .fa{font-family:FontAwesome !important;}
     .fa-location-arrow{color:#ffffff !important;}
     #content{padding-top:120px;padding-bottom:40px;}
     .content{box-sizing:border-box;margin-top: 20px;}
     .content .col-md-12{padding:0;float:unset;}
     .content .box_content{justify-content:center;border-radius:8px;margin-bottom:30px;}
-    .content .box_content{background:{{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};border:1px solid {{$data['websites']['info']['color_word']}};font-size:25px;text-align:center;padding:30px;width:100%;}
+    .content .box_content{background:{{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};border:1px solid {{$data['websites']['info']['color_word'] ?? ''}};font-size:25px;text-align:center;padding:30px;width:100%;}
     .content .box_content img{width:40px;margin-right:5px;}
     .inquiry_box{display:none;}
-    .navbar_menu{color: {{$data['websites']['info']['color_word']}};font-size: 16px;margin-bottom:10px;}
-    .context,.navbar_menu a{color:{{$data['websites']['info']['color']}};}
+    .navbar_menu{color: {{$data['websites']['info']['color_word'] ?? ''}};font-size: 16px;margin-bottom:10px;}
+    .context,.navbar_menu a{color:{{$data['websites']['info']['color'] ?? ''}};}
     .context{margin-bottom:1cm;}
-    .layui-colla-title{color:{{$data['websites']['info']['color_word']}};background-color:{{$data['websites']['info']['color']}};}
-    .preamble_con,.layui-colla-content{color:{{$data['websites']['info']['color_word']}};font-size:15px;}
+    .layui-colla-title{color:{{$data['websites']['info']['color_word'] ?? ''}};background-color:{{$data['websites']['info']['color'] ?? ''}};}
+    .preamble_con,.layui-colla-content{color:{{$data['websites']['info']['color_word'] ?? ''}};font-size:15px;}
     .layui-colla-content p{margin-bottom:0.3cm;}
 
     footer{display: block !important;}
@@ -37,10 +37,10 @@
                 <div class="layui-fluid" style="padding:0;">
                     <div class="layui-row layui-col-space15">
                         <div class="layui-col-md12" style="padding:0;">
-                            <p class="navbar_menu"><i class="fa fa-sign-in" style="margin-right:5px;display:none;"></i><a href="/">HOME</a>&nbsp;<span style="color:{{$data['websites']['info']['color']}};">\</span>&nbsp;<a href="/rule_list" style="color:{{$data['websites']['info']['color']}};">平台规则</a>&nbsp;<span style="color:{{$data['websites']['info']['color']}};">\</span>&nbsp;<a href="/version_list?pid={{$rule['id']}}" style="color:{{$data['websites']['info']['color']}};">{{$rule['rule_name']}}</a>&nbsp;<span style="color:{{$data['websites']['info']['color']}};">\</span>&nbsp;<span style="color:{{$data['websites']['info']['color']}};">{{$rule['version']}}</span></p>
+                            <p class="navbar_menu"><i class="fa fa-sign-in" style="margin-right:5px;display:none;"></i><a href="/">HOME</a>&nbsp;<span style="color:{{$data['websites']['info']['color'] ?? ''}};">\</span>&nbsp;<a href="/rule_list" style="color:{{$data['websites']['info']['color'] ?? ''}};">平台规则</a>&nbsp;<span style="color:{{$data['websites']['info']['color'] ?? ''}};">\</span>&nbsp;<a href="/version_list?pid={{$rule['id']}}" style="color:{{$data['websites']['info']['color'] ?? ''}};">{{$rule['rule_name']}}</a>&nbsp;<span style="color:{{$data['websites']['info']['color'] ?? ''}};">\</span>&nbsp;<span style="color:{{$data['websites']['info']['color'] ?? ''}};">{{$rule['version']}}</span></p>
                             <div class="row" style="width:100%;margin:0 auto 20px auto;">
                                 <div class="col-md-12">
-                                    <div class="common_inner_background" style="border:1px solid {{$data['websites']['info']['color']}};height: 650px;overflow-y: scroll;padding:0 10px;box-sizing:border-box;">
+                                    <div class="common_inner_background" style="border:1px solid {{$data['websites']['info']['color'] ?? ''}};height: 650px;overflow-y: scroll;padding:0 10px;box-sizing:border-box;">
                                         <!--序言头部-->
                                         @if($rule['is_preamble']==1 && $rule['position_display']==1)
                                             <div class="preamble_con" style="margin-top:0.5cm;">{!! $rule['preamble_con'] !!}</div>
@@ -113,7 +113,7 @@
                     @if(!empty($footerInfo['link']))
                         <a href="{{$footerInfo['link']}}" target="_blank">
                             <div class="need_service">
-                                <i class="fa fa-location-arrow" style="color:{{$data['websites']['info']['color_word']}};font-size:15px;margin-right:3px;"></i>
+                                <i class="fa fa-location-arrow" style="color:{{$data['websites']['info']['color_word'] ?? ''}};font-size:15px;margin-right:3px;"></i>
                                 我要服务
                             </div>
                         </a>

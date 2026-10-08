@@ -2,10 +2,10 @@
 <style>
     .mask {background: black;opacity: 0.7;display: none;width: 100%;position: fixed;z-index: 9999;top: 0;left: 0;height: 100%;display: none;}
     .mask_content {width: 350px;/*position: fixed;bottom: 50% !important;left: 50%;z-index: 99999;transform: translate(-50%, 30%);*/display:none;}
-    .mask_content{border:1px solid {{$data['websites']['info']['color_word']}};display: none;padding:0 20px 20px 20px;}
+    .mask_content{border:1px solid {{$data['websites']['info']['color_word'] ?? ''}};display: none;padding:0 20px 20px 20px;}
     .mask_content .text-center {text-align: center;padding:20px 0;}
     .mask_content.padding {padding: 10px;}
-    .mask_content h3 {font-weight: bold;color: {{$data['websites']['info']['color_word']}};}
+    .mask_content h3 {font-weight: bold;color: {{$data['websites']['info']['color_word'] ?? ''}};}
     .mask_content .form-group {margin-bottom: 15px;}
     .mask_content .input-group {border-collapse: separate;display: table;position: relative;width: 100%;display: flex;align-items: center;}
     .mask_content .input-group .addon {background-color: #ffffff;border: 1px solid #ddd;line-height: 1;padding: 6px 12px;text-align: center;width: 18%;height: 46px;}
@@ -55,7 +55,7 @@
 
             <div class="form-group">
                 <div class="field" style="text-align:center;">
-                    <input type="submit" class="button x6 x3-move bg-blue text-big" value="立即提交" style="border:1px solid {{$data['websites']['info']['color_word']}};color:{{$data['websites']['info']['color_word']}};float:unset;background:{{$data['websites']['info']['color']}};">
+                    <input type="submit" class="button x6 x3-move bg-blue text-big" value="立即提交" style="border:1px solid {{$data['websites']['info']['color_word'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};float:unset;background:{{$data['websites']['info']['color'] ?? ''}};">
                     <div class="cancel" style="">关闭</div>
                 </div>
             </div>

@@ -8,18 +8,18 @@
 
 <style type="text/css" media="all">
     .layui-colla-content{padding:5px;}
-    #content{padding-top:0px;padding-bottom:20px;background:{{$data['websites']['info']['color_inner']}};height:630px;}
+    #content{padding-top:0px;padding-bottom:20px;background:{{$data['websites']['info']['color_inner'] ?? ''}};height:630px;}
     .content{padding:20px 20px;box-sizing:border-box;}
     .content .col-md-12{padding:0;float:unset;}
     .content .box_content{justify-content:center;border-radius:8px;margin-bottom:30px;}
-    .content .box_content{background:{{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};border:1px solid {{$data['websites']['info']['color_word']}};font-size:25px;text-align:center;padding:30px;width:100%;}
+    .content .box_content{background:{{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};border:1px solid {{$data['websites']['info']['color_word'] ?? ''}};font-size:25px;text-align:center;padding:30px;width:100%;}
     .content .box_content img{width:40px;margin-right:5px;}
-    .navbar_menu{color: {{$data['websites']['info']['color']}};font-size: 16px;margin-bottom:10px;}
-    .navbar_menu a{color:{{$data['websites']['info']['color']}};}
-    .layui-colla-title{color:{{$data['websites']['info']['color_word']}};background-color:{{$data['websites']['info']['color']}};}
-    .preamble_con,.layui-colla-content{color:{{$data['websites']['info']['color_word']}};font-size:15px;}
+    .navbar_menu{color: {{$data['websites']['info']['color'] ?? ''}};font-size: 16px;margin-bottom:10px;}
+    .navbar_menu a{color:{{$data['websites']['info']['color'] ?? ''}};}
+    .layui-colla-title{color:{{$data['websites']['info']['color_word'] ?? ''}};background-color:{{$data['websites']['info']['color'] ?? ''}};}
+    .preamble_con,.layui-colla-content{color:{{$data['websites']['info']['color_word'] ?? ''}};font-size:15px;}
     .layui-colla-content p{margin-bottom:0.3cm;}
-    .rule_div{color: {{$data['websites']['info']['color_word']}};background-color: {{$data['websites']['info']['color']}};padding:10px 5px;justify-content: space-between;border-bottom: 1px solid {{$data['websites']['info']['color_word']}};font-size:15px;}
+    .rule_div{color: {{$data['websites']['info']['color_word'] ?? ''}};background-color: {{$data['websites']['info']['color'] ?? ''}};padding:10px 5px;justify-content: space-between;border-bottom: 1px solid {{$data['websites']['info']['color_word'] ?? ''}};font-size:15px;}
     .rule_div:last-child{border:0;}
     .rule_div .left_title{width:80%;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-line-clamp: 1;white-space: nowrap;}
 
@@ -37,7 +37,7 @@
                 <div class="layui-fluid" style="padding:0;">
                     <div class="layui-row layui-col-space15">
                         <div class="layui-col-md12" style="padding:0;">
-                            <p class="navbar_menu"><i class="fa fa-sign-in" style="margin-right:5px;display:none;"></i><a href="/">HOME</a>&nbsp;<span style="color:{{$data['websites']['info']['color']}};">\</span>&nbsp;<span style="color:{{$data['websites']['info']['color']}};">平台规则</span></p>
+                            <p class="navbar_menu"><i class="fa fa-sign-in" style="margin-right:5px;display:none;"></i><a href="/">HOME</a>&nbsp;<span style="color:{{$data['websites']['info']['color'] ?? ''}};">\</span>&nbsp;<span style="color:{{$data['websites']['info']['color'] ?? ''}};">平台规则</span></p>
 
                             <div class="layui-card common_inner_background">
                                 <div class="layui-card-body">
@@ -54,7 +54,7 @@
                                                                     @foreach($vo2['children'] as $key3 => $vo3)
                                                                         <div class="disf rule_div">
                                                                             <div class="left_title">{{$vo3['rule_name']}}</div>
-                                                                            <div class="right_btn"><div class="layui-btn layui-btn-primary layui-btn-xs" style="background:unset;border:1px solid {{$data['websites']['info']['color_word']}};color:{{$data['websites']['info']['color_word']}};" onclick="rule_history({{$vo3['id']}})">查看历史版本</div></div>
+                                                                            <div class="right_btn"><div class="layui-btn layui-btn-primary layui-btn-xs" style="background:unset;border:1px solid {{$data['websites']['info']['color_word'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};" onclick="rule_history({{$vo3['id']}})">查看历史版本</div></div>
                                                                         </div>
 
                                                                     @endforeach

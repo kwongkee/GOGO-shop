@@ -7,19 +7,19 @@
 <script src="/assets/d2eace91/js/jquery.js?v=1.1"></script>
 
 <style type="text/css" media="all">
-    #content{padding-top:10px;padding-bottom:20px;background:{{$data['websites']['info']['color_inner']}};}
+    #content{padding-top:10px;padding-bottom:20px;background:{{$data['websites']['info']['color_inner'] ?? ''}};}
     .content{padding:20px 20px;box-sizing:border-box;height:630px;}
     .content .col-md-12{padding:0;float:unset;}
     .content .box_content{justify-content:center;border-radius:8px;margin-bottom:30px;}
-    .content .box_content{background:{{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};border:1px solid {{$data['websites']['info']['color_word']}};font-size:25px;text-align:center;padding:30px;width:100%;}
+    .content .box_content{background:{{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};border:1px solid {{$data['websites']['info']['color_word'] ?? ''}};font-size:25px;text-align:center;padding:30px;width:100%;}
     .content .box_content img{width:40px;margin-right:5px;}
     .inquiry_box{display:none;}
-    .navbar_menu{color: {{$data['websites']['info']['color_word']}};font-size: 16px;margin-bottom:10px;}
-    .navbar_menu a{color:{{$data['websites']['info']['color']}};}
+    .navbar_menu{color: {{$data['websites']['info']['color_word'] ?? ''}};font-size: 16px;margin-bottom:10px;}
+    .navbar_menu a{color:{{$data['websites']['info']['color'] ?? ''}};}
     .layui-table-page{background:#f2f2f2;}
     .layui-card{background:unset;}
-    .layui-table thead tr{background:{{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};}
-    .layui-table-view .layui-table td{color:{{$data['websites']['info']['color']}};}
+    .layui-table thead tr{background:{{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};}
+    .layui-table-view .layui-table td{color:{{$data['websites']['info']['color'] ?? ''}};}
     /*.xm-select-demo .xm-label{overflow: hidden;}*/
     /*.xm-select-demo .xm-label-block{white-space: nowrap;}*/
 
@@ -33,7 +33,7 @@
                 <div class="layui-fluid" style="padding:0;">
                     <div class="layui-row layui-col-space15">
                         <div class="layui-col-md12" style="padding:0;">
-                            <p class="navbar_menu"><i class="fa fa-sign-in" style="margin-right:5px;display:none;"></i><a href="/">HOME</a>&nbsp;<span style="color:{{$data['websites']['info']['color']}};">\</span>&nbsp;<a href="/rule_list" style="color:{{$data['websites']['info']['color']}};">平台规则</a>&nbsp;<span style="color:{{$data['websites']['info']['color']}};">\</span>&nbsp;<span style="color:{{$data['websites']['info']['color']}};">{{$history['rule_name']}}</span>&nbsp;</p>
+                            <p class="navbar_menu"><i class="fa fa-sign-in" style="margin-right:5px;display:none;"></i><a href="/">HOME</a>&nbsp;<span style="color:{{$data['websites']['info']['color'] ?? ''}};">\</span>&nbsp;<a href="/rule_list" style="color:{{$data['websites']['info']['color'] ?? ''}};">平台规则</a>&nbsp;<span style="color:{{$data['websites']['info']['color'] ?? ''}};">\</span>&nbsp;<span style="color:{{$data['websites']['info']['color'] ?? ''}};">{{$history['rule_name']}}</span>&nbsp;</p>
                             <div class="layui-card common_inner_background">
                                 <div class="layui-card-body">
                                     <table class="layui-hide" id="mainTable"></table>

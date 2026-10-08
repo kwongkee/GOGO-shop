@@ -1,20 +1,20 @@
 <style>
     /*卡片导航展示版式*/
-    .cardDiv {width: 100%;margin: 50px 0px 0px;padding: 10px 10px;position: relative;border: 2px solid {{$data['websites']['info']['color']}};box-sizing: border-box;border-radius: 5px;border-top-left-radius: 0;}
-    .cardDiv .storeTitle {position: absolute;top: -36px;left: -2px;background: #1761b7;color: {{$data['websites']['info']['color_word']}};padding: 5px 10px;border: 2px solid {{$data['websites']['info']['color']}};z-index: 9;border-bottom: 0;border-radius: 5px;border-bottom-right-radius: 0;border-bottom-left-radius: 0;font-weight: 800;}
+    .cardDiv {width: 100%;margin: 50px 0px 0px;padding: 10px 10px;position: relative;border: 2px solid {{$data['websites']['info']['color'] ?? ''}};box-sizing: border-box;border-radius: 5px;border-top-left-radius: 0;}
+    .cardDiv .storeTitle {position: absolute;top: -36px;left: -2px;background: #1761b7;color: {{$data['websites']['info']['color_word'] ?? ''}};padding: 5px 10px;border: 2px solid {{$data['websites']['info']['color'] ?? ''}};z-index: 9;border-bottom: 0;border-radius: 5px;border-bottom-right-radius: 0;border-bottom-left-radius: 0;font-weight: 800;}
     .cardDiv .swiper-container{overflow: hidden;position: relative;padding: 10px 20px;box-sizing: border-box;}
     .cardDiv .swiper-container .swiper-slide{height:100%;margin-right: 60px;}
     .cardDiv .cross-section{background-position: center;background-size: cover;position: relative;transform-style: preserve-3d;box-shadow: 0px 0px 10px #666;border-radius: 8px;overflow:hidden;}
     .cardDiv .cross-section .in_mask {background-color: #000;opacity: 0.4;position: absolute;left: 0;top: 0;height: 100%;width: 100%;z-index: 1;}
-    .cardDiv .cross-section .cross-content hr {border-bottom: 1px solid {{$data['websites']['info']['color_word']}};width: 75px;margin: 0 0 10px;}
-    .cardDiv .cross-section .cross-content {padding: 20px 30px 80px 30px;z-index: 2;position: relative;font-size: 15px;height: 100%;min-height: 305px;max-height: 305px;border:3px solid {{$data['websites']['info']['color_word']}};}
-    .cardDiv .cross-section .cross-content h3 {color:{{$data['websites']['info']['color_word']}};margin-bottom: 10px;padding-bottom: 0;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;}
+    .cardDiv .cross-section .cross-content hr {border-bottom: 1px solid {{$data['websites']['info']['color_word'] ?? ''}};width: 75px;margin: 0 0 10px;}
+    .cardDiv .cross-section .cross-content {padding: 20px 30px 80px 30px;z-index: 2;position: relative;font-size: 15px;height: 100%;min-height: 305px;max-height: 305px;border:3px solid {{$data['websites']['info']['color_word'] ?? ''}};}
+    .cardDiv .cross-section .cross-content h3 {color:{{$data['websites']['info']['color_word'] ?? ''}};margin-bottom: 10px;padding-bottom: 0;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;}
     .cardDiv .cross-section .cross-content .withArrow {margin-bottom: 30px;max-height: 160px;overflow-y: auto;}
     .cardDiv .cross-section .cross-content .withArrow li{white-space: nowrap;overflow: hidden;text-overflow: ellipsis;}
     .cardDiv .about-text li {margin-bottom: 10px;list-style: none;}
-    .cardDiv .cross-section .cross-content .withArrow a {font-weight: unset;color: {{$data['websites']['info']['color_word']}};}
-    .cardDiv .fa {display: inline-block;font-family: FontAwesome;font-style: normal;font-weight: normal;line-height: 1;-webkit-font-smoothing: antialiased;-moz-osx-font-smoothing: grayscale;box-shadow: 1px 1px 10px #eee;border: 1px solid {{$data['websites']['info']['color_word']}};border-radius: 50%;padding: 2px 5px;}
-    .cardDiv .view_detail {background: {{$data['websites']['info']['color']}};color: {{$data['websites']['info']['color_word']}};position: absolute;bottom: 0px;left: 50%;transform: translate(-50%, -50%);padding: 2px 10px;border-radius: 15px;font-weight: 600;border: 2px solid {{$data['websites']['info']['color_word']}};}
+    .cardDiv .cross-section .cross-content .withArrow a {font-weight: unset;color: {{$data['websites']['info']['color_word'] ?? ''}};}
+    .cardDiv .fa {display: inline-block;font-family: FontAwesome;font-style: normal;font-weight: normal;line-height: 1;-webkit-font-smoothing: antialiased;-moz-osx-font-smoothing: grayscale;box-shadow: 1px 1px 10px #eee;border: 1px solid {{$data['websites']['info']['color_word'] ?? ''}};border-radius: 50%;padding: 2px 5px;}
+    .cardDiv .view_detail {background: {{$data['websites']['info']['color'] ?? ''}};color: {{$data['websites']['info']['color_word'] ?? ''}};position: absolute;bottom: 0px;left: 50%;transform: translate(-50%, -50%);padding: 2px 10px;border-radius: 15px;font-weight: 600;border: 2px solid {{$data['websites']['info']['color_word'] ?? ''}};}
 
     @media (max-width: 992px){
 

@@ -1,24 +1,24 @@
 <!--滚动栏信息-->
 <style>
-    .rotateBox{border:1px solid {{$data['websites']['info']['color']}};height:35px;z-index: 99;}
+    .rotateBox{border:1px solid {{$data['websites']['info']['color'] ?? ''}};height:35px;z-index: 99;}
     /*新闻内容*/
     .rotateBox .newsContainer {max-width: 350px;justify-content: center;transition: all 0.3s ease;padding-right: 5px;height:100%;}
     .rotateBox .newsContainer .news {height: 20px;overflow: hidden;width: 100%;}
-    .rotateBox .newsContainer .news a {color: {{$data['websites']['info']['color_word']}};font-weight: 800;}
-    .rotateBox .newsContainer .news a p {color: {{$data['websites']['info']['color_word']}};font-weight: 800;line-height: 20px;width: 100%;white-space: nowrap;text-overflow: unset;overflow: unset;}
+    .rotateBox .newsContainer .news a {color: {{$data['websites']['info']['color_word'] ?? ''}};font-weight: 800;}
+    .rotateBox .newsContainer .news a p {color: {{$data['websites']['info']['color_word'] ?? ''}};font-weight: 800;line-height: 20px;width: 100%;white-space: nowrap;text-overflow: unset;overflow: unset;}
     /*时间内容*/
-    .rotateBox .time,.rotateBox  .mtime {margin: 0px 0px 0;color: {{$data['websites']['info']['color_word']}};font-size: 15px;}
+    .rotateBox .time,.rotateBox  .mtime {margin: 0px 0px 0;color: {{$data['websites']['info']['color_word'] ?? ''}};font-size: 15px;}
     .rotateBox .time span,.rotateBox .mtime span {font-size: 15px;white-space: nowrap;font-weight: 800;}
     .rotateBox .time .chosen-container, .rotateBox .mtime .chosen-container {width: 120px;margin-right: 3px;}
     .rotateBox .time #selectCity, .rotateBox .mtime #selectCity {width: 90px;font-size: 15px;border: 0;background: #fff;text-align: center;color: #000;}
     .rotateBox .time .chosen-container,.rotateBox .mtime .chosen-container{width: 120px;margin-right:3px;}
-    .chosen-container-single .chosen-search input[type="text"]{color: {{$data['websites']['info']['color_word']}};}
+    .chosen-container-single .chosen-search input[type="text"]{color: {{$data['websites']['info']['color_word'] ?? ''}};}
     /*汇率内容*/
     .rotateBox .rate {margin-top: 0px;padding-left: 0px;justify-content: center;}
-    .rotateBox .rate .leftTxt {color: {{$data['websites']['info']['color_word']}};display: inline-block;font-weight: 800;width: fit-content;white-space: nowrap;font-size: 15px;}
+    .rotateBox .rate .leftTxt {color: {{$data['websites']['info']['color_word'] ?? ''}};display: inline-block;font-weight: 800;width: fit-content;white-space: nowrap;font-size: 15px;}
     .rotateBox .rate .rightTxt {display: inline-block;width: fit-content;font-size: 15px;font-weight: 800;}
     .rotateBox .rate .rate_swiper,.rotateBox .rate .mrate_swiper {height: 18px;overflow: hidden;width: 100%;}
-    .rotateBox .rate_swiper a p, .rotateBox .mrate_swiper a p {color: {{$data['websites']['info']['color_word']}};font-weight: 800;line-height: 20px;width: 100%;white-space: nowrap;text-overflow: ellipsis;overflow: hidden;font-size: 15px;}
+    .rotateBox .rate_swiper a p, .rotateBox .mrate_swiper a p {color: {{$data['websites']['info']['color_word'] ?? ''}};font-weight: 800;line-height: 20px;width: 100%;white-space: nowrap;text-overflow: ellipsis;overflow: hidden;font-size: 15px;}
 
     .pc_news_box{width: 100%;}
     .mobile_news_box{display:none;}
@@ -34,8 +34,8 @@
         /*新闻*/
         #mobileNewsBox-container .newsContainer{max-width:100%;}
         #mobileNewsBox-container .newsContainer .news{height:100%;}
-        #mobileNewsBox-container .news a {color: {{$data['websites']['info']['color_word']}};font-weight: 800;}
-        #mobileNewsBox-container .news a p{color: {{$data['websites']['info']['color_word']}};font-weight: 800;line-height: 35px;}
+        #mobileNewsBox-container .news a {color: {{$data['websites']['info']['color_word'] ?? ''}};font-weight: 800;}
+        #mobileNewsBox-container .news a p{color: {{$data['websites']['info']['color_word'] ?? ''}};font-weight: 800;line-height: 35px;}
         /*汇率*/
         /*#mobileNewsBox-container .rate{margin-top:2px;}*/
         .mobile_news_box .news_box .rate{margin: 0px 0;margin-top:0;}

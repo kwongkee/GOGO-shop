@@ -70,7 +70,7 @@
     <script src="/assets/d2eace91/js/chosen/jquery.chosen.js?v=1.3"></script>
 
     <style>
-        body{background:{{$data['websites']['info']['color_inner']}} !important;}
+        body{background:{{$data['websites']['info']['color_inner'] ?? ''}} !important;}
         .w1210{margin-top:20px;}
         .store-service .store-service-group .service-list{padding-left:80px;}
         .tree li span{height:20px;}
@@ -82,10 +82,10 @@
         /*chosen搜索框颜色*/
         .chosen-container.chosen-with-drop .chosen-drop{color:#000;}
         /*layui时间线*/
-        .layui-timeline-axis{color:{{$data['websites']['info']['color_word']}};}
+        .layui-timeline-axis{color:{{$data['websites']['info']['color_word'] ?? ''}};}
         .video-show,.video .video-js{width:100% !important;}
         .layui-table{margin:0;}
-        .layui-table th{background:{{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};}
+        .layui-table th{background:{{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};}
 
         /**添加地址**/
         .sort_div select{display:none !important;}
@@ -96,16 +96,16 @@
         .hide2{display: none;}
         .address_div .layui-form-label{width:100px;}
 
-        {{--.goods-info,.fl,.goodsDetail{background:$data['websites']['info']['color_inner'];}--}}
+        {{--.goods-info,.fl,.goodsDetail{background:$data['websites']['info']['color_inner'] ?? '';}--}}
         .clearfix .fl{display: none;}
         .goodsDetail{width: 100%;}
         .goods-info{padding: 20px;box-sizing: border-box;width: 100%;}
         /*加入分销、收藏商品、分享积分*/
         .goods-gallery-bottom{display: flex;align-items: center;justify-content: center;}
-        .goods-gallery-bottom a.goods-compare{margin-right:10px;color:{{$data['websites']['info']['color_word']}};}
-        .goods-gallery-bottom a.goods-compare i{height: 18px;color:{{$data['websites']['info']['color_word']}};}
+        .goods-gallery-bottom a.goods-compare{margin-right:10px;color:{{$data['websites']['info']['color_word'] ?? ''}};}
+        .goods-gallery-bottom a.goods-compare i{height: 18px;color:{{$data['websites']['info']['color_word'] ?? ''}};}
         .goods-gallery-bottom .bdsharebuttonbox a{padding-left:0;font-size: 15px;}
-        .goods-gallery-bottom a.goods-col{color:{{$data['websites']['info']['color_word']}};}
+        .goods-gallery-bottom a.goods-col{color:{{$data['websites']['info']['color_word'] ?? ''}};}
 
         #gg-zoom{width: 100%;}
         .goodsgallery .gg-current-img img{width:100%;}
@@ -116,8 +116,8 @@
         .choose dl.attr dd li a{border:2px solid #b8b7bd;}
         .choose dl.attr dd li.spec-hover a{border:2px solid #e60000;}
         .choose dl.attr dd li.selected a{border:0;}
-        .choose dl.attr dd li.selected>a{background:{{$data['websites']['info']['color']}};border:2px solid {{$data['websites']['info']['color']}};}
-        .choose dl.attr dd li.selected>a span{color:{{$data['websites']['info']['color_word']}} !important;}
+        .choose dl.attr dd li.selected>a{background:{{$data['websites']['info']['color'] ?? ''}};border:2px solid {{$data['websites']['info']['color'] ?? ''}};}
+        .choose dl.attr dd li.selected>a span{color:{{$data['websites']['info']['color_word'] ?? ''}} !important;}
         .choose dl.attr dd li a span{max-width: 200px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;font-weight: 800;color:#000;}
         /**已选规格**/
         .already_select .optionSel{background: #f7e6e1;color: #e60000;padding: 2px 5px;box-sizing: border-box;font-size: 12px;cursor: pointer;display: inline-block;}
@@ -157,18 +157,18 @@
         /*商品详情*/
         .detail-info{width:60%;}
         .detail-info .goods-name{color: #000 !important;padding: 10px;border: 2px solid #d9d9d9;border-radius: 7px;font-size: 23px;font-weight: 800;}
-        .detail-info .goods-url{font-size: 14px;font-weight: 600;color: {{$data['websites']['info']['color_word']}};background: {{$data['websites']['info']['color']}};padding: 1px 8px;box-sizing: border-box;border-radius: 5px;border: 2px solid #d9d9d9;}
+        .detail-info .goods-url{font-size: 14px;font-weight: 600;color: {{$data['websites']['info']['color_word'] ?? ''}};background: {{$data['websites']['info']['color'] ?? ''}};padding: 1px 8px;box-sizing: border-box;border-radius: 5px;border: 2px solid #d9d9d9;}
         .detail-info .goods-brief{display: inline-block;width: fit-content;margin-right:10px;margin-top:5px;}
         .detail-info .goods-price{margin-top:30px;margin-bottom:0;height:72px;}
         .detail-info .goods-price .now-prices{background: #E3E6EB;float: left;padding: 3px 10px;box-sizing: border-box;min-width: 320px;justify-content: space-between;border: 2px solid #d9d9d9;border-radius: 5px;margin-right:20px;}
         .detail-info .goods-price .now-prices .priceDiv *{font-size:18px;}
         .detail-info .goods-price .now-prices .priceDiv .SZY-CURRENCY{font-size:23px;color:#000;}
         .detail-info .goods-price .now-prices .priceDiv .SZY-PRICE{font-size:23px;color:#db1d18;}
-        .detail-info .goods-price .now-prices .operaDiv .operaBtn{border:2px solid {{$data['websites']['info']['color_word']}};border-radius: 8px;color:{{$data['websites']['info']['color']}};padding:0px 10px;font-weight:800;cursor:pointer;}
+        .detail-info .goods-price .now-prices .operaDiv .operaBtn{border:2px solid {{$data['websites']['info']['color_word'] ?? ''}};border-radius: 8px;color:{{$data['websites']['info']['color'] ?? ''}};padding:0px 10px;font-weight:800;cursor:pointer;}
         .detail-info .goods-price .now-prices .operaDiv .operaBtn:nth-of-type(1){margin-bottom:5px;}
         .detail-info .goods-price .now-service{float:left;font-size:14px;}
-        .detail-info .goods-price .now-service .service-one{font-size:15px;color:{{$data['websites']['info']['color_word']}};font-weight: 800;}
-        .detail-info .goods-price .now-service p{color:{{$data['websites']['info']['color_word']}};}
+        .detail-info .goods-price .now-service .service-one{font-size:15px;color:{{$data['websites']['info']['color_word'] ?? ''}};font-weight: 800;}
+        .detail-info .goods-price .now-service p{color:{{$data['websites']['info']['color_word'] ?? ''}};}
         /*集货仓&收货地址*/
         .purchase_process{margin:30px 0;}
         .purchase_process *{box-sizing: border-box;}
@@ -176,9 +176,9 @@
         .purchase_process .goods-options-freight {background: #E3E6EB;margin-top: 0px;padding: 5px 10px;border-radius: 5px;border: 2px solid #d9d9d9;}
         .purchase_process dd,.purchase_process div{font-size: 14px;font-style: normal;margin: 0;padding: 0;}
         .purchase_process .new-goods-options-content>.label {align-items: center;display: flex;flex-wrap: wrap;margin-bottom: 10px;padding-left: 25px;position: relative;}
-        .purchase_process .new-goods-options-content>.label.label-one:before {background: {{$data['websites']['info']['color']}};border-radius: 50%;bottom: 0;color: {{$data['websites']['info']['color_word']}};content: "1";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$data['websites']['info']['color']}};}
-        .purchase_process .new-goods-options-content>.label.label-two:before {background: {{$data['websites']['info']['color']}};border-radius: 50%;bottom: 0;color: {{$data['websites']['info']['color_word']}};content: "2";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$data['websites']['info']['color']}};}
-        .purchase_process .new-goods-options-content>.label.label-three:before {background: {{$data['websites']['info']['color']}};border-radius: 50%;bottom: 0;color: {{$data['websites']['info']['color_word']}};content: "3";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$data['websites']['info']['color']}};}
+        .purchase_process .new-goods-options-content>.label.label-one:before {background: {{$data['websites']['info']['color'] ?? ''}};border-radius: 50%;bottom: 0;color: {{$data['websites']['info']['color_word'] ?? ''}};content: "1";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$data['websites']['info']['color'] ?? ''}};}
+        .purchase_process .new-goods-options-content>.label.label-two:before {background: {{$data['websites']['info']['color'] ?? ''}};border-radius: 50%;bottom: 0;color: {{$data['websites']['info']['color_word'] ?? ''}};content: "2";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$data['websites']['info']['color'] ?? ''}};}
+        .purchase_process .new-goods-options-content>.label.label-three:before {background: {{$data['websites']['info']['color'] ?? ''}};border-radius: 50%;bottom: 0;color: {{$data['websites']['info']['color_word'] ?? ''}};content: "3";font-size: 13px;height: 18px;left: 0;line-height: 13px;margin: auto;position: absolute;text-align: center;top: 0;width: 18px;border:2px solid {{$data['websites']['info']['color'] ?? ''}};}
         .purchase_process .goods-freight {border: 1px solid #eee;color: #999;height: 26px;line-height: 29px;text-indent: 40px;transition: all .3s linear;vertical-align: top;width: 80px;}
         .new-goods-options-content .label-title {color: #666;font-size: 15px;font-weight:600;}
         .new-goods-options-content>.label .arrow {color: #666;font-size: 18px;line-height: 18px;margin: 0px 5px;}
@@ -187,16 +187,16 @@
         .new-goods-options-content>.label .label-freight {align-items: center;display: flex;margin-left: auto;}
         .new-goods-options-content>.label .label-freight label {align-items: center;display: flex;font-size: 12px;}
         .new-goods-options-content>.label .label-input {align-items: center;display: flex;margin: 0 0 0 10px;}
-        .new-goods-options-content .rightLabel span{color:{{$data['websites']['info']['color']}};font-size: 15px;}
-        .new-goods-options-content .rightLabel .freight_estimate{color:{{$data['websites']['info']['color_word']}};background:{{$data['websites']['info']['color']}};font-size: 15px;border:2px solid #d9d9d9;padding:3px 5px;box-sizing: border-box;border-radius: 5px;cursor:pointer;}
-        .new-goods-options-content .leftLabel .freight_estimate{color:{{$data['websites']['info']['color_word']}};background:{{$data['websites']['info']['color']}};font-size: 15px;border:2px solid #d9d9d9;padding:3px 5px;box-sizing: border-box;border-radius: 5px;cursor:pointer;}
+        .new-goods-options-content .rightLabel span{color:{{$data['websites']['info']['color'] ?? ''}};font-size: 15px;}
+        .new-goods-options-content .rightLabel .freight_estimate{color:{{$data['websites']['info']['color_word'] ?? ''}};background:{{$data['websites']['info']['color'] ?? ''}};font-size: 15px;border:2px solid #d9d9d9;padding:3px 5px;box-sizing: border-box;border-radius: 5px;cursor:pointer;}
+        .new-goods-options-content .leftLabel .freight_estimate{color:{{$data['websites']['info']['color_word'] ?? ''}};background:{{$data['websites']['info']['color'] ?? ''}};font-size: 15px;border:2px solid #d9d9d9;padding:3px 5px;box-sizing: border-box;border-radius: 5px;cursor:pointer;}
         .purchase_process .new-goods-options-content.cn .label-input .goods-freight-rmb {line-height: 27px !important;position: absolute;}
         .new-goods-options-content>.label .label-input em, .new-goods-options-content>.label .label-input input{font-size: 12px;}
         .new-goods-options-content>.label.label-tow:after {background: #ddd;content: "";height: 14px;left: 7px;margin: 6px 0;position: absolute;top: -20px;width: 2px;}
         .new-goods-options-content>.label.label-tow {margin-bottom: 12px;}
         .goods-info_container .country-select {font-size: 12px;padding-left: 26px;}
         .new-goods-options-content>.label {align-items: center;display: flex;flex-wrap: wrap;margin-bottom: 15px;padding-left: 25px;position: relative;}
-        .new-goods-options-content>.label.label-tow:before {background: #E31939;border-radius: 50%;color: {{$data['websites']['info']['color_word']}};content: "2";font-size: 12px;height: 16px;left: 0;line-height: 16px;margin: auto;position: absolute;text-align: center;width: 16px;z-index: 1;}
+        .new-goods-options-content>.label.label-tow:before {background: #E31939;border-radius: 50%;color: {{$data['websites']['info']['color_word'] ?? ''}};content: "2";font-size: 12px;height: 16px;left: 0;line-height: 16px;margin: auto;position: absolute;text-align: center;width: 16px;z-index: 1;}
         .goods-info_container .country-select>span:first-child {margin-right: 8px;}
         .new-goods-options-content>.label .arrow {color: #666;font-size: 18px;line-height: 18px;margin: 0px 5px;}
         .new-goods-options-content>.label.label-tow .label-title {margin-right: 10px;}
@@ -204,7 +204,7 @@
         .new-goods-options-content>.label .label-freight {align-items: center;display: flex;margin-left: auto;}
         .new-goods-options-content>.label .label-freight>span {font-size: 12px;}
         .new-goods-options-content>.label .label-freight .label-icon {display: flex;}
-        .purchase_process .goods-options-freight a {color: {{$data['websites']['info']['color']}};}
+        .purchase_process .goods-options-freight a {color: {{$data['websites']['info']['color'] ?? ''}};}
         .new-goods-options-content>.label .label-freight .label-icon li span {color: #333;cursor: pointer;font-size: 20px;font-weight: 700;line-height: 24px;margin-left: 8px;transition: all .3s linear;user-select: none;}
         .purchase_process .new-goods-options-content>.label-three{margin-bottom:0;}
         /*商品规格*/
@@ -213,10 +213,10 @@
         .choose .layui-tab{width: 100%;margin:0;}
         .choose .layui-tab-title{border-bottom:2px solid #ddd;height:32px;}
         .choose .layui-tab-title li{font-weight: 800;font-size:15px;border-bottom:2px solid #ddd;border-right:2px solid #ddd;color:#000;line-height:32px;}
-        .choose .layui-tab-title .layui-this:after{border-bottom-color:{{$data['websites']['info']['color']}};}
-        .choose .layui-tab-title .layui-this{color:{{$data['websites']['info']['color_word']}};background:{{$data['websites']['info']['color']}};}
+        .choose .layui-tab-title .layui-this:after{border-bottom-color:{{$data['websites']['info']['color'] ?? ''}};}
+        .choose .layui-tab-title .layui-this{color:{{$data['websites']['info']['color_word'] ?? ''}};background:{{$data['websites']['info']['color'] ?? ''}};}
         .choose .layui-tab .layui-tab-content{width: 100%;padding: 5px 0px 0px 0px;}
-        .choose dl dd{width: 100%;height: 114px;overflow-y: auto;scrollbar-color: {{$data['websites']['info']['color']}} {{$data['websites']['info']['color_word']}};}
+        .choose dl dd{width: 100%;height: 114px;overflow-y: auto;scrollbar-color: {{$data['websites']['info']['color'] ?? ''}} {{$data['websites']['info']['color_word'] ?? ''}};}
         .choose dl.attr{padding-left:0;width: 100%;margin-bottom:0;}
         .choose dl.attr dd li{max-width: unset; width:48%;}
         .choose dl.attr dd li a{min-width: 100%;max-width:100%;overflow:hidden;}
@@ -228,14 +228,14 @@
         /*购物清单==================START*/
         /*已选规格&选购数量*/
         .buy_div{background:#E3E6EB;padding:5px 10px;border-radius: 5px;border: 2px solid #d9d9d9;box-sizing: border-box;width:100%;align-items: flex-start;}
-        .buy_div .already_select .selectBtn{background:#db1d18;padding:2px 5px;font-size: 15px;box-sizing: border-box;margin-right:5px;color:{{$data['websites']['info']['color_word']}};white-space:nowrap;font-weight: 800;}
-        .buy_div .already_select .selectOptionName{border: 2px solid #b8b7bd;background:{{$data['websites']['info']['color_word']}};width: calc(100% - 45px);height: fit-content;max-height:90px;overflow:hidden;white-space: nowrap;text-overflow: ellipsis;font-size:15px;overflow-y:auto;scrollbar-color: {{$data['websites']['info']['color']}} {{$data['websites']['info']['color_word']}};}
+        .buy_div .already_select .selectBtn{background:#db1d18;padding:2px 5px;font-size: 15px;box-sizing: border-box;margin-right:5px;color:{{$data['websites']['info']['color_word'] ?? ''}};white-space:nowrap;font-weight: 800;}
+        .buy_div .already_select .selectOptionName{border: 2px solid #b8b7bd;background:{{$data['websites']['info']['color_word'] ?? ''}};width: calc(100% - 45px);height: fit-content;max-height:90px;overflow:hidden;white-space: nowrap;text-overflow: ellipsis;font-size:15px;overflow-y:auto;scrollbar-color: {{$data['websites']['info']['color'] ?? ''}} {{$data['websites']['info']['color_word'] ?? ''}};}
         .buy_div .already_select .selectOptionName .paramDiv{border-bottom:2px solid #ddd;}
         .buy_div .already_select .selectOptionName .paramDiv:last-child{border-bottom:0;}
-        .buy_div .already_select .selectOptionName .select_param{background:{{$data['websites']['info']['color']}};font-size: 13px;color:{{$data['websites']['info']['color_word']}};font-weight:800;padding:2px 5px;box-sizing: border-box;width: 48px;min-width: 48px;max-width: 48px;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;text-align: center;}
+        .buy_div .already_select .selectOptionName .select_param{background:{{$data['websites']['info']['color'] ?? ''}};font-size: 13px;color:{{$data['websites']['info']['color_word'] ?? ''}};font-weight:800;padding:2px 5px;box-sizing: border-box;width: 48px;min-width: 48px;max-width: 48px;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;text-align: center;}
         .buy_div .already_select .selectOptionName .optionSel{background:unset;padding:1px 5px;font-size:13px;color:#000;width: 100%;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;font-weight:800;color:#000;}
         .buy_div .select_buy{margin-top:0px;width: 42%;}
-        .buy_div .select_buy .selectBtn{background:#db1d18;padding:2px 5px;font-size: 15px;box-sizing: border-box;margin-right:5px;color:{{$data['websites']['info']['color_word']}};font-weight: 800;white-space: nowrap;width: 48px;min-width: 48px;max-width: 48px;text-align: center;}
+        .buy_div .select_buy .selectBtn{background:#db1d18;padding:2px 5px;font-size: 15px;box-sizing: border-box;margin-right:5px;color:{{$data['websites']['info']['color_word'] ?? ''}};font-weight: 800;white-space: nowrap;width: 48px;min-width: 48px;max-width: 48px;text-align: center;}
         /*数量+ -*/
         .buy_div .select_buy .amount .amount-widget .amount-btn{margin-top:0;}
         .buy_div .select_buy .amount .amount-widget .amount-plus{height:15px;}
@@ -248,16 +248,16 @@
         .buy_div .select_buy .select_buy_headBox .amount_num{width:fit-content;}
         .buy_div .select_buy .select_buy_btmBox{margin-top:5px;}
         .buy_div .select_buy .select_buy_btmBox .priceDiv{width:fit-content;margin-right:10px;}
-        .buy_div .select_buy .select_buy_btmBox .SZY-CURRENCY{font-size:15px;color:{{$data['websites']['info']['color_word']}};background:#db1d18;padding:2px 5px;box-sizing: border-box;font-weight: 800;width: 48px;min-width: 48px;max-width: 48px;text-align: center;}
-        .buy_div .select_buy .select_buy_btmBox .SZY-PRICE{font-size:15px;font-weight:800;background:{{$data['websites']['info']['color_word']}};color:#db1d18;border: 1px solid #a7a6ac;padding: 2px 16px;box-sizing: border-box;min-width: 100px;text-align: center;}
-        .buy_div .select_buy .btn_buy{padding:3px 10px;box-sizing: border-box;margin-right:10px;color:{{$data['websites']['info']['color_word']}};cursor:pointer;}
+        .buy_div .select_buy .select_buy_btmBox .SZY-CURRENCY{font-size:15px;color:{{$data['websites']['info']['color_word'] ?? ''}};background:#db1d18;padding:2px 5px;box-sizing: border-box;font-weight: 800;width: 48px;min-width: 48px;max-width: 48px;text-align: center;}
+        .buy_div .select_buy .select_buy_btmBox .SZY-PRICE{font-size:15px;font-weight:800;background:{{$data['websites']['info']['color_word'] ?? ''}};color:#db1d18;border: 1px solid #a7a6ac;padding: 2px 16px;box-sizing: border-box;min-width: 100px;text-align: center;}
+        .buy_div .select_buy .btn_buy{padding:3px 10px;box-sizing: border-box;margin-right:10px;color:{{$data['websites']['info']['color_word'] ?? ''}};cursor:pointer;}
         .buy_div .select_buy .buy-goods,.buy_div .select_buy .buy-goods-soon{background:#db1d18;margin-right:0;float:right;font-weight: 800;}
         .buy_div .select_buy .join_list{background:#fff;font-weight:800;white-space: nowrap;color:#000;}
         .buy_div .select_buy .show_list{background:unset;padding: 0;margin-right: 0;}
         .buy_div .select_buy .amount_num{margin-right:10px;}
 
         .buy_list{position:relative;width: 100%;padding:10px;box-sizing: border-box;display:none;}
-        .buy_list .glist_form{background:{{$data['websites']['info']['color_word']}};padding:15px;box-sizing: border-box;/*position:absolute;top:45px;left:0px;*/border: 1px solid #ededed;z-index: 10;/*box-shadow: 0px 0px 10px 1px #999;*/width: 100%;}
+        .buy_list .glist_form{background:{{$data['websites']['info']['color_word'] ?? ''}};padding:15px;box-sizing: border-box;/*position:absolute;top:45px;left:0px;*/border: 1px solid #ededed;z-index: 10;/*box-shadow: 0px 0px 10px 1px #999;*/width: 100%;}
         .buy_list .glist_form .buy_table{max-height: 175px;overflow-y: auto;}
         .yixuan_div{margin-top: 0px;width: 100%;height: 40px;background: #f2f2f2;padding: 10px 20px;box-sizing: border-box;}
         .yixuan_div .yixuan,.yixuan_div .yixuan2{cursor: pointer;position:relative;width:fit-content;font-size:15px;}
@@ -277,13 +277,13 @@
         .buy_info .gi_otherfee_price,.buy_info .gi_otherfee_price2{position:relative;cursor:pointer;}
         .buy_info .gi_otherfee_price:after{content:'';position: absolute;width:8px;height:8px;border-top:1px solid #666;border-right:1px solid #666;right:-20px;top:5px ;transform:rotate(135deg);}
         .buy_info .gi_otherfee_price2:after{content:'';position: absolute;width:8px;height:8px;border-top:1px solid #666;border-right:1px solid #666;right:-20px;top:6px ;transform:rotate(-45deg);}
-        .buy_info .otherfee_div{padding: 20px;box-sizing: border-box;box-shadow: 0px 0px 10px 1px #999;position: absolute;top: 20px;left: 0px;background: {{$data['websites']['info']['color_word']}};z-index: 11;min-width:600px;}
+        .buy_info .otherfee_div{padding: 20px;box-sizing: border-box;box-shadow: 0px 0px 10px 1px #999;position: absolute;top: 20px;left: 0px;background: {{$data['websites']['info']['color_word'] ?? ''}};z-index: 11;min-width:600px;}
 
         /**购物优惠**/
         .buy_info .preferential_div,.buy_info .see_prefe,.buy_info .see_prefe2{position:relative;cursor:pointer;}
         .buy_info .see_prefe:after{content:'';position: absolute;width:8px;height:8px;border-top:1px solid #666;border-right:1px solid #666;right:-20px;top:5px ;transform:rotate(135deg);}
         .buy_info .see_prefe2:after{content:'';position: absolute;width:8px;height:8px;border-top:1px solid #666;border-right:1px solid #666;right:-20px;top:6px ;transform:rotate(-45deg);}
-        .buy_info .prefe_info{padding: 20px;box-sizing: border-box;box-shadow: 0px 0px 10px 1px #999;position: absolute;top: 20px;left: 0px;background: {{$data['websites']['info']['color_word']}};z-index: 11;min-width: 700px;}
+        .buy_info .prefe_info{padding: 20px;box-sizing: border-box;box-shadow: 0px 0px 10px 1px #999;position: absolute;top: 20px;left: 0px;background: {{$data['websites']['info']['color_word'] ?? ''}};z-index: 11;min-width: 700px;}
         .buy_info .offer-title{padding-top:0;}
         .buy_info .gift_common{display: block;border: 1px solid #666;padding: 5px 10px;}
         .buy_info .gift_common .points_divName,.buy_info .gift_common .coupon_divName{margin-right:8px;}
@@ -292,7 +292,7 @@
         .buy_info .prefeProduct_div,.buy_info .see_prefeProduct,.buy_info .see_prefeProduct2{position:relative;cursor:pointer;}
         .buy_info .see_prefeProduct:after{content:'';position: absolute;width:8px;height:8px;border-top:1px solid #666;border-right:1px solid #666;right:-20px;top:5px ;transform:rotate(135deg);}
         .buy_info .see_prefeProduct2:after{content:'';position: absolute;width:8px;height:8px;border-top:1px solid #666;border-right:1px solid #666;right:-20px;top:6px ;transform:rotate(-45deg);}
-        .buy_info .prefeProduct_info{padding: 20px;box-sizing: border-box;box-shadow: 0px 0px 10px 1px #999;position: absolute;top: 20px;left: 0px;background: {{$data['websites']['info']['color_word']}};z-index: 11;min-width: 400px;}
+        .buy_info .prefeProduct_info{padding: 20px;box-sizing: border-box;box-shadow: 0px 0px 10px 1px #999;position: absolute;top: 20px;left: 0px;background: {{$data['websites']['info']['color_word'] ?? ''}};z-index: 11;min-width: 400px;}
         /*购物清单==================END*/
 
         /*商品头部详情信息end*/
@@ -302,15 +302,15 @@
         .detailContent{width:100%;height:fit-content;margin-bottom: 60px;}
         /*详情头部*/
         .detailContent .detailHead{width:100%;max-width: 1210px;z-index: 9;}
-        .detailContent .detailHead .detailHeadBox{width:100%;padding:20px 30px;box-sizing: border-box;background:{{$data['websites']['info']['color']}};}
-        .detailContent .detailHead .detailHeadBox .detailHeadTxt{font-size: 20px;color:{{$data['websites']['info']['color_word']}};font-weight: 800;margin-right:30px;display: inline-block;position:relative;cursor:pointer;}
-        .detailContent .detailHead .detailHeadBox .detailHeadTxtAct:after{content:'';position:absolute;left: 50%;bottom: 0;width: calc(100% - 20px);height: 2px;border-bottom: 2px solid {{$data['websites']['info']['color_word']}};transform: translate(-50%, 8px);}
-        .detailContent .detailHead .detailBtmBox{width: 100%;padding:10px 30px;box-sizing: border-box;background:{{$data['websites']['info']['color_word']}};border: 2px solid #d9d9d9;}
+        .detailContent .detailHead .detailHeadBox{width:100%;padding:20px 30px;box-sizing: border-box;background:{{$data['websites']['info']['color'] ?? ''}};}
+        .detailContent .detailHead .detailHeadBox .detailHeadTxt{font-size: 20px;color:{{$data['websites']['info']['color_word'] ?? ''}};font-weight: 800;margin-right:30px;display: inline-block;position:relative;cursor:pointer;}
+        .detailContent .detailHead .detailHeadBox .detailHeadTxtAct:after{content:'';position:absolute;left: 50%;bottom: 0;width: calc(100% - 20px);height: 2px;border-bottom: 2px solid {{$data['websites']['info']['color_word'] ?? ''}};transform: translate(-50%, 8px);}
+        .detailContent .detailHead .detailBtmBox{width: 100%;padding:10px 30px;box-sizing: border-box;background:{{$data['websites']['info']['color_word'] ?? ''}};border: 2px solid #d9d9d9;}
         .detailContent .detailHead .detailBtmBox .detailBtmShow{display: block;}
         .detailContent .detailHead .detailBtmBox .detailBtmHide{display: none;}
         .detailContent .detailHead .detailBtmBox .detailBtmDiv{width: 100%;}
-        .detailContent .detailHead .detailBtmBox .detailBtmDiv .detailBtmTxt{font-size: 15px;color:{{$data['websites']['info']['color']}};display: inline-block;margin-right:50px;font-weight: 800;position:relative;cursor:pointer;}
-        .detailContent .detailHead .detailBtmBox .detailBtmTxtAct:after{content:'';position:absolute;left: 50%;bottom: 0;width: calc(100% - 20px);height: 2px;border-bottom: 2px solid {{$data['websites']['info']['color']}};transform: translate(-50%, 5px);}
+        .detailContent .detailHead .detailBtmBox .detailBtmDiv .detailBtmTxt{font-size: 15px;color:{{$data['websites']['info']['color'] ?? ''}};display: inline-block;margin-right:50px;font-weight: 800;position:relative;cursor:pointer;}
+        .detailContent .detailHead .detailBtmBox .detailBtmTxtAct:after{content:'';position:absolute;left: 50%;bottom: 0;width: calc(100% - 20px);height: 2px;border-bottom: 2px solid {{$data['websites']['info']['color'] ?? ''}};transform: translate(-50%, 5px);}
         /*详情底部*/
         .detailContent .detailBtm::after{content:'';display: table;clear: both;}
         .detailContent .detailBtm .detailBtmLeft{width: 70%;height:100%;float:left;margin-bottom:60px;}
@@ -320,7 +320,7 @@
         .detailContent .detailBtm .detailBtmLeft .detailBtmInfo{border:5px solid #d1d6dc;}
         .detailContent .detailBtm .detailBtmLeft .detailBtmInfo .baseDropsInfo--wbxz8fyq {width: 100%;}
         .detailContent .detailBtm .detailBtmLeft .detailBtmInfo .baseDropsInfo--wbxz8fyq .tableWrapper--APDk75pt {border-left: 1px solid #f0f3f5;border-radius: 4px;border-top: 1px solid #f0f3f5;display: flex;flex-direction: row;flex-wrap: wrap;overflow: hidden;width: 100%;}
-        .detailContent .detailBtm .detailBtmLeft .detailBtmInfo .infoItem--Z4hNxv8b {--variable-limitLineNumver: 2;align-items: center;background: {{$data['websites']['info']['color_word']}};border-bottom: 1px solid #f0f3f5;border-right: 1px solid #f0f3f5;display: flex;flex-direction: row;justify-content: flex-start;position: relative;width: 50%;}
+        .detailContent .detailBtm .detailBtmLeft .detailBtmInfo .infoItem--Z4hNxv8b {--variable-limitLineNumver: 2;align-items: center;background: {{$data['websites']['info']['color_word'] ?? ''}};border-bottom: 1px solid #f0f3f5;border-right: 1px solid #f0f3f5;display: flex;flex-direction: row;justify-content: flex-start;position: relative;width: 50%;}
         .detailContent .detailBtm .detailBtmLeft .detailBtmInfo .infoItem--Z4hNxv8b .infoItemTitle--P41WPBIx {align-items: center;background: #f3f6f8;color: #11192d;display: flex;flex-direction: row;font-family: PingFangSC-Medium;font-size: 14px;height: 100%;justify-content: flex-start;letter-spacing: 0;line-height: 18px;min-height: 50px;padding: 0 24px;text-align: left;width: 160px;font-weight: 800;color:#000;}
         .detailContent .detailBtm .detailBtmLeft .detailBtmInfo .infoItem--Z4hNxv8b .infoItemContent--IJwpPvuk {-webkit-box-orient: vertical;-webkit-line-clamp: var(--variable-limitLineNumver);color: #11192d;display: -webkit-box;font-family: PingFangSC-Medium;font-size: 14px;letter-spacing: 0;line-height: 20px;margin: 0 24px;max-height: 40px;overflow: hidden;text-align: left;width: 240px;font-weight: 800;color:#000;}
         .detailContent .detailBtm .detailBtmLeft .detailBtmInfo p img{width: 100%;}
@@ -456,7 +456,7 @@
 
                         {{--分享积分--}}
                         <div class="bdsharebuttonbox fr">
-                            <a class="bds_more" href="#" data-cmd="more" style="background: none; color: {{$data['websites']['info']['color_word']}}; line-height: 25px; height: 25px; display: block;">
+                            <a class="bds_more" href="#" data-cmd="more" style="background: none; color: {{$data['websites']['info']['color_word'] ?? ''}}; line-height: 25px; height: 25px; display: block;">
                                 <i class="iconfont">&#xe6ac;</i>
                                 分享积分
                             </a>
@@ -467,7 +467,7 @@
                         window._bd_share_config = {
                             "common": {
                                 "bdSnsKey": {},
-                                "bdText": "我在@" + "{{$data['websites']['info']['name']}}" + " 发现了一个非常不错的商品：" + $(".SZY-GOODS-NAME-BASE").text() + "。感觉不错，分享一下~",
+                                "bdText": "我在@" + "{{$data['websites']['info']['name'] ?? ''}}" + " 发现了一个非常不错的商品：" + $(".SZY-GOODS-NAME-BASE").text() + "。感觉不错，分享一下~",
                                 "bdMini": "2",
                                 "bdMiniList": false,
                                 "bdPic": "{{ get_image_url($goods['goods_image']) }}?x-oss-process=image/resize,m_pad,limit_0,h_320,w_320",
@@ -488,7 +488,7 @@
                     <form method="get" lay-filter="component-form-buygood">
                         <!-- 商品名称 -->
                         <div class="goods-name SZY-GOODS-NAME">
-                            <div class="goodsName" style="min-height:48px;color:{{$data['websites']['info']['color_word']}};">{{$goods['goods_name']}}</div>
+                            <div class="goodsName" style="min-height:48px;color:{{$data['websites']['info']['color_word'] ?? ''}};">{{$goods['goods_name']}}</div>
                             @if($goods['shop_id']==0)
                                 <div class="goods-brief goodsUrl">
                                     <a href="{{$goods['other_goods_link']}}" target="_blank" class="goods-url">商品链接&gt;</a>
@@ -508,7 +508,7 @@
                                     @else
                                         <style>
                                             .priceDiv1{min-width:190px;}
-                                            .step_price_div{max-height: 75px;overflow-y: auto;width: 100%;overflow-x: clip;scrollbar-color: {{$data['websites']['info']['color']}} {{$data['websites']['info']['color_word']}}fff;}
+                                            .step_price_div{max-height: 75px;overflow-y: auto;width: 100%;overflow-x: clip;scrollbar-color: {{$data['websites']['info']['color'] ?? ''}} {{$data['websites']['info']['color_word'] ?? ''}}fff;}
                                             .step_price_div .font12{color:#000;font-size:12px !important;font-weight:800;}
                                             .step_price_div .font15{color:#000;font-size:15px !important;font-weight:800;}
                                             .step_price_div .price{color:#db1d18;font-size:15px !important;font-weight:800;padding-left:2px !important;}
@@ -1007,7 +1007,7 @@
                                                     .alsel,.alsel2{cursor:pointer;}
                                                     .alsel:after{content: '';position: absolute;width: 8px;height: 8px;border-top: 1px solid #666;border-right: 1px solid #666;right: -20px;top: 5px;transform: rotate(135deg);}
                                                     .alsel2:after{content: '';position: absolute;width: 8px;height: 8px;border-top: 1px solid #666;border-right: 1px solid #666;right: -20px;top: 6px;transform: rotate(-45deg);}
-                                                    .alselBox .servicesDiv{background:{{$data['websites']['info']['color_word']}};padding:20px;box-sizing: border-box;box-shadow: 0px 0px 10px 1px #999;position: absolute;top: 20px;left: -85px;z-index: 11;min-width: 578px;}
+                                                    .alselBox .servicesDiv{background:{{$data['websites']['info']['color_word'] ?? ''}};padding:20px;box-sizing: border-box;box-shadow: 0px 0px 10px 1px #999;position: absolute;top: 20px;left: -85px;z-index: 11;min-width: 578px;}
                                                 </style>
                                                 <div class="gi_services disf gi_border" style="display: none;">
                                                     <div class="gi_label">更多服务</div>
@@ -1073,7 +1073,7 @@
                                                             </div>
                                                         </div>
                                                         @if($goods['platform_valueInfo']['perform_type']==1)
-                                                            <div class="gi_file_div" style="display:none;background:{{$data['websites']['info']['color_word']}};">
+                                                            <div class="gi_file_div" style="display:none;background:{{$data['websites']['info']['color_word'] ?? ''}};">
                                                                 <div class="layui-btn layui-btn-normal" style="background:#d3d3d3;position:absolute;right:0;top:0;font-size: 25px;padding: 0 15px;" onclick="cancel_buy()">×</div>
                                                                 <div class="gi_file disf gi_border" style="margin-top:10px;">
                                                                     <div class="gi_label">文件上传</div>
@@ -1089,7 +1089,7 @@
                                                                 </div>
                                                                 <div class="upload_file_footer">
                                                                     <button class="layui-btn layui-btn-normal" lay-submit lay-filter="glist-element2" style="background:#ff0000;margin-left:70px;display:none;">立即订购</button>
-                                                                    <button class="layui-btn layui-btn-normal" lay-submit lay-filter="glist-element3" style="border:1px solid #1E9FFF;color:{{$data['websites']['info']['color_word']}};margin-left:0px;">立即加购</button>
+                                                                    <button class="layui-btn layui-btn-normal" lay-submit lay-filter="glist-element3" style="border:1px solid #1E9FFF;color:{{$data['websites']['info']['color_word'] ?? ''}};margin-left:0px;">立即加购</button>
                                                                 </div>
                                                             </div>
                                                         @elseif($goods['platform_valueInfo']['perform_type']==2 && $goods['platform_valueInfo']['drug']['value']['value']>=4)
@@ -1104,7 +1104,7 @@
 
                                             @if(!isset($goods['platform_valueInfo']))
                                                 <button class="layui-btn layui-btn-normal" lay-submit lay-filter="glist-element2" style="background:#ff0000;display:none;">立即订购</button>
-                                                <button class="layui-btn layui-btn-normal order_now" lay-submit lay-filter="glist-element3" style="border:1px solid #1E9FFF;color:{{$data['websites']['info']['color_word']}};margin-left:0px;background:{{$data['websites']['info']['color']}};">立即订购</button>
+                                                <button class="layui-btn layui-btn-normal order_now" lay-submit lay-filter="glist-element3" style="border:1px solid #1E9FFF;color:{{$data['websites']['info']['color_word'] ?? ''}};margin-left:0px;background:{{$data['websites']['info']['color'] ?? ''}};">立即订购</button>
                                             @else
                                                 @if($goods['platform_valueInfo']['perform_type']==1)
                                                     <div class="layui-btn layui-btn-normal" style="background:#ff0000;" onclick="goto_buy()">上传文件</div>
@@ -1256,7 +1256,7 @@
                                                 </div>
                                             </div>
                                             <div class="disf" style="justify-content:center;text-align: center;">
-                                                <button class="layui-btn" lay-submit="" lay-filter="address-element2" style="background:{{$data['websites']['info']['color']}};">立即提交</button>
+                                                <button class="layui-btn" lay-submit="" lay-filter="address-element2" style="background:{{$data['websites']['info']['color'] ?? ''}};">立即提交</button>
                                                 <div style="margin-left:10px;">
                                                     <input type="checkbox" name="is_default" id="is_default" lay-skin="primary" title="默认" value="1" checked onclick="is_default(this)" style="display:none;">
                                                 </div>
@@ -3305,13 +3305,13 @@
 
                     @if($goods['shop_id']>0 && !empty($goods['rule_id']))
                         <style>
-                            .detailBtmDiv .layui-colla-title{background:{{$data['websites']['info']['color']}};color:{{$data['websites']['info']['color_word']}};}
+                            .detailBtmDiv .layui-colla-title{background:{{$data['websites']['info']['color'] ?? ''}};color:{{$data['websites']['info']['color_word'] ?? ''}};}
                             .detailBtmDiv p{font-size:15px;color:#000;}
                         </style>
                         <div class="detailBtmDiv detailBtmHide">
                             <div class="detailBtmTitle paramInfoDiv">规则声明</div>
                             <div class="detailBtmInfo">
-                                <div style="border:0px solid {{$data['websites']['info']['color_word']}};height: 650px;overflow-y: scroll;padding:0 10px;box-sizing:border-box;background:{{$data['websites']['info']['color_word']}};">
+                                <div style="border:0px solid {{$data['websites']['info']['color_word'] ?? ''}};height: 650px;overflow-y: scroll;padding:0 10px;box-sizing:border-box;background:{{$data['websites']['info']['color_word'] ?? ''}};">
                                     <!--序言头部-->
                                     @if($goods['rule']['is_preamble']==1 && $goods['rule']['position_display']==1)
                                         <div class="preamble_con" style="margin-top:0.5cm;">{!! $goods['rule']['preamble_con'] !!}</div>
@@ -3520,7 +3520,7 @@
                                     @foreach($goods['activity_info'] as $k=>$v)
                                         <tr>
                                             <td>{{$v['name']}}</td>
-                                            <td><div class="layui-btn layui-btn-xs layui-btn-normal" style="background:{{$data['websites']['info']['color']}};">进入活动</div></td>
+                                            <td><div class="layui-btn layui-btn-xs layui-btn-normal" style="background:{{$data['websites']['info']['color'] ?? ''}};">进入活动</div></td>
                                         </tr>
                                     @endforeach
                                     </tbody>
